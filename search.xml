@@ -19,6 +19,68 @@
 ]]></content>
   </entry>
   <entry>
+    <title>openFeign介绍</title>
+    <url>/2022/07/10/openFeign%E4%BB%8B%E7%BB%8D/</url>
+    <content><![CDATA[<p>Feign是Spring Cloud组件中的一个轻量级RESTful的HTTP服务客户端，Feign内置了Ribbon，用来做客户端负载均衡，去调用服务注册中心的服务。Feign的使用方式是：使用Feign的注解定义接口，调用这个接口，就可以调用服务注册中心的服务，简化成就像调用本地方法那样简单。</p>
+<p>OpenFeign是Spring Cloud在Feign的基础上支持了SpringMVC的注解，如@RequestMaping等等。OpenFeign的@FeignClient可以解析SpringMVC的@RequestMaping注解下的接口，并通过动态代理的方式产生实现类，实现类中做负载均衡并调用其他服务</p>
+<p>OpenFeign 是对 JDK 的 HttpURLConnection（以及第三方库 HttpClient 和 OkHttp）的包装和简化</p>
+<h5 id="简单总结下-OpenFeign-能用来做什么："><a href="#简单总结下-OpenFeign-能用来做什么：" class="headerlink" title="简单总结下 OpenFeign 能用来做什么："></a>简单总结下 OpenFeign 能用来做什么：</h5><p>OpenFeign 是声明式的 HTTP 客户端，让远程调用更简单。</p>
+<p>提供了HTTP请求的模板，编写简单的接口和插入注解，就可以定义好HTTP请求的参数、格式、地址等信息</p>
+<p>整合了Ribbon（负载均衡组件）和 Hystix（服务熔断组件），不需要显示使用这两个组件</p>
+<p>Spring Cloud Feign 在 Netflix Feign的基础上扩展了对SpringMVC注解的支持</p>
+<h5 id="梳理-OpenFeign-的核心流程："><a href="#梳理-OpenFeign-的核心流程：" class="headerlink" title="梳理 OpenFeign 的核心流程："></a>梳理 OpenFeign 的核心流程：</h5><p><img src="/2022/07/10/openFeign%E4%BB%8B%E7%BB%8D/clipboard.png"></p>
+<ul>
+<li><p>在 Spring 项目启动阶段，服务 A 的OpenFeign 框架会发起一个主动的扫包流程。</p>
+</li>
+<li><p>从指定的目录下扫描并加载所有被 @FeignClient 注解修饰的接口，然后将这些接口转换成 Bean，统一交给 Spring 来管理。</p>
+</li>
+<li><p>根据这些接口会经过 MVC Contract 协议解析，将方法上的注解都解析出来，放到 MethodMetadata 元数据中。</p>
+</li>
+<li><p>基于上面加载的每一个 FeignClient 接口，会生成一个动态代理对象，指向了一个包含对应方法的 MethodHandler 的 HashMap。MethodHandler 对元数据有引用关系。生成的动态代理对象会被添加到 Spring 容器中，并注入到对应的服务里。</p>
+</li>
+<li><p>服务 A 调用接口，准备发起远程调用。</p>
+</li>
+<li><p>从动态代理对象 Proxy 中找到一个 MethodHandler 实例，生成 Request，包含有服务的请求 URL（不包含服务的 IP）。</p>
+</li>
+<li><p>经过负载均衡算法找到一个服务的 IP 地址，拼接出请求的 URL</p>
+</li>
+<li><p>服务 B 处理服务 A 发起的远程调用请求，执行业务逻辑后，返回响应给服务 A</p>
+</li>
+</ul>
+<h5 id="代码helloword："><a href="#代码helloword：" class="headerlink" title="代码helloword："></a>代码helloword：</h5><p>1、依赖</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;spring-cloud-starter-openfeign&lt;/artifactId&gt;</span><br><span class="line">&lt;/dependency&gt; </span><br></pre></td></tr></table></figure>
+
+<p>2、主启动类添加@EnableFeignClients @EnableDiscoveryClient</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.yl.openfeign.order;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.SpringApplication;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;</span><br><span class="line"><span class="keyword">import</span> org.springframework.cloud.client.discovery.EnableDiscoveryClient;</span><br><span class="line"><span class="keyword">import</span> org.springframework.cloud.openfeign.EnableFeignClients;</span><br><span class="line"></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="meta">@EnableDiscoveryClient</span></span><br><span class="line"><span class="meta">@EnableFeignClients</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OpenFeignOrder80Application</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        SpringApplication.run(OpenFeignOrder80Application.class,args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>3、编写service接口调用远程服务，添加@FeignClient注解（value：调用的服务名）</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 支付</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@FeignClient(value = &quot;PAYMENT&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">PaymentFeignService</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 根据id查询数据</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> id</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@GetMapping(value = &quot;/payment/get/&#123;id&#125;&quot;)</span></span><br><span class="line">    CommonResult&lt;Payment&gt; <span class="title function_">getPaymentById</span><span class="params">(<span class="meta">@PathVariable(&quot;id&quot;)</span> Long id)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>4、编写controller</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 支付</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/order&quot;)</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OrderFeignController</span> &#123;</span><br><span class="line">    <span class="meta">@Resource</span></span><br><span class="line">    <span class="keyword">private</span> PaymentFeignService paymentFeignService;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 根据id查询数据</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> id id</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> 查询结果</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@GetMapping(value = &quot;/payment/get/&#123;id&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> CommonResult&lt;Payment&gt; <span class="title function_">getPaymentById</span><span class="params">(<span class="meta">@PathVariable(&quot;id&quot;)</span> Long id)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> paymentFeignService.getPaymentById(id);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>5、被调用的服务controller</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 支付</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@auther</span> Y-wee</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/payment&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PaymentController</span> &#123;</span><br><span class="line">    <span class="meta">@Resource</span></span><br><span class="line">    <span class="keyword">private</span> PaymentService paymentService;</span><br><span class="line">    <span class="meta">@Value(&quot;$&#123;server.port&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">private</span> String serverPort;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 查询数据</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> id id</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> 查询结果</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@GetMapping(value = &quot;/get/&#123;id&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> CommonResult&lt;Payment&gt; <span class="title function_">getPaymentById</span><span class="params">(<span class="meta">@PathVariable(&quot;id&quot;)</span> Long id)</span> &#123;</span><br><span class="line">        <span class="type">Payment</span> <span class="variable">payment</span> <span class="operator">=</span> paymentService.getPaymentById(id);</span><br><span class="line">        <span class="keyword">if</span> (payment != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CommonResult</span>(<span class="number">200</span>, <span class="string">&quot;查询成功:&quot;</span> + serverPort, payment);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CommonResult</span>(<span class="number">444</span>, <span class="string">&quot;没有对应记录,查询ID: &quot;</span> + id, <span class="literal">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="feign中http-client"><a href="#feign中http-client" class="headerlink" title="feign中http client"></a>feign中http client</h5><p>如果不做特殊配置，OpenFeign默认使用jdk自带的HttpURLConnection，我们知道HttpURLConnection没有连接池、性能和效率比较低，如果采用默认，很可能会遇到性能问题导致系统故障。</p>
+<p>可以采用Apache HttpClient</p>
+<p>@ConditionalOnClass({ApacheHttpClient.class})注解可知，只需要在pom文件上加上HttpClient依赖即可</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">feign.httpclient.enabled=<span class="literal">true</span> #不配置也是默认为<span class="literal">true</span>的</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;io.github.openfeign&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;feign-httpclient&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;<span class="number">9.4</span><span class="number">.0</span>&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+
+<p>也可以采用OkHttpClient</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;io.github.openfeign&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;feign-okhttp&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;<span class="number">10.2</span><span class="number">.0</span>&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>框架</category>
+        <category>SpringCould</category>
+        <category>openFeign</category>
+      </categories>
+      <tags>
+        <tag>SpringCould</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Hexo使用</title>
     <url>/2022/07/10/Hexo%E4%BD%BF%E7%94%A8/</url>
     <content><![CDATA[<h4 id="Hexo-官网-https-hexo-io-zh-cn"><a href="#Hexo-官网-https-hexo-io-zh-cn" class="headerlink" title="Hexo 官网 https://hexo.io/zh-cn/"></a>Hexo 官网 <a href="https://hexo.io/zh-cn/">https://hexo.io/zh-cn/</a></h4><h5 id="安装相关工具"><a href="#安装相关工具" class="headerlink" title="安装相关工具"></a>安装相关工具</h5><ul>
@@ -119,68 +181,6 @@
       </categories>
       <tags>
         <tag>Hexo</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>openFeign介绍</title>
-    <url>/2022/07/10/openFeign%E4%BB%8B%E7%BB%8D/</url>
-    <content><![CDATA[<p>Feign是Spring Cloud组件中的一个轻量级RESTful的HTTP服务客户端，Feign内置了Ribbon，用来做客户端负载均衡，去调用服务注册中心的服务。Feign的使用方式是：使用Feign的注解定义接口，调用这个接口，就可以调用服务注册中心的服务，简化成就像调用本地方法那样简单。</p>
-<p>OpenFeign是Spring Cloud在Feign的基础上支持了SpringMVC的注解，如@RequestMaping等等。OpenFeign的@FeignClient可以解析SpringMVC的@RequestMaping注解下的接口，并通过动态代理的方式产生实现类，实现类中做负载均衡并调用其他服务</p>
-<p>OpenFeign 是对 JDK 的 HttpURLConnection（以及第三方库 HttpClient 和 OkHttp）的包装和简化</p>
-<h5 id="简单总结下-OpenFeign-能用来做什么："><a href="#简单总结下-OpenFeign-能用来做什么：" class="headerlink" title="简单总结下 OpenFeign 能用来做什么："></a>简单总结下 OpenFeign 能用来做什么：</h5><p>OpenFeign 是声明式的 HTTP 客户端，让远程调用更简单。</p>
-<p>提供了HTTP请求的模板，编写简单的接口和插入注解，就可以定义好HTTP请求的参数、格式、地址等信息</p>
-<p>整合了Ribbon（负载均衡组件）和 Hystix（服务熔断组件），不需要显示使用这两个组件</p>
-<p>Spring Cloud Feign 在 Netflix Feign的基础上扩展了对SpringMVC注解的支持</p>
-<h5 id="梳理-OpenFeign-的核心流程："><a href="#梳理-OpenFeign-的核心流程：" class="headerlink" title="梳理 OpenFeign 的核心流程："></a>梳理 OpenFeign 的核心流程：</h5><p><img src="/2022/07/10/openFeign%E4%BB%8B%E7%BB%8D/clipboard.png"></p>
-<ul>
-<li><p>在 Spring 项目启动阶段，服务 A 的OpenFeign 框架会发起一个主动的扫包流程。</p>
-</li>
-<li><p>从指定的目录下扫描并加载所有被 @FeignClient 注解修饰的接口，然后将这些接口转换成 Bean，统一交给 Spring 来管理。</p>
-</li>
-<li><p>根据这些接口会经过 MVC Contract 协议解析，将方法上的注解都解析出来，放到 MethodMetadata 元数据中。</p>
-</li>
-<li><p>基于上面加载的每一个 FeignClient 接口，会生成一个动态代理对象，指向了一个包含对应方法的 MethodHandler 的 HashMap。MethodHandler 对元数据有引用关系。生成的动态代理对象会被添加到 Spring 容器中，并注入到对应的服务里。</p>
-</li>
-<li><p>服务 A 调用接口，准备发起远程调用。</p>
-</li>
-<li><p>从动态代理对象 Proxy 中找到一个 MethodHandler 实例，生成 Request，包含有服务的请求 URL（不包含服务的 IP）。</p>
-</li>
-<li><p>经过负载均衡算法找到一个服务的 IP 地址，拼接出请求的 URL</p>
-</li>
-<li><p>服务 B 处理服务 A 发起的远程调用请求，执行业务逻辑后，返回响应给服务 A</p>
-</li>
-</ul>
-<h5 id="代码helloword："><a href="#代码helloword：" class="headerlink" title="代码helloword："></a>代码helloword：</h5><p>1、依赖</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;spring-cloud-starter-openfeign&lt;/artifactId&gt;</span><br><span class="line">&lt;/dependency&gt; </span><br></pre></td></tr></table></figure>
-
-<p>2、主启动类添加@EnableFeignClients @EnableDiscoveryClient</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">package</span> com.yl.openfeign.order;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.SpringApplication;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;</span><br><span class="line"><span class="keyword">import</span> org.springframework.cloud.client.discovery.EnableDiscoveryClient;</span><br><span class="line"><span class="keyword">import</span> org.springframework.cloud.openfeign.EnableFeignClients;</span><br><span class="line"></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="meta">@EnableDiscoveryClient</span></span><br><span class="line"><span class="meta">@EnableFeignClients</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OpenFeignOrder80Application</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        SpringApplication.run(OpenFeignOrder80Application.class,args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>3、编写service接口调用远程服务，添加@FeignClient注解（value：调用的服务名）</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 支付</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="meta">@FeignClient(value = &quot;PAYMENT&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">PaymentFeignService</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 根据id查询数据</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> id</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@GetMapping(value = &quot;/payment/get/&#123;id&#125;&quot;)</span></span><br><span class="line">    CommonResult&lt;Payment&gt; <span class="title function_">getPaymentById</span><span class="params">(<span class="meta">@PathVariable(&quot;id&quot;)</span> Long id)</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>4、编写controller</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 支付</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/order&quot;)</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OrderFeignController</span> &#123;</span><br><span class="line">    <span class="meta">@Resource</span></span><br><span class="line">    <span class="keyword">private</span> PaymentFeignService paymentFeignService;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 根据id查询数据</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> id id</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> 查询结果</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@GetMapping(value = &quot;/payment/get/&#123;id&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> CommonResult&lt;Payment&gt; <span class="title function_">getPaymentById</span><span class="params">(<span class="meta">@PathVariable(&quot;id&quot;)</span> Long id)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> paymentFeignService.getPaymentById(id);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>5、被调用的服务controller</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 支付</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@auther</span> Y-wee</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@RestController</span></span><br><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="meta">@RequestMapping(&quot;/payment&quot;)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">PaymentController</span> &#123;</span><br><span class="line">    <span class="meta">@Resource</span></span><br><span class="line">    <span class="keyword">private</span> PaymentService paymentService;</span><br><span class="line">    <span class="meta">@Value(&quot;$&#123;server.port&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">private</span> String serverPort;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 查询数据</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> id id</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> 查询结果</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@GetMapping(value = &quot;/get/&#123;id&#125;&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> CommonResult&lt;Payment&gt; <span class="title function_">getPaymentById</span><span class="params">(<span class="meta">@PathVariable(&quot;id&quot;)</span> Long id)</span> &#123;</span><br><span class="line">        <span class="type">Payment</span> <span class="variable">payment</span> <span class="operator">=</span> paymentService.getPaymentById(id);</span><br><span class="line">        <span class="keyword">if</span> (payment != <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CommonResult</span>(<span class="number">200</span>, <span class="string">&quot;查询成功:&quot;</span> + serverPort, payment);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">CommonResult</span>(<span class="number">444</span>, <span class="string">&quot;没有对应记录,查询ID: &quot;</span> + id, <span class="literal">null</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h5 id="feign中http-client"><a href="#feign中http-client" class="headerlink" title="feign中http client"></a>feign中http client</h5><p>如果不做特殊配置，OpenFeign默认使用jdk自带的HttpURLConnection，我们知道HttpURLConnection没有连接池、性能和效率比较低，如果采用默认，很可能会遇到性能问题导致系统故障。</p>
-<p>可以采用Apache HttpClient</p>
-<p>@ConditionalOnClass({ApacheHttpClient.class})注解可知，只需要在pom文件上加上HttpClient依赖即可</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">feign.httpclient.enabled=<span class="literal">true</span> #不配置也是默认为<span class="literal">true</span>的</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;io.github.openfeign&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;feign-httpclient&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;<span class="number">9.4</span><span class="number">.0</span>&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
-
-<p>也可以采用OkHttpClient</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;io.github.openfeign&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;feign-okhttp&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;<span class="number">10.2</span><span class="number">.0</span>&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>框架</category>
-        <category>SpringCould</category>
-        <category>openFeign</category>
-      </categories>
-      <tags>
-        <tag>SpringCould</tag>
       </tags>
   </entry>
 </search>
