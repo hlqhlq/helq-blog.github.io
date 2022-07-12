@@ -275,7 +275,7 @@
 <h4 id="Mysql的覆盖索引和联合索引的区别"><a href="#Mysql的覆盖索引和联合索引的区别" class="headerlink" title="Mysql的覆盖索引和联合索引的区别"></a>Mysql的<strong>覆盖索引和联合索引</strong>的区别</h4><p><strong>覆盖索引</strong>指的是<strong>索引中已包含需要查询的数据，执行查询时无需回表</strong>，扫描一次B+数索引即可</p>
 <p><strong>联合索引，在多个属性，建立为一个索引，加快多条件查询</strong></p>
 <p><strong>索引覆盖是联合索引查询时的最优情况，不要回表</strong></p>
-<h4 id="索引最为常见的扫描方式有："><a href="#索引最为常见的扫描方式有：" class="headerlink" title="索引最为常见的扫描方式有："></a>索引最为常见的扫描方式有：</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">system：系统表，少量数据，往往不需要进行磁盘IO；</span><br><span class="line">const：常量连接；命中主键(primary key)或者唯一(unique)索引</span><br><span class="line">eq_ref：主键索引(primary key)或者非空唯一索引(unique not null)等值扫描；</span><br><span class="line">ref：非主键非唯一索引等值扫描；</span><br><span class="line">range：范围扫描；</span><br><span class="line">index：索引树扫描；</span><br><span class="line">ALL：全表扫描(full table scan)</span><br></pre></td></tr></table></figure>
+<h4 id="索引最为常见的扫描方式"><a href="#索引最为常见的扫描方式" class="headerlink" title="索引最为常见的扫描方式"></a>索引最为常见的扫描方式</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">system：系统表，少量数据，往往不需要进行磁盘IO；</span><br><span class="line">const：常量连接；命中主键(primary key)或者唯一(unique)索引</span><br><span class="line">eq_ref：主键索引(primary key)或者非空唯一索引(unique not null)等值扫描；</span><br><span class="line">ref：非主键非唯一索引等值扫描；</span><br><span class="line">range：范围扫描；</span><br><span class="line">index：索引树扫描；</span><br><span class="line">ALL：全表扫描(full table scan)</span><br></pre></td></tr></table></figure>
 
  
       <!-- reward -->
@@ -359,6 +359,15 @@
 
    
   <nav class="article-nav">
+    
+      <a href="/2022/07/12/%E5%88%86%E5%B8%83%E5%BC%8FSession%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            分布式Session解决方案
+          
+        </div>
+      </a>
     
     
       <a href="/2022/07/10/Hexo%E4%BD%BF%E7%94%A8/" class="article-nav-link">
