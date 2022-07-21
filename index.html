@@ -155,6 +155,79 @@
     
     
     <article
+  id="post-SpringMVC-Controller并发安全问题"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/"
+    >SpringMVC Controller并发安全问题</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/" class="article-date">
+  <time datetime="2022-07-21T06:09:01.000Z" itemprop="datePublished">2022-07-21</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%A1%86%E6%9E%B6/">框架</a> / <a class="article-category-link" href="/categories/%E6%A1%86%E6%9E%B6/SprigMVC/">SprigMVC</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a><strong>背景</strong></h4><p>根据Tomcat官网中的介绍，<strong>对于一个浏览器请求，tomcat会指定一个处理线程</strong>，或是在线程池中选取空闲的，或者新建一个线程。</p>
+<p>在Tomcat容器中，每个servlet是单例的。<strong>在SpringMVC中，Controller 默认也是单例</strong>。 采用单例模式的最大好处，就是可以<strong>在高并发场景下极大地节省内存资源，提高服务抗压能力</strong>。</p>
+<p>单例模式容易出现的问题是：在Controller中定义的<strong>实例变量</strong>，在多个请求并发时会出现竞争访问，<strong>Controller中的实例变量不是线程安全的</strong>。</p>
+<h4 id="Controller不是线程安全的"><a href="#Controller不是线程安全的" class="headerlink" title="Controller不是线程安全的"></a><strong>Controller不是线程安全的</strong></h4><p>正因为Controller默认是单例，所以不是线程安全的。如果用SpringMVC 的 Controller时，尽量不在 Controller中使用实例变量，否则会出现线程不安全性的情况，导致数据逻辑混乱。</p>
+<p>举一个简单的例子，在一个Controller中定义一个非静态成员变量 num 。通过Controller成员方法来对 num 增加。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">首先访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是1</span></span><br><span class="line">再次访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是 2。</span></span><br><span class="line">两次访问得到的结果不同，num已经被修改，并不是我们希望的结果，接口的幂等性被破坏。</span><br></pre></td></tr></table></figure>
+
+<p>所有的请求访问同一个Controller实例，<strong>Controller的私有成员变量就是线程共用的</strong>。某个请求对应的线程如果修改了这个变量，那么在别的请求中也可以读到这个变量修改后的的值。</p>
+<h4 id="Controller并发安全的解决办法"><a href="#Controller并发安全的解决办法" class="headerlink" title="Controller并发安全的解决办法"></a><strong>Controller并发安全的解决办法</strong></h4><ul>
+<li><p>尽量不要在 Controller 中定义成员变量 ；</p>
+</li>
+<li><p>如果必须要定义一个非静态成员变量，那么可以通过注解 @Scope(“prototype”) ，将Controller设置为多例模式，容器在接受到该类型对象的请求时，每次都会重新生成一个新的对象给请求方。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="meta">@Scope(value=&quot;prototype&quot;)</span><span class="comment">// 多例</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>Controller 中使用 ThreadLocal 变量。 每一个线程都有一个变量的副本</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ThreadLocal &lt;Integer&gt; uniqueNum =</span><br><span class="line">             <span class="keyword">new</span> <span class="title class_">ThreadLocal</span> &lt;Integer&gt; () &#123;</span><br><span class="line">                 <span class="meta">@Override</span> <span class="keyword">protected</span> Integer <span class="title function_">initialValue</span><span class="params">()</span> &#123;</span><br><span class="line">                     <span class="keyword">return</span> num;</span><br><span class="line">                 &#125;</span><br><span class="line">             &#125;;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">unum</span> <span class="operator">=</span> uniqueNum.get();</span><br><span class="line">       uniqueNum.set(++unum);</span><br><span class="line">       System.out.println(uniqueNum.get());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">以上代码运行以后，每次请求 http:<span class="comment">// localhost:8080 / addNum , 得到的结果都是1。</span></span><br><span class="line">更严格的做法是用AtomicInteger类型定义成员变量，对于成员变量的操作使用AtomicInteger的自增方法完成。</span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SprigMVC/" rel="tag">SprigMVC</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-数据库范式"
   class="article article-type-post"
   itemscope
@@ -1256,151 +1329,6 @@
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-Hexo使用"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/07/10/Hexo%E4%BD%BF%E7%94%A8/"
-    >Hexo使用</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/07/10/Hexo%E4%BD%BF%E7%94%A8/" class="article-date">
-  <time datetime="2022-07-10T10:32:13.000Z" itemprop="datePublished">2022-07-10</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Hexo/">Hexo</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="Hexo-官网-https-hexo-io-zh-cn"><a href="#Hexo-官网-https-hexo-io-zh-cn" class="headerlink" title="Hexo 官网 https://hexo.io/zh-cn/"></a>Hexo 官网 <a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/">https://hexo.io/zh-cn/</a></h4><h5 id="安装相关工具"><a href="#安装相关工具" class="headerlink" title="安装相关工具"></a>安装相关工具</h5><ul>
-<li><p>安装Node.js</p>
-</li>
-<li><p>安装Git</p>
-</li>
-<li><p>安装Hexo脚手架</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-cli -g</span><br><span class="line">hexo -v</span><br></pre></td></tr></table></figure></li>
-</ul>
-<h4 id="github上建项目"><a href="#github上建项目" class="headerlink" title="github上建项目"></a>github上建项目</h4><ul>
-<li><p>登录后点击“+”号，选择New repository，下一步</p>
-</li>
-<li><p>在Repository name下面填写你要创建的地址，这个地址是就是你的域名，以github.io结尾。**例如填写hlqhlq.github.io以后就在地址栏直接输入wapchief.github.io就可以访问网站</p>
-</li>
-<li><p>按照提示一步步完成创建。</p>
-</li>
-<li><p>创建之后，点击setting设置远程库：</p>
-</li>
-<li><p>找到GitHub Pages点击Automatic page generator</p>
-</li>
-<li><p>等待github pages创建完成，然后输入你创建的地址测试github pager是否创建成功。此时页面是空的没有任何东西。</p>
-<p><img src="/2022/07/10/Hexo%E4%BD%BF%E7%94%A8/52dcbd638f8efd76e8470d25a3f57c05.png"></p>
-</li>
-</ul>
-<p>使用hexo模板将源码放到github</p>
-<h4 id="初始化Hexo"><a href="#初始化Hexo" class="headerlink" title="初始化Hexo"></a>初始化Hexo</h4><ul>
-<li><p>创建一个文件夹用于存放hexo</p>
-</li>
-<li><p>安装hexo</p>
-</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo --save</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>初始化hexo基础配置文件</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>初始化hexo</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>生成网站静态文件到默认设置的 public 文件夹</li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo g</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>启动本地服务器，用于预览主题。默认地址： <a target="_blank" rel="noopener" href="http://localhost:4000/">http://localhost:4000/</a></li>
-</ul>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo s</span><br></pre></td></tr></table></figure>
-
-<h4 id="安装ayer主题"><a href="#安装ayer主题" class="headerlink" title="安装ayer主题"></a>安装ayer主题</h4><p><strong>方法一：</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm i hexo-theme-ayer -S</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li>如果是新安装本主题，安装完成后会在根目录生成一个<code>_config.ayer.yml</code>文件，直接编辑<code>_config.ayer.yml</code>文件进行配置即可。</li>
-<li>如果是主题升级，建议先把配置内容做备份，然后用<code>npm uninstall hexo-theme-ayer -S</code>先卸载主题，再<code>npm i hexo-theme-ayer -S</code>重新安装。</li>
-</ul>
-<p><strong>方法二（hexo &lt; 5.0）：</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 国内用户如果速度较慢，可以把github地址替换为：https://gitee.com/mirrors/ayer.git</span><br><span class="line">git clone https://github.com/Shen-Yu/hexo-theme-ayer.git themes/ayer</span><br></pre></td></tr></table></figure>
-
-<h4 id="修改配置文件"><a href="#修改配置文件" class="headerlink" title="修改配置文件"></a>修改配置文件</h4><p>将博客根目录下的 <code>_config.yml</code> 里的 <code>theme</code> 值修改成 <code>ayer</code></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">theme: ayer</span><br></pre></td></tr></table></figure>
-
-<h4 id="更新主题"><a href="#更新主题" class="headerlink" title="更新主题"></a>更新主题</h4><p> npm 安装本主题，那么在根目录执行以下命令就可更新。</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">COPYnpm update hexo-theme-ayer -S</span><br></pre></td></tr></table></figure>
-
-<h4 id="写作博客"><a href="#写作博客" class="headerlink" title="写作博客"></a>写作博客</h4><ul>
-<li><p>创建一篇新文章或者新的页面</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new [layout] &lt;title&gt;</span><br></pre></td></tr></table></figure></li>
-<li><p>分类</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new page categories</span><br></pre></td></tr></table></figure>
-
-<p>然后将以下复制到 /source/categories/index.md 文件</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">添加属性</span><br><span class="line">type: &quot;categories&quot;</span><br><span class="line">layout: &quot;categories&quot;	</span><br></pre></td></tr></table></figure></li>
-<li><p>标签</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new page tags</span><br></pre></td></tr></table></figure>
-
-<p>然后将以下复制到 /source/tags/index.md 文件</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">添加属性</span><br><span class="line">type: &quot;tags&quot;</span><br><span class="line">layout: &quot;tags&quot;	</span><br></pre></td></tr></table></figure></li>
-<li><p>​    设置文章分类和标签</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">title: Hexo使用</span><br><span class="line">date: 2022-07-10 18:32:13</span><br><span class="line">#分类</span><br><span class="line">categories:</span><br><span class="line">- Hexo</span><br><span class="line">- Hexo #二级分类</span><br><span class="line">#标签</span><br><span class="line">tags:</span><br><span class="line">- Hexo</span><br></pre></td></tr></table></figure></li>
-</ul>
-<h4 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h4><ul>
-<li><p>安装部署插件 </p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure></li>
-<li><p>修改站点配置文件，打开站点下的<code>_config,yml</code>文件，添加<code>deploy</code>信息</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">deploy:</span><br><span class="line">    type: git</span><br><span class="line">    repo: https://github.com/username/username.github.io</span><br><span class="line">    branch: master					</span><br></pre></td></tr></table></figure></li>
-<li><p>部署命令</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean    //清理缓存</span><br><span class="line">hexo g      //生成静态文件</span><br><span class="line">hexo d      //部署网站到创建的仓库</span><br></pre></td></tr></table></figure></li>
-</ul>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hexo/" rel="tag">Hexo</a></li></ul>
 
     </footer>
   </div>
