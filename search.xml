@@ -455,6 +455,31 @@
       </tags>
   </entry>
   <entry>
+    <title>数据库范式</title>
+    <url>/2022/07/21/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%8C%83%E5%BC%8F/</url>
+    <content><![CDATA[<p>范式是关系数据库理论的基础，也是我们在设计数据库结构过程中所要遵循的规则和指导方法</p>
+<h4 id="第一范式（1NF）"><a href="#第一范式（1NF）" class="headerlink" title="第一范式（1NF）"></a>第一范式（1NF）</h4><p>数据表中的每一列（每个字段）必须是不可拆分的最小单元，也就是确保<strong>每一列的原子性   (值不可再分)</strong></p>
+<h4 id="第二范式（2NF）"><a href="#第二范式（2NF）" class="headerlink" title="第二范式（2NF）"></a>第二范式（2NF）</h4><p>满足1NF后，要求表中的<strong>所有列，都必须依赖于主键</strong>，而不能有任何一列与主键没有关系，也就是说<strong>一个表只描述一件事情</strong>；(<strong>消除了部份依赖</strong>)</p>
+<p>例如：订单表只描述订单相关的信息，所以所有字段都必须与订单id相关 产品表只描述产品相关的信息，所以所有字段都必须与产品id相 关；因此不能在一张表中同时出现订单信息与产品信息</p>
+<h4 id="第三范式（3NF）"><a href="#第三范式（3NF）" class="headerlink" title="第三范式（3NF）"></a>第三范式（3NF）</h4><p>必须先满足第二范式（2NF），要求：表中的<strong>每一列只与主键直接相关而不是间接相关</strong>，（表中的每一列只能依赖于主键）；(<strong>消除了传递依赖</strong>)</p>
+<p>订单表中需要有客户相关信息，在分离出客户表之后，订单表中只需要有一个用户id即可，而不能有其他的客户信息。因为其他的客户信息直接关联于用户id，而不是直接与订单id直接相关</p>
+<h4 id="数据库五大约束"><a href="#数据库五大约束" class="headerlink" title="数据库五大约束"></a>数据库五大约束</h4><ul>
+<li><strong>primary KEY</strong>:设置主键约束；</li>
+<li><strong>UNIQUE</strong>：设置唯一性约束，不能有重复值；</li>
+<li><strong>DEFAULT</strong> 默认值约束，height DOUBLE(3,2)DEFAULT 1.2 height不输入是默认为1,2</li>
+<li><strong>NOT NULL</strong>：设置非空约束，该字段不能为空；</li>
+<li><strong>FOREIGN key</strong> :设置外键约束</li>
+</ul>
+]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>MySQL</category>
+      </categories>
+      <tags>
+        <tag>MySQL</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>MySQL基本知识点</title>
     <url>/2022/07/19/MySQL%E5%9F%BA%E6%9C%AC%E7%9F%A5%E8%AF%86%E7%82%B9/</url>
     <content><![CDATA[<h4 id="什么是MySQL"><a href="#什么是MySQL" class="headerlink" title="什么是MySQL?"></a>什么是MySQL?</h4><p>MySQL 是一种<strong>关系型数据库</strong>，<strong>开源免费</strong>的</p>
