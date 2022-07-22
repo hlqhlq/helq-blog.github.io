@@ -11,7 +11,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>SpringMVC Controller并发安全问题 |  迷途小书童</title>
+      <title>Redis value过大问题 |  迷途小书童</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/favicon.ico" />
@@ -53,7 +53,7 @@
     <main class="content on">
       <section class="outer">
   <article
-  id="post-SpringMVC-Controller并发安全问题"
+  id="post-Redis-value过大问题"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -64,7 +64,7 @@
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  SpringMVC Controller并发安全问题
+  Redis value过大问题
 </h1>
  
 
@@ -72,11 +72,11 @@
     </header>
      
     <div class="article-meta">
-      <a href="/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/" class="article-date">
-  <time datetime="2022-07-21T06:09:01.000Z" itemprop="datePublished">2022-07-21</time>
+      <a href="/2022/07/22/Redis-value%E8%BF%87%E5%A4%A7%E9%97%AE%E9%A2%98/" class="article-date">
+  <time datetime="2022-07-22T05:11:54.000Z" itemprop="datePublished">2022-07-22</time>
 </a> 
   <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%A1%86%E6%9E%B6/">框架</a> / <a class="article-category-link" href="/categories/%E6%A1%86%E6%9E%B6/SprigMVC/">SprigMVC</a>
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a>
   </div>
   
 <div class="word_count">
@@ -84,7 +84,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> Word count:</span>
-            <span class="post-count">678</span>
+            <span class="post-count">1.3k</span>
         </span>
     </span>
 
@@ -93,7 +93,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> Reading time≈</span>
-            <span class="post-count">2 min</span>
+            <span class="post-count">4 min</span>
         </span>
     </span>
 </div>
@@ -108,24 +108,51 @@
   
     <div class="article-entry" itemprop="articleBody">
        
-  <h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a><strong>背景</strong></h4><p>根据Tomcat官网中的介绍，<strong>对于一个浏览器请求，tomcat会指定一个处理线程</strong>，或是在线程池中选取空闲的，或者新建一个线程。</p>
-<p>在Tomcat容器中，每个servlet是单例的。<strong>在SpringMVC中，Controller 默认也是单例</strong>。 采用单例模式的最大好处，就是可以<strong>在高并发场景下极大地节省内存资源，提高服务抗压能力</strong>。</p>
-<p>单例模式容易出现的问题是：在Controller中定义的<strong>实例变量</strong>，在多个请求并发时会出现竞争访问，<strong>Controller中的实例变量不是线程安全的</strong>。</p>
-<h4 id="Controller不是线程安全的"><a href="#Controller不是线程安全的" class="headerlink" title="Controller不是线程安全的"></a><strong>Controller不是线程安全的</strong></h4><p>正因为Controller默认是单例，所以不是线程安全的。如果用SpringMVC 的 Controller时，尽量不在 Controller中使用实例变量，否则会出现线程不安全性的情况，导致数据逻辑混乱。</p>
-<p>举一个简单的例子，在一个Controller中定义一个非静态成员变量 num 。通过Controller成员方法来对 num 增加。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">首先访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是1</span></span><br><span class="line">再次访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是 2。</span></span><br><span class="line">两次访问得到的结果不同，num已经被修改，并不是我们希望的结果，接口的幂等性被破坏。</span><br></pre></td></tr></table></figure>
+  <h4 id="多大的-key-算大？"><a href="#多大的-key-算大？" class="headerlink" title="多大的 key 算大？"></a><strong>多大的 key 算大？</strong></h4><p>阿里云Redis 最佳实践中提到 合理的 <strong>Key 中 Value 的字节大小，推荐小于10 KB</strong>。过大的 Value 会引发<strong>数据倾斜、热点Key、实例流量或 CPU 性能被占满</strong>等问题，应从设计源头上避免此类问题带来的性能影响。那么 value Bytes &gt;10kb 可以作为判断 大 key 的一个参考值</p>
+<h4 id="怎么发现大-Key-？"><a href="#怎么发现大-Key-？" class="headerlink" title="怎么发现大 Key ？"></a><strong>怎么发现大 Key ？</strong></h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--bigkeys 命令</span><br></pre></td></tr></table></figure>
 
-<p>所有的请求访问同一个Controller实例，<strong>Controller的私有成员变量就是线程共用的</strong>。某个请求对应的线程如果修改了这个变量，那么在别的请求中也可以读到这个变量修改后的的值。</p>
-<h4 id="Controller并发安全的解决办法"><a href="#Controller并发安全的解决办法" class="headerlink" title="Controller并发安全的解决办法"></a><strong>Controller并发安全的解决办法</strong></h4><ul>
-<li><p>尽量不要在 Controller 中定义成员变量 ；</p>
+<p>–bigkeys 是 redis 自带的命令，<strong>对整个 Key 进行扫描</strong>，统计 string，list，set，zset，hash 这几个常见数据类型中每种类型里的 最大的 key。<strong>string 类型统计的是 value 的字节数</strong>；<strong>另外 4 种复杂结构的类型统计的是 元素个数，不能直观的看出 value 占用字节数</strong>，所以 –bigkeys 对分析 string 类型的大 key 是有用的，而复杂结构的类型还需要一些第三方工具。（ 元素个数少，不一定 value 不大；元素个数多，也不一定 value 就大）</p>
+<p>root@vm1:~# redis-cli -h 127.0.0.1 -p 6379 -a “password” –bigkeys #　<strong>–bigkeys　是以 scan 延迟计算的方式扫描所有 key，因此执行过程中不会阻塞 redis，但实例存在 大量的 keys 时，命令执行的时间会很长</strong>，这种情况建议在 slave 上扫描。</p>
+<p>–-bigkeys 统计能直观的看出 string 类型 value 的大小，非 string 类型通常有以下两种方式统计：</p>
+<ul>
+<li>Redis 4.0 以后的版本：支持 了 <strong>memory 命令查看 key 的大小</strong></li>
+<li><strong>Rdbtools 工具包</strong>： Rdbtools 是 python写的 一个第三方开源工具，用来<strong>解析 Redis 快照文件</strong>。除了解析 rdb 文件，还提供了 <strong>统计单个 key 大小的工具</strong>。</li>
+</ul>
+<h4 id="如何优雅的删除-大-key-？"><a href="#如何优雅的删除-大-key-？" class="headerlink" title="如何优雅的删除 大 key ？"></a><strong>如何优雅的删除 大 key ？</strong></h4><h5 id="del-命令"><a href="#del-命令" class="headerlink" title="del 命令"></a>del 命令</h5><p>del 命令删除单个很大的 key 和 del 批量删除 大 key。</p>
+<p><strong>直接 del 命令 粗暴的 删大 key 容易造成 redis 线程阻塞</strong>。<strong>4.0 以前要优雅的删除就是针对不同的类型 写脚本，拆分链表，hash 表，分批删除</strong>。</p>
+<h5 id="UNLINK-命令"><a href="#UNLINK-命令" class="headerlink" title="UNLINK 命令"></a><strong>UNLINK</strong> 命令</h5><p><strong>4.0 版本以后</strong>官方对 删 大key 有了特别优化，<strong>支持了 lazy free 功能</strong>， 通常不需要开发脚本就可以删    </p>
+<p><strong>UNLINK mykey</strong> </p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; UNLINK mykey </span><br><span class="line">unlink 命令是  del 的异步版本，由 Lazyfree 机制实现。</span><br><span class="line">Lazyfree 机制的原理是在删除的时候只进行逻辑删除，</span><br><span class="line">把 key 释放操作放在 bio (Background I/O)单独的子线程中惰性处理，</span><br><span class="line">减少删除大 key 对 redis 主线程的阻塞，有效地避免因删除大key带来的性能问题。</span><br><span class="line">unlink 即使在批量删除 大 key 时，也不会对阻塞造成阻塞。</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="被动删除大-key"><a href="#被动删除大-key" class="headerlink" title="被动删除大 key"></a><strong>被动删除大 key</strong></h5><p>被动删除是指 Redis 自身的 key 清除策略</p>
+<ul>
+<li>Redis 内存不够时 key 的淘汰策略 ，即超过了 maxmemory 的配置</li>
+<li>惰性删除：（建议开启惰性清除策略 ）</li>
+<li>定时删除：( redis 默认策略 )</li>
+</ul>
+<h4 id="Redis的-bigkey-有哪些影响"><a href="#Redis的-bigkey-有哪些影响" class="headerlink" title="Redis的 bigkey 有哪些影响"></a><strong>Redis的 bigkey 有哪些影响</strong></h4><ul>
+<li><strong>影响性能</strong></li>
+</ul>
+<p>因为 Redis <strong>单线程</strong>的工作机制，主线程处理所有key的增删改查。<strong>对bigkey的操作耗时增加将阻塞主线程处理其他业务请求，进而影响整体吞吐量</strong>。</p>
+<ul>
+<li><strong>影响带宽</strong></li>
+</ul>
+<p>前面的案例即是一个例子，单个key 7MB ，如果每秒100次查询，则带来700MB 的带宽，虽然现在大部分是万兆网卡<strong>，业务请求量再大一些，网卡也有被打满的风险</strong>。</p>
+<ul>
+<li><strong>数据倾斜</strong></li>
+</ul>
+<p><strong>对于分片的redis集群，存在bigkey 会导致单个分片数据量远大于其他节点，整体不均衡</strong>。<strong>如果一个分片空间容量满了，对系统造成不可访问</strong>，而且也不能随意扩容，因为不拆分key的情况下扩容，单个分片还是存在数据倾斜。更惨的是，<strong>数据量比较大，那么访问就增加，容易形成热点</strong>。热点不都是因为数据倾斜导致，数据倾斜会大概率导致热点。</p>
+<ul>
+<li><strong>影响主从同步</strong></li>
+</ul>
+<p>Redis Server 的输出大小通常是不可控制的。存在bigkey的时候，就会产生体积庞大的返回数据。另外也有可能因为执行了太多命令，导致产生返回数据的速率超过了往客户端发送的速率，导致服务器堆积大量消息，从而<strong>导致输出缓冲区越来越大，占用过多内存，甚至导致系统崩溃</strong>。Redis 通过设置client-output-buffer-limit 来保护系统安全。</p>
+<h4 id="如何解决大key？"><a href="#如何解决大key？" class="headerlink" title="如何解决大key？"></a><strong>如何解决大key？</strong></h4><p>其实就是一个字 “拆”。</p>
+<ul>
+<li><p>对于字符串类型的key，我们通常要在业务层面将value的大小控制在10KB左右，如果value确实很大，可以考虑<strong>采用序列化算法和压缩算法来处理</strong>，推荐常用的几种序列化算法:Protostuff、Kryo或者Fst。</p>
 </li>
-<li><p>如果必须要定义一个非静态成员变量，那么可以通过注解 @Scope(“prototype”) ，将Controller设置为多例模式，容器在接受到该类型对象的请求时，每次都会重新生成一个新的对象给请求方。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="meta">@Scope(value=&quot;prototype&quot;)</span><span class="comment">// 多例</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p>Controller 中使用 ThreadLocal 变量。 每一个线程都有一个变量的副本</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ThreadLocal &lt;Integer&gt; uniqueNum =</span><br><span class="line">             <span class="keyword">new</span> <span class="title class_">ThreadLocal</span> &lt;Integer&gt; () &#123;</span><br><span class="line">                 <span class="meta">@Override</span> <span class="keyword">protected</span> Integer <span class="title function_">initialValue</span><span class="params">()</span> &#123;</span><br><span class="line">                     <span class="keyword">return</span> num;</span><br><span class="line">                 &#125;</span><br><span class="line">             &#125;;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">unum</span> <span class="operator">=</span> uniqueNum.get();</span><br><span class="line">       uniqueNum.set(++unum);</span><br><span class="line">       System.out.println(uniqueNum.get());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">以上代码运行以后，每次请求 http:<span class="comment">// localhost:8080 / addNum , 得到的结果都是1。</span></span><br><span class="line">更严格的做法是用AtomicInteger类型定义成员变量，对于成员变量的操作使用AtomicInteger的自增方法完成。</span><br></pre></td></tr></table></figure>
-
-
-
+<li><p>对于集合类型的key，我们通常要通过控制集合内元素数量来避免bigKey，通常的做法是将<strong>一个大的集合类型的key拆分成若干小集合类型的key来达到目的</strong>。</p>
 </li>
 </ul>
  
@@ -198,12 +225,12 @@
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://example.com/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://example.com/2022/07/22/Redis-value%E8%BF%87%E5%A4%A7%E9%97%AE%E9%A2%98/" alt="微信分享二维码">
     </div>
 </div>
 
 <div id="share-mask"></div>  
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SprigMVC/" rel="tag">SprigMVC</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
 
     </footer>
   </div>
@@ -211,19 +238,10 @@
    
   <nav class="article-nav">
     
-      <a href="/2022/07/22/Redis-value%E8%BF%87%E5%A4%A7%E9%97%AE%E9%A2%98/" class="article-nav-link">
-        <strong class="article-nav-caption">上一篇</strong>
-        <div class="article-nav-title">
-          
-            Redis value过大问题
-          
-        </div>
-      </a>
     
-    
-      <a href="/2022/07/21/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%8C%83%E5%BC%8F/" class="article-nav-link">
+      <a href="/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
-        <div class="article-nav-title">数据库范式</div>
+        <div class="article-nav-title">SpringMVC Controller并发安全问题</div>
       </a>
     
   </nav>

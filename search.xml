@@ -172,6 +172,65 @@
       </tags>
   </entry>
   <entry>
+    <title>Redis value过大问题</title>
+    <url>/2022/07/22/Redis-value%E8%BF%87%E5%A4%A7%E9%97%AE%E9%A2%98/</url>
+    <content><![CDATA[<h4 id="多大的-key-算大？"><a href="#多大的-key-算大？" class="headerlink" title="多大的 key 算大？"></a><strong>多大的 key 算大？</strong></h4><p>阿里云Redis 最佳实践中提到 合理的 <strong>Key 中 Value 的字节大小，推荐小于10 KB</strong>。过大的 Value 会引发<strong>数据倾斜、热点Key、实例流量或 CPU 性能被占满</strong>等问题，应从设计源头上避免此类问题带来的性能影响。那么 value Bytes &gt;10kb 可以作为判断 大 key 的一个参考值</p>
+<h4 id="怎么发现大-Key-？"><a href="#怎么发现大-Key-？" class="headerlink" title="怎么发现大 Key ？"></a><strong>怎么发现大 Key ？</strong></h4><figure class="highlight java"><table><tr><td class="code"><pre><span class="line">--bigkeys 命令</span><br></pre></td></tr></table></figure>
+
+<p>–bigkeys 是 redis 自带的命令，<strong>对整个 Key 进行扫描</strong>，统计 string，list，set，zset，hash 这几个常见数据类型中每种类型里的 最大的 key。<strong>string 类型统计的是 value 的字节数</strong>；<strong>另外 4 种复杂结构的类型统计的是 元素个数，不能直观的看出 value 占用字节数</strong>，所以 –bigkeys 对分析 string 类型的大 key 是有用的，而复杂结构的类型还需要一些第三方工具。（ 元素个数少，不一定 value 不大；元素个数多，也不一定 value 就大）</p>
+<p>root@vm1:~# redis-cli -h 127.0.0.1 -p 6379 -a “password” –bigkeys #　<strong>–bigkeys　是以 scan 延迟计算的方式扫描所有 key，因此执行过程中不会阻塞 redis，但实例存在 大量的 keys 时，命令执行的时间会很长</strong>，这种情况建议在 slave 上扫描。</p>
+<p>–-bigkeys 统计能直观的看出 string 类型 value 的大小，非 string 类型通常有以下两种方式统计：</p>
+<ul>
+<li>Redis 4.0 以后的版本：支持 了 <strong>memory 命令查看 key 的大小</strong></li>
+<li><strong>Rdbtools 工具包</strong>： Rdbtools 是 python写的 一个第三方开源工具，用来<strong>解析 Redis 快照文件</strong>。除了解析 rdb 文件，还提供了 <strong>统计单个 key 大小的工具</strong>。</li>
+</ul>
+<h4 id="如何优雅的删除-大-key-？"><a href="#如何优雅的删除-大-key-？" class="headerlink" title="如何优雅的删除 大 key ？"></a><strong>如何优雅的删除 大 key ？</strong></h4><h5 id="del-命令"><a href="#del-命令" class="headerlink" title="del 命令"></a>del 命令</h5><p>del 命令删除单个很大的 key 和 del 批量删除 大 key。</p>
+<p><strong>直接 del 命令 粗暴的 删大 key 容易造成 redis 线程阻塞</strong>。<strong>4.0 以前要优雅的删除就是针对不同的类型 写脚本，拆分链表，hash 表，分批删除</strong>。</p>
+<h5 id="UNLINK-命令"><a href="#UNLINK-命令" class="headerlink" title="UNLINK 命令"></a><strong>UNLINK</strong> 命令</h5><p><strong>4.0 版本以后</strong>官方对 删 大key 有了特别优化，<strong>支持了 lazy free 功能</strong>， 通常不需要开发脚本就可以删    </p>
+<p><strong>UNLINK mykey</strong> </p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; UNLINK mykey </span><br><span class="line">unlink 命令是  del 的异步版本，由 Lazyfree 机制实现。</span><br><span class="line">Lazyfree 机制的原理是在删除的时候只进行逻辑删除，</span><br><span class="line">把 key 释放操作放在 bio (Background I/O)单独的子线程中惰性处理，</span><br><span class="line">减少删除大 key 对 redis 主线程的阻塞，有效地避免因删除大key带来的性能问题。</span><br><span class="line">unlink 即使在批量删除 大 key 时，也不会对阻塞造成阻塞。</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="被动删除大-key"><a href="#被动删除大-key" class="headerlink" title="被动删除大 key"></a><strong>被动删除大 key</strong></h5><p>被动删除是指 Redis 自身的 key 清除策略</p>
+<ul>
+<li>Redis 内存不够时 key 的淘汰策略 ，即超过了 maxmemory 的配置</li>
+<li>惰性删除：（建议开启惰性清除策略 ）</li>
+<li>定时删除：( redis 默认策略 )</li>
+</ul>
+<h4 id="Redis的-bigkey-有哪些影响"><a href="#Redis的-bigkey-有哪些影响" class="headerlink" title="Redis的 bigkey 有哪些影响"></a><strong>Redis的 bigkey 有哪些影响</strong></h4><ul>
+<li><strong>影响性能</strong></li>
+</ul>
+<p>因为 Redis <strong>单线程</strong>的工作机制，主线程处理所有key的增删改查。<strong>对bigkey的操作耗时增加将阻塞主线程处理其他业务请求，进而影响整体吞吐量</strong>。</p>
+<ul>
+<li><strong>影响带宽</strong></li>
+</ul>
+<p>前面的案例即是一个例子，单个key 7MB ，如果每秒100次查询，则带来700MB 的带宽，虽然现在大部分是万兆网卡<strong>，业务请求量再大一些，网卡也有被打满的风险</strong>。</p>
+<ul>
+<li><strong>数据倾斜</strong></li>
+</ul>
+<p><strong>对于分片的redis集群，存在bigkey 会导致单个分片数据量远大于其他节点，整体不均衡</strong>。<strong>如果一个分片空间容量满了，对系统造成不可访问</strong>，而且也不能随意扩容，因为不拆分key的情况下扩容，单个分片还是存在数据倾斜。更惨的是，<strong>数据量比较大，那么访问就增加，容易形成热点</strong>。热点不都是因为数据倾斜导致，数据倾斜会大概率导致热点。</p>
+<ul>
+<li><strong>影响主从同步</strong></li>
+</ul>
+<p>Redis Server 的输出大小通常是不可控制的。存在bigkey的时候，就会产生体积庞大的返回数据。另外也有可能因为执行了太多命令，导致产生返回数据的速率超过了往客户端发送的速率，导致服务器堆积大量消息，从而<strong>导致输出缓冲区越来越大，占用过多内存，甚至导致系统崩溃</strong>。Redis 通过设置client-output-buffer-limit 来保护系统安全。</p>
+<h4 id="如何解决大key？"><a href="#如何解决大key？" class="headerlink" title="如何解决大key？"></a><strong>如何解决大key？</strong></h4><p>其实就是一个字 “拆”。</p>
+<ul>
+<li><p>对于字符串类型的key，我们通常要在业务层面将value的大小控制在10KB左右，如果value确实很大，可以考虑<strong>采用序列化算法和压缩算法来处理</strong>，推荐常用的几种序列化算法:Protostuff、Kryo或者Fst。</p>
+</li>
+<li><p>对于集合类型的key，我们通常要通过控制集合内元素数量来避免bigKey，通常的做法是将<strong>一个大的集合类型的key拆分成若干小集合类型的key来达到目的</strong>。</p>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>SpringMVC Controller并发安全问题</title>
     <url>/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/</url>
     <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a><strong>背景</strong></h4><p>根据Tomcat官网中的介绍，<strong>对于一个浏览器请求，tomcat会指定一个处理线程</strong>，或是在线程池中选取空闲的，或者新建一个线程。</p>
@@ -201,54 +260,6 @@
       </categories>
       <tags>
         <tag>SprigMVC</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Vue的生命周期</title>
-    <url>/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
-    <content><![CDATA[<h4 id="Vue的优点"><a href="#Vue的优点" class="headerlink" title="Vue的优点"></a>Vue的优点</h4><ul>
-<li><strong>轻量级框架</strong>：只<strong>关注视图层</strong></li>
-<li><strong>双向数据绑定</strong>：保留了 angular 的特点，在数据操作方面更为简单</li>
-<li><strong>组件化</strong>：保留了 react 的优点，实现了 html 的封装和重用，在构建单页面应用方面有着独特的优势</li>
-<li><strong>虚拟DOM</strong>：dom 操作是非常耗费性能的， 不再使用原生的 dom 操作节点。而是预先通过JavaScript进行各种计算，把最终的DOM操作计算出来并优化。由于这个DOM操作属于预处理操作，并没有真实的操作DOM，所以叫做虚拟DOM。只有最后在计算完毕才真正将DOM操作提交，将DOM操作变化反映到DOM树上</li>
-</ul>
-<h4 id="对MVVM的理解？"><a href="#对MVVM的理解？" class="headerlink" title="对MVVM的理解？"></a>对MVVM的理解？</h4><p>MVVM 由 <strong>Model、View、ViewModel</strong> 三部分构成，<strong>Model 层代表数据模型</strong>，也可以在Model中定义数据修改和操作的业务逻辑；<strong>View 代表UI 组件</strong>，它负责将数据模型转化成UI 展现出来；<strong>ViewModel 是一个同步View 和 Model的对象</strong>。</p>
-<p>在MVVM架构下，<strong>View 和 Model 之间并没有直接的联系，而是通过ViewModel进行交互</strong>，Model 和 ViewModel 之间的交互是双向的， 因此View 数据的变化会同步到Model中，而Model 数据的变化也会立即反应到View 上。</p>
-<p><strong>ViewModel 通过双向数据绑定把 View 层和 Model 层连接了起来，而View 和 Model 之间的同步工作完全是自动的</strong>，无需人为干涉，因此开发者只需关注业务逻辑，不需要手动操作DOM， 不需要关注数据状态的同步问题，复杂的数据状态维护完全由 MVVM 来统一管理</p>
-<h4 id="Vue数据双向绑定原理"><a href="#Vue数据双向绑定原理" class="headerlink" title="Vue数据双向绑定原理"></a>Vue数据双向绑定原理</h4><p>实现mvvm的数据双向绑定，是采用<strong>数据劫持结合发布者-订阅者模式的方式</strong>，通过<strong>Object.defineProperty()来给各个属性添加setter，getter并劫持监听</strong>，在<strong>数据变动时发布消息给订阅者，触发相应的监听回调</strong>。就必须要实现以下几点：</p>
-<ol>
-<li>实现一个数据监听器Observer，能够对数据对象的所有属性进行监听，如有变动可拿到最新值并通知订阅者</li>
-<li>实现一个指令解析器Compile，对每个元素节点的指令进行扫描和解析，根据指令模板替换数据，以及绑定相应的更新函数</li>
-<li>实现一个Watcher，作为连接Observer和Compile的桥梁，能够订阅并收到每个属性变动的通知，执行指令绑定的相应回调函数，从而更新视图</li>
-</ol>
-<p><img src="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/clipboard.png"></p>
-<h4 id="生命周期简介"><a href="#生命周期简介" class="headerlink" title="生命周期简介"></a>生命周期简介</h4><p><strong>每个Vue实例在被创建时都要经过一系列的初始化过程</strong>，例如：需要设置<strong>数据的监听</strong>，编译模板，将<strong>实例挂载</strong>到DOM上，并且在<strong>数据变化时更新DOM</strong>等，这些过程统称为Vue实例的生命周期。</p>
-<p>这个过程中也会运行一些叫做<strong>生命周期钩子的函数</strong>，这给了用户在不同阶段添加自己的代码的机会</p>
-<p>Vue实例的生命周期，主要分为三个阶段，每个阶段都会执行不同的钩子函数</p>
-<h5 id="挂载-初始化相关属性-例如watch属性，method属性"><a href="#挂载-初始化相关属性-例如watch属性，method属性" class="headerlink" title="挂载(初始化相关属性,例如watch属性，method属性)"></a><strong>挂载</strong>(初始化相关属性,例如watch属性，method属性)</h5><ul>
-<li>beforeCreate</li>
-<li>created</li>
-<li>beforeMount</li>
-<li>mounted</li>
-</ul>
-<h5 id="更新-元素或组件的变更操作"><a href="#更新-元素或组件的变更操作" class="headerlink" title="**更新(**元素或组件的变更操作)"></a>**更新(**元素或组件的变更操作)</h5><ul>
-<li>beforeUpdate</li>
-<li>updated</li>
-</ul>
-<h5 id="销毁（销毁相关属性）"><a href="#销毁（销毁相关属性）" class="headerlink" title="销毁（销毁相关属性）"></a><strong>销毁</strong>（销毁相关属性）</h5><ul>
-<li>beforeDestroy</li>
-<li>destroyed</li>
-</ul>
-<p><img src="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/clipboard2.png"></p>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="title function_">beforeCreate</span>( )<span class="comment">// 该钩子函数执行时，组件实例还未创建.</span></span><br><span class="line"><span class="title function_">created</span>()<span class="comment">//组件初始化完毕，各种数据可以使用，可以使用ajax发送异步请求获取数据</span></span><br><span class="line"><span class="title function_">beforeMounted</span>()<span class="comment">// 未执行渲染，更新，虚拟DOM完成，真实DOM未创建</span></span><br><span class="line"><span class="title function_">mounted</span>()<span class="comment">// 初始化阶段结束，真实DOM已经创建，可以发送异步请求获取数据,也可以访问dom元素</span></span><br><span class="line"><span class="title function_">beforeUpdate</span>()<span class="comment">//更新前，可用于获取更新前各种状态数据</span></span><br><span class="line"><span class="title function_">updated</span>()<span class="comment">//更新后执行该钩子函数，所有的状态数据是最新的。</span></span><br><span class="line"><span class="title function_">beforeDestroy</span>() <span class="comment">// 销毁前执行，可以用于一些定时器的清除。</span></span><br><span class="line"><span class="title function_">destroyed</span>()<span class="comment">//组件已经销毁，事件监听器被移除，所有的子实例也会被销毁。</span></span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>前端</category>
-        <category>Vue</category>
-      </categories>
-      <tags>
-        <tag>Vue</tag>
       </tags>
   </entry>
   <entry>
@@ -329,6 +340,54 @@
       </categories>
       <tags>
         <tag>SpringCould</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Vue的生命周期</title>
+    <url>/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
+    <content><![CDATA[<h4 id="Vue的优点"><a href="#Vue的优点" class="headerlink" title="Vue的优点"></a>Vue的优点</h4><ul>
+<li><strong>轻量级框架</strong>：只<strong>关注视图层</strong></li>
+<li><strong>双向数据绑定</strong>：保留了 angular 的特点，在数据操作方面更为简单</li>
+<li><strong>组件化</strong>：保留了 react 的优点，实现了 html 的封装和重用，在构建单页面应用方面有着独特的优势</li>
+<li><strong>虚拟DOM</strong>：dom 操作是非常耗费性能的， 不再使用原生的 dom 操作节点。而是预先通过JavaScript进行各种计算，把最终的DOM操作计算出来并优化。由于这个DOM操作属于预处理操作，并没有真实的操作DOM，所以叫做虚拟DOM。只有最后在计算完毕才真正将DOM操作提交，将DOM操作变化反映到DOM树上</li>
+</ul>
+<h4 id="对MVVM的理解？"><a href="#对MVVM的理解？" class="headerlink" title="对MVVM的理解？"></a>对MVVM的理解？</h4><p>MVVM 由 <strong>Model、View、ViewModel</strong> 三部分构成，<strong>Model 层代表数据模型</strong>，也可以在Model中定义数据修改和操作的业务逻辑；<strong>View 代表UI 组件</strong>，它负责将数据模型转化成UI 展现出来；<strong>ViewModel 是一个同步View 和 Model的对象</strong>。</p>
+<p>在MVVM架构下，<strong>View 和 Model 之间并没有直接的联系，而是通过ViewModel进行交互</strong>，Model 和 ViewModel 之间的交互是双向的， 因此View 数据的变化会同步到Model中，而Model 数据的变化也会立即反应到View 上。</p>
+<p><strong>ViewModel 通过双向数据绑定把 View 层和 Model 层连接了起来，而View 和 Model 之间的同步工作完全是自动的</strong>，无需人为干涉，因此开发者只需关注业务逻辑，不需要手动操作DOM， 不需要关注数据状态的同步问题，复杂的数据状态维护完全由 MVVM 来统一管理</p>
+<h4 id="Vue数据双向绑定原理"><a href="#Vue数据双向绑定原理" class="headerlink" title="Vue数据双向绑定原理"></a>Vue数据双向绑定原理</h4><p>实现mvvm的数据双向绑定，是采用<strong>数据劫持结合发布者-订阅者模式的方式</strong>，通过<strong>Object.defineProperty()来给各个属性添加setter，getter并劫持监听</strong>，在<strong>数据变动时发布消息给订阅者，触发相应的监听回调</strong>。就必须要实现以下几点：</p>
+<ol>
+<li>实现一个数据监听器Observer，能够对数据对象的所有属性进行监听，如有变动可拿到最新值并通知订阅者</li>
+<li>实现一个指令解析器Compile，对每个元素节点的指令进行扫描和解析，根据指令模板替换数据，以及绑定相应的更新函数</li>
+<li>实现一个Watcher，作为连接Observer和Compile的桥梁，能够订阅并收到每个属性变动的通知，执行指令绑定的相应回调函数，从而更新视图</li>
+</ol>
+<p><img src="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/clipboard.png"></p>
+<h4 id="生命周期简介"><a href="#生命周期简介" class="headerlink" title="生命周期简介"></a>生命周期简介</h4><p><strong>每个Vue实例在被创建时都要经过一系列的初始化过程</strong>，例如：需要设置<strong>数据的监听</strong>，编译模板，将<strong>实例挂载</strong>到DOM上，并且在<strong>数据变化时更新DOM</strong>等，这些过程统称为Vue实例的生命周期。</p>
+<p>这个过程中也会运行一些叫做<strong>生命周期钩子的函数</strong>，这给了用户在不同阶段添加自己的代码的机会</p>
+<p>Vue实例的生命周期，主要分为三个阶段，每个阶段都会执行不同的钩子函数</p>
+<h5 id="挂载-初始化相关属性-例如watch属性，method属性"><a href="#挂载-初始化相关属性-例如watch属性，method属性" class="headerlink" title="挂载(初始化相关属性,例如watch属性，method属性)"></a><strong>挂载</strong>(初始化相关属性,例如watch属性，method属性)</h5><ul>
+<li>beforeCreate</li>
+<li>created</li>
+<li>beforeMount</li>
+<li>mounted</li>
+</ul>
+<h5 id="更新-元素或组件的变更操作"><a href="#更新-元素或组件的变更操作" class="headerlink" title="**更新(**元素或组件的变更操作)"></a>**更新(**元素或组件的变更操作)</h5><ul>
+<li>beforeUpdate</li>
+<li>updated</li>
+</ul>
+<h5 id="销毁（销毁相关属性）"><a href="#销毁（销毁相关属性）" class="headerlink" title="销毁（销毁相关属性）"></a><strong>销毁</strong>（销毁相关属性）</h5><ul>
+<li>beforeDestroy</li>
+<li>destroyed</li>
+</ul>
+<p><img src="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/clipboard2.png"></p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="title function_">beforeCreate</span>( )<span class="comment">// 该钩子函数执行时，组件实例还未创建.</span></span><br><span class="line"><span class="title function_">created</span>()<span class="comment">//组件初始化完毕，各种数据可以使用，可以使用ajax发送异步请求获取数据</span></span><br><span class="line"><span class="title function_">beforeMounted</span>()<span class="comment">// 未执行渲染，更新，虚拟DOM完成，真实DOM未创建</span></span><br><span class="line"><span class="title function_">mounted</span>()<span class="comment">// 初始化阶段结束，真实DOM已经创建，可以发送异步请求获取数据,也可以访问dom元素</span></span><br><span class="line"><span class="title function_">beforeUpdate</span>()<span class="comment">//更新前，可用于获取更新前各种状态数据</span></span><br><span class="line"><span class="title function_">updated</span>()<span class="comment">//更新后执行该钩子函数，所有的状态数据是最新的。</span></span><br><span class="line"><span class="title function_">beforeDestroy</span>() <span class="comment">// 销毁前执行，可以用于一些定时器的清除。</span></span><br><span class="line"><span class="title function_">destroyed</span>()<span class="comment">//组件已经销毁，事件监听器被移除，所有的子实例也会被销毁。</span></span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>前端</category>
+        <category>Vue</category>
+      </categories>
+      <tags>
+        <tag>Vue</tag>
       </tags>
   </entry>
   <entry>
