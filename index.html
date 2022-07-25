@@ -155,6 +155,99 @@
     
     
     <article
+  id="post-JVM运行时数据区"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/"
+    >JVM运行时数据区</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/" class="article-date">
+  <time datetime="2022-07-25T05:12:39.000Z" itemprop="datePublished">2022-07-25</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/JVM/">JVM</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h4><p>VM(Java Virtual Machine/Java 虚拟机)在执行 Java 程序的过程中会把它所管理的<strong>内存划分为若干个不同的数据区域</strong>。这些区域有各自的用途，以及创建和销毁的时间，有的区域随着虚拟机<a target="_blank" rel="noopener" href="https://www.jianshu.com/p/94b7c2ab84ac">进程</a>的启动而一直存在，有的区域则是依赖用户线程的启动和结束而建立和销毁</p>
+<p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/CA1BB924A33442FC9CFC3BC482E62ABB.jpg"></p>
+<h4 id="运行时数据区"><a href="#运行时数据区" class="headerlink" title="运行时数据区"></a><strong>运行时数据区</strong></h4><h5 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a><strong>程序计数器</strong></h5><p>保存当前线程所正在执行的字节码指令的地址(行号)<strong>，为了</strong>线程切换后能恢复到正确的执行位置**，每条线程都有一个独立的程序计数器，各个线程之间计数器互不影响，独立存储</p>
+<p><strong>为什么要线程计数器？因为线程是不具备记忆功能</strong></p>
+<h5 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a><strong>虚拟机栈</strong></h5><p><strong>线程私有</strong>的，它的<strong>生命周期和线程相同</strong></p>
+<p>虚拟机栈描述的是Java方法执行的内存模型： 每个方法在执行的同时 都会创建一个<strong>栈帧</strong>（StackFrame）用于<strong>存储局部变量表、操作数栈、动态链接、方法出口</strong>等信息。</p>
+<p>虚拟机栈中是有单位的，单位就是栈帧，<strong>一个方法一个栈帧</strong>。一个栈帧中他又要存储，局部变量，操作数栈，动态链接，出口等。</p>
+<p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/0F361B626063436CA773F219E67AC2AC.jpg"></p>
+<p>解析栈帧：</p>
+<ul>
+<li> <strong>局部变量表</strong>：是用来<strong>存储我们临时8个基本数据类型、对象引用地址、returnAddress类型</strong>。</li>
+</ul>
+<p>  （returnAddress中保存的是return后要执行的字节码的指令地址。）</p>
+<ul>
+<li> <strong>操作数栈</strong>：操作数栈就是用来操作的，例如代码中有个 i = 6*6，他在一开始的时候就会进行操</li>
+</ul>
+<p>  作，读取我们的代码，<strong>进行计算后再放入局部变量表</strong>中去</p>
+<ul>
+<li><p><strong>动态链接</strong>：假如我方法中，有个 service.add()方法，要链接到别的方法中去，这就是动态链接，</p>
+<p>存储链接的地方。</p>
+</li>
+<li><p><strong>出口</strong>：出口是什呢，出口正常的话就是return 不正常的话就是抛出异常落</p>
+</li>
+</ul>
+<h5 id="堆"><a href="#堆" class="headerlink" title="堆"></a><strong>堆</strong></h5><p>被<strong>所有线程共享的一块内存区</strong>，<strong>存放对象实例</strong>，所有的对象实例以及数组都要在堆上分配</p>
+<h5 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a><strong>本地方法栈</strong></h5><p>栈很像，只不过方法上带了 <strong>native 关键字的栈字</strong>，且native关键字修饰的大部分源码都是C和C++的代码</p>
+<h5 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a><strong>方法区</strong></h5><p>所有<strong>线程共享的内存区域</strong>，它用于存储已<strong>被Java虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码</strong>等数据，别命叫Non-Heap（非堆）</p>
+<h4 id="JVM运行流程"><a href="#JVM运行流程" class="headerlink" title="JVM运行流程"></a>JVM运行流程</h4><p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/D3E84FA2772A4286B75ED4870D0CFB1D.jpg"></p>
+<p>JVM包含两个子系统和两个组件: 两个子系统为Class loader(类装载)、Execution engine(执行引擎)； 两个组件为Runtime data area(运行时数据区)、Native Interface(本地接口)。</p>
+<ul>
+<li><p>Class loader(类装载)：根据给定的全限定名类名(如：java.lang.Object)来装载class文件到Runtime data area中的method area。</p>
+</li>
+<li><p>Execution engine（执行引擎）：执行classes中的指令。</p>
+</li>
+<li><p>Native Interface(本地接口)：与native libraries交互，是其它编程语言交互的接口。</p>
+</li>
+<li><p>Runtime data area(运行时数据区域)：这就是我们常说的JVM的内存。</p>
+</li>
+</ul>
+<p>流程 ：首先通过<strong>编译器把 Java 代码转换成字节码</strong>，<strong>类加载器（ClassLoader）再把字节码加载到内存中，将其放在运行时数据区（Runtime data area）的方法区内</strong>，而<strong>字节码文件</strong>只是 JVM 的一套指令集规范，<strong>并不能直接交给底层操作系统去执行</strong>，因此<strong>需要特定的命令解析器执行引擎</strong>（Execution Engine），<strong>将字节码翻译成底层系统指令，</strong>再交由 CPU 去执行，而这个过程中需要<strong>调用其他语言的本地库接口</strong>（Native Interface）来实现整个程序的功能。</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JVM/" rel="tag">JVM</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-Redis-value过大问题"
   class="article article-type-post"
   itemscope
@@ -1103,110 +1196,6 @@
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Vue/" rel="tag">Vue</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-分布式Session解决方案"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/07/12/%E5%88%86%E5%B8%83%E5%BC%8FSession%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"
-    >分布式Session解决方案</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/07/12/%E5%88%86%E5%B8%83%E5%BC%8FSession%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="article-date">
-  <time datetime="2022-07-12T11:08:23.000Z" itemprop="datePublished">2022-07-12</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a> / <a class="article-category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/Session/">Session</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="分布式session解决方案"><a href="#分布式session解决方案" class="headerlink" title="分布式session解决方案"></a>分布式session解决方案</h4><h5 id="cookie和session的区别和联系"><a href="#cookie和session的区别和联系" class="headerlink" title="cookie和session的区别和联系"></a>cookie和session的区别和联系</h5><ul>
-<li>cookie是本地客户端用来存储少量数据信息的，保存在客户端，用户能够很容易的获取，安全性不高，存储的数据量小</li>
-<li>session是服务器用来存储部分数据信息，保存在服务器，用户不容易获取，安全性高，储存的数据量相对大，存储在服务器，会占用一些服务器资源，但是对于它的优点来说，这个缺点可以忽略了</li>
-</ul>
-<h5 id="session有什么用"><a href="#session有什么用" class="headerlink" title="session有什么用"></a>session有什么用</h5><ul>
-<li><p>在一次客户端和服务器为之间的会话中，客户端(浏览器)向服务器发送请求，首先cookie会自动携带上次请求存储的数据(JSESSIONID)到服务器，服务器根据请求参数中的JSESSIONID到服务器中的session库中查询是否存在此JSESSIONID的信息，如果存在，那么服务器就知道此用户是谁，如果不存在，就会创建一个JSESSIONID，并在本次请求结束后将JSESSIONID返回给客户端，同时将此JSESSIONID在客户端cookie中进行保存</p>
-</li>
-<li><p>客户端和服务器之间是通过http协议进行通信，但是http协议是无状态的，不同次请求会话是没有任何关联的，但是优点是处理速度快</p>
-</li>
-<li><p>session是一次浏览器和服务器的交互的会话，当浏览器关闭的时候，会话就结束了，但是会话session还在，默认session是还保留30分钟的</p>
-</li>
-</ul>
-<h5 id="分布式session一致性"><a href="#分布式session一致性" class="headerlink" title="分布式session一致性"></a>分布式session一致性</h5><p>客户端发送一个请求，经过负载均衡后该请求会被分配到服务器中的其中一个，由于不同服务器含有不同的web服务器(例如Tomcat)，不同的web服务器中并不能发现之前web服务器保存的session信息，就会再次生成一个JSESSIONID，之前的状态就会丢失</p>
-<h5 id="分布式session的几种实现方式"><a href="#分布式session的几种实现方式" class="headerlink" title="分布式session的几种实现方式"></a>分布式session的几种实现方式</h5><ul>
-<li><p><strong>粘性session</strong></p>
-<p><strong>原理</strong>：粘性Session是指将用户锁定到某一个服务器上，比如上面说的例子，用户第一次请求时，负载均衡器将用户的请求转发到了A服务器上，如果负载均衡器设置了粘性Session的话，那么用户以后的每次请求都会转发到A服务器上，相当于把用户和A服务器粘到了一块，这就是粘性Session机制。</p>
-<p><strong>优点</strong>：简单，不需要对session做任何处理。</p>
-<p><strong>缺点</strong>：缺乏容错性，如果当前访问的服务器发生故障，用户被转移到第二个服务器上时，他的session信息都将失效。</p>
-<p><strong>适用场景</strong>：发生故障对客户产生的影响较小；服务器发生故障是低概率事件。</p>
-<p><strong>实现方式</strong>：以Nginx为例，在upstream模块配置ip_hash属性即可实现粘性Session。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">upstream mycluster&#123;</span><br><span class="line">    #这里添加的是上面启动好的两台Tomcat服务器</span><br><span class="line">    ip_hash;#粘性Session</span><br><span class="line">     server 192.168.22.229:8080 weight=1;</span><br><span class="line">     server 192.168.22.230:8080 weight=1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p><strong>服务器session复制</strong></p>
-<p><strong>原理</strong>：任何一个服务器上的session发生改变（增删改），该节点会把这个 session的所有内容序列化，然后广播给所有其它节点，不管其他服务器需不需要session，以此来保证Session同步。</p>
-<p><strong>优点</strong>：可容错，各个服务器间session能够实时响应。</p>
-<p><strong>缺点</strong>：会对网络负荷造成一定压力，如果session量大的话可能会造成网络堵塞，拖慢服务器性能。</p>
-<p><strong>实现方式</strong>：</p>
-<p>① 设置tomcat ，server.xml 开启tomcat集群功能</p>
-<p><img src="/2022/07/12/%E5%88%86%E5%B8%83%E5%BC%8FSession%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/80CB811C-CC17-4a43-A2E9-9324813A4B0C.png"></p>
-</li>
-</ul>
-<p>​        Address:填写本机ip即可，设置端口号，预防端口冲突。</p>
-<p>​       ② 在应用里增加信息：通知应用当前处于集群环境中，支持分布式，在web.xml中添加选项</p>
-<p>**session共享机制 ** <strong>基于redis存储session方案</strong></p>
-<p>基于redis存储session方案流程示意图</p>
-<p><img src="/2022/07/12/%E5%88%86%E5%B8%83%E5%BC%8FSession%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/2019070810495327.png"></p>
-<p>引入pom依赖</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">	&lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;</span><br><span class="line">	&lt;artifactId&gt;spring-session-data-redis&lt;/artifactId&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">	&lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;</span><br><span class="line">	&lt;artifactId&gt;spring-boot-data-starter-redis&lt;/artifactId&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
-
-<p><strong>优点</strong>：</p>
-<ul>
-<li><p>这是企业中使用的最多的一种方式</p>
-</li>
-<li><p>spring为我们封装好了spring-session，直接引入依赖即可</p>
-</li>
-<li><p>数据保存在redis中，无缝接入，不存在任何安全隐患</p>
-</li>
-<li><p>redis自身可做集群，搭建主从，同时方便管理</p>
-</li>
-</ul>
-<p><strong>缺点</strong>：多了一次网络调用，web容器需要向redis访问</p>
-<p><strong>总结</strong>：一般会将web容器所在的服务器和redis所在的服务器放在同一个机房，减少网络开销，走内网进行连接 </p>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Session/" rel="tag">Session</a></li></ul>
 
     </footer>
   </div>
