@@ -155,6 +155,219 @@
     
     
     <article
+  id="post-TCP-UDP协议"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/27/TCP-UDP%E5%8D%8F%E8%AE%AE/"
+    >TCP/UDP协议</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/27/TCP-UDP%E5%8D%8F%E8%AE%AE/" class="article-date">
+  <time datetime="2022-07-27T02:07:57.000Z" itemprop="datePublished">2022-07-27</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/">计算机网络</a> / <a class="article-category-link" href="/categories/%E8%AE%A1%E7%AE%97%E6%9C%BA%E7%BD%91%E7%BB%9C/TCP-UDP/">TCP/UDP</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="TCP与UDP区别"><a href="#TCP与UDP区别" class="headerlink" title="TCP与UDP区别"></a>TCP与UDP区别</h4><ul>
+<li><p><strong>TCP是面向连接的协议</strong>，发送数据前要先建立连接，<strong>TCP提供可靠的服务</strong>，也就是说，通过TCP连接<strong>传输的数据不会丢失</strong>，没有重复，并且按顺序到达；</p>
+</li>
+<li><p><strong>UDP是无连接的协议</strong>，发送数据前<strong>不需要建立连接</strong>，是<strong>没有可靠性</strong>；</p>
+</li>
+<li><p><strong>UDP传输速度快，TCP相对慢一些</strong></p>
+</li>
+<li><p>TCP通信类似于于要打个电话，接通了，确认身份后，才开始进行通行；</p>
+</li>
+<li><p>UDP通信类似于学校广播，靠着广播播报直接进行通信。</p>
+</li>
+<li><p>TCP只支持点对点通信，UDP支持一对一、一对多、多对一、多对多；</p>
+</li>
+<li><p><strong>TCP是面向字节流的</strong>，<strong>UDP是面向报文的</strong>； <strong>面向字节流是指发送数据时以字节为单位，一个数据包可以拆分成若干组进行发送</strong>，而<strong>UDP一个报文只能一次发完</strong>。</p>
+</li>
+<li><p>TCP首部开销（20字节）比UDP首部开销（8字节）要大</p>
+</li>
+<li><p>UDP 的主机不需要维持复杂的连接状态表</p>
+</li>
+</ul>
+<h4 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h4><p>UDP应用场景：某些<strong>实时性要求比较高</strong>的情况，比如<strong>游戏，媒体通信，实时直播</strong>，即使出现传输错误 也可以容忍</p>
+<p>TCP应用场景: <strong>HTTP</strong>都是用TCP，因为要求<strong>传输的内容可靠，不出现丢失</strong>的情况</p>
+<p><strong>TCP协议</strong>：http(超文本传输协议)、https、FTP(文件传输协议)、POP3(邮局协议,收邮件)、SMTP(简单邮件传输协议,发邮件)</p>
+<p><strong>UDP协议</strong>：DHCP(动态主机配置协议,动态主机配置协议)、NTP(网络时间协议,用于网络同步)</p>
+<h4 id="用现实理解三次握手的具体细节"><a href="#用现实理解三次握手的具体细节" class="headerlink" title="用现实理解三次握手的具体细节"></a><strong>用现实理解三次握手的具体细节</strong></h4><p>三次握手的目的是建立可靠的通信信道，主要的目的就是<strong>双方确认自己与对方的发送与接收机能正常</strong></p>
+<p><img src="/2022/07/27/TCP-UDP%E5%8D%8F%E8%AE%AE/B263ECD21A60439BA729B9B3311B7B27.jpg"></p>
+<ul>
+<li>第一次握手：客户什么都不能确认；服务器确认了对方发送正常</li>
+<li>第二次握手：客户确认了：自己发送、接收正常，对方发送、接收正常；服务器确认 了：自己接收正常，对方发送正常</li>
+<li>第三次握手：客户确认了：自己发送、接收正常，对方发送、接收正常；服务器确认 了：自己发送、接收正常，对方发送接收正常 所以三次握手就能确认双发收发功能都正常，缺一不可</li>
+</ul>
+<h5 id="建立连接可以两次握手吗？为什么"><a href="#建立连接可以两次握手吗？为什么" class="headerlink" title="建立连接可以两次握手吗？为什么?"></a><strong>建立连接可以两次握手吗？为什么?</strong></h5><p>因为可能会出现<strong>已失效的连接请求</strong>报文段又传到了服务器端</p>
+<p>server 收到此失效的连接请求报文段后，就误认为是 client 再次发出的一个新的连接请求。于是就向 client 发出确认报文段，同意建立连接。<strong>假设不采用 “三次握手</strong>”，那么<strong>只要 server 发出确认，新的连接就建立了</strong>。由于现在 <strong>client 并没有发出建立连接的请求，因此不会理睬 server 的确认</strong>，也不会向 server 发送数据。但 <strong>server 却以为新的运输连接已经建立，并一直等待 client 发来数据</strong>。这样，server 的很多<strong>资源就白白浪费</strong>掉了</p>
+<p>采用 “三次握手” 的办法可以防止上述现象发生。例如刚才那种情况，<strong>client 不会向 server 的确认发出确认server 由于收不到确认，就知道 client 并没有要求建立连接</strong></p>
+<h4 id="什么是TCP的四次挥手"><a href="#什么是TCP的四次挥手" class="headerlink" title="什么是TCP的四次挥手?"></a><strong>什么是TCP的四次挥手?</strong></h4><p>在网络数据传输中，传输层协议断开连接的过程我们称为四次挥手</p>
+<p><img src="/2022/07/27/TCP-UDP%E5%8D%8F%E8%AE%AE/9E02A1D33F3D4A09AF4C04B25FD91F33.jpg"></p>
+<p>TCP的四次挥手</p>
+<p><strong>四次挥手断开连接</strong>是因为<strong>要确定数据全部传输完</strong>了</p>
+<ul>
+<li>客户与服务器交谈结束之后，客户要结束此次会话，就会对服务器说：我要关闭连接了（第一 次挥手）</li>
+<li>服务器收到客户的消息后说：好的，你要关闭连接了。（第二次挥手）</li>
+<li> 然后服务器确定了没有话要和客户说了，服务器就会对客户说，我要关闭连接了。(第三次挥 手)</li>
+<li>客户收到服务器要结束连接的消息后说：已收到你要关闭连接的消息。(第四次挥手)，才关闭</li>
+</ul>
+<h5 id="CLOSE-WAIT状态意义是什么"><a href="#CLOSE-WAIT状态意义是什么" class="headerlink" title="CLOSE_WAIT状态意义是什么"></a><strong>CLOSE_WAIT状态意义是什么</strong></h5><p>为什么不能把服务器发送的ACK和FIN合并起来，变成三次挥手（<strong>CLOSE_WAIT状态意义是什么</strong>）？</p>
+<p>因为<strong>服务器收到客户端断开连接的请求时，可能还有一些数据没有发完</strong>，这时先回复ACK，表示接</p>
+<p>收到了断开连接的请求。<strong>等到数据发完之后再发FIN</strong>，断开服务器到客户端的数据传送</p>
+<h5 id="客户端TIME-WAIT状态的意义是什么？"><a href="#客户端TIME-WAIT状态的意义是什么？" class="headerlink" title="客户端TIME_WAIT状态的意义是什么？"></a><strong>客户端TIME_WAIT状态的意义是什么</strong>？</h5><p><strong>第四次挥手时，客户端发送给服务器的ACK有可能丢失</strong>，<strong>TIME_WAIT状态就是用来重发可能丢失的ACK报文</strong>。如</p>
+<p>果Server没有收到ACK，就会<strong>重发FIN</strong>，如果<strong>Client在2*MSL的时间内收到了FIN，就会重新发送ACK并再次等待</strong></p>
+<p><strong>2MSL</strong>，<strong>防止Server没有收到ACK而不断重发FIN</strong>。 MSL(MaximumSegment Lifetime)，指一个片段在网络中最</p>
+<p>大的存活时间，<strong>2MSL就是一个发送和一个回复所需的最大时间</strong>。<strong>如果直到2MSL，Client都没有再次收到FIN，那</strong></p>
+<p><strong>么Client推断ACK已经被成功接收，则结束TCP连接。</strong></p>
+<h4 id="从输入址到获得页面的过程"><a href="#从输入址到获得页面的过程" class="headerlink" title="从输入址到获得页面的过程"></a><strong>从输入址到获得页面的过程</strong></h4><ul>
+<li><p>浏览器查询 DNS，获取域名对应的IP地址</p>
+</li>
+<li><p>浏览器获得域名对应的IP地址以后，浏览器向服务器请求建立链接，发起三次握手TCP/IP链接建立起来后，浏览器向服务器发送HTTP请求</p>
+</li>
+<li><p>服务器接收到这个请求，并根据路径参数映射到特定的请求处理器进行处理，并将处理结果及相应的视图返回给浏览器</p>
+</li>
+<li><p>浏览器解析并渲染视图，若遇到对js文件、css文件及图片等静态资源的引用，则重复上述步骤并向服务器请求这些资源</p>
+</li>
+<li><p>浏览器根据其请求到的资源、数据渲染页面，最终向用户呈现一个完整的页面</p>
+</li>
+</ul>
+<h4 id="Http协议"><a href="#Http协议" class="headerlink" title="Http协议"></a><strong>Http协议</strong></h4><p><strong>Http协议</strong>是对客户端和服务器端之间数据之间实现<strong>可靠性的传输文字、图片、音频、视频</strong>等超文本数据的规范，格式简称为“<strong>超文本传输协议</strong>”</p>
+<h5 id="http和https的区别？"><a href="#http和https的区别？" class="headerlink" title="http和https的区别？"></a>http和https的区别？</h5><p>其实HTTPS就是从HTTP加上加密处理（一般是SSL安全通信线路）+认证+完整性保护</p>
+<ul>
+<li><strong>端口不一样，http是80，https443</strong></li>
+<li>http是超文本传输协议，信息是<strong>明文传输</strong>，https则是具有安全性的<strong>ssl加密传输协议</strong>。</li>
+</ul>
+<h5 id="HTTP状态码"><a href="#HTTP状态码" class="headerlink" title="HTTP状态码"></a>HTTP状态码</h5><p><img src="/2022/07/27/TCP-UDP%E5%8D%8F%E8%AE%AE/A5310E2F789945829BB4F8552F135745.jpg"></p>
+<h5 id="GET方法与POST方法的区别"><a href="#GET方法与POST方法的区别" class="headerlink" title="GET方法与POST方法的区别"></a>GET方法与POST方法的区别</h5><ul>
+<li><p>get重点在从服务器上<strong>获取资源</strong>，post重点在向服务器<strong>发送数据</strong></p>
+</li>
+<li><p><strong>Get传输的数据量小</strong>，因为<strong>受URL长度限制</strong>，但效率较高； <strong>Post可以传输大量数据</strong>，所以上传文件时只能用Post方式</p>
+</li>
+<li><p><strong>get是不安全</strong>的，因为get请求<strong>发送数据是在URL上，是可见的</strong>，可能会泄露私密信息，如密码等； <strong>post是放在请求头部的，是安全的</strong></p>
+</li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/TCP-UDP/" rel="tag">TCP/UDP</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-类加载机制"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/27/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/"
+    >类加载机制</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/27/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/" class="article-date">
+  <time datetime="2022-07-27T01:46:37.000Z" itemprop="datePublished">2022-07-27</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/JVM/">JVM</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="类加载的机制及过程"><a href="#类加载的机制及过程" class="headerlink" title="类加载的机制及过程"></a>类加载的机制及过程</h4><p>程序主动使用某个类时，如果该类还未被加载到内存中，则JVM会通过<strong>加载、连接、初始化</strong>3个步骤来对该类进行初始化</p>
+<p><img src="/2022/07/27/%E7%B1%BB%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6/EE841B01A90E4862827B1F2ACBE90643.jpg"></p>
+<h5 id="类装载的执行过程"><a href="#类装载的执行过程" class="headerlink" title="类装载的执行过程"></a>类装载的执行过程</h5><p>类装载分为以下 5 个步骤： </p>
+<ul>
+<li><strong>加载</strong>：根据查找路径找到相应的 <strong>class 文件然后读入到内存</strong>；</li>
+<li><strong>验证</strong>：检查加载的 class 文件,确保<strong>加载的类信息符合JVM规范</strong>； </li>
+<li><strong>准备</strong>：给类中的<strong>静态变量分配内存空间</strong>； 类变量（static变量）分配内存并设置类变量初始值的阶段</li>
+<li><strong>解析</strong>：虚拟机将<strong>常量池中的符号引用替换成直接引用的过程</strong>。符号引用就理解为一个标示， 而在直接引用直接指向内存中的地址； </li>
+<li><strong>初始化</strong>：<strong>对静态变量和静态代码块执行初始化工作</strong></li>
+</ul>
+<h5 id="类装载方式"><a href="#类装载方式" class="headerlink" title="类装载方式"></a><strong>类装载方式</strong></h5><ul>
+<li><strong>隐式装载</strong>：程序在运行过程中当碰到<strong>通过new 等方式生成对象</strong>时，隐式调用类装载器加载对应的类到jvm中</li>
+<li><strong>显式装载</strong>： 通过<strong>class.forname()等方法</strong>，显式加载需要的类</li>
+</ul>
+<h4 id="什么是类加载器？"><a href="#什么是类加载器？" class="headerlink" title="什么是类加载器？"></a>什么是类加载器？</h4><p><strong>类加载器就是把java类文件加载到虚拟机</strong>中，也就是说通过一个类的全限定名来获取描述该类的二进制字节流。Java 源程序（.java 文件）在经过 Java 编译器编译之后就被转换成 Java 字节代码（.class 文件）。<strong>类加载器负责读取 Java 字节代码，并转换成 java.lang.Class类的一个实例</strong></p>
+<h4 id="什么是双亲委派模型？"><a href="#什么是双亲委派模型？" class="headerlink" title="什么是双亲委派模型？"></a>什么是双亲委派模型？</h4><p>如果一个<strong>类加载器收到了类加载的请求</strong>，它首先<strong>不会自己去加载这个类</strong>，而是把这个请求<strong>委派给父类加载器</strong>去完成，每一层的类加载器都是如此，这样<strong>所有的加载请求都会被传送到顶层的启动类加载器</strong>中，只有当<strong>父加载无法完成加载请求</strong>（它的搜索范围中没找到所需的类）时，<strong>子加载器才会尝试去加载类</strong></p>
+<h5 id="优势"><a href="#优势" class="headerlink" title="优势"></a>优势</h5><ul>
+<li>双亲委派模型保证了Java程序的稳定运行，可以<strong>避免类的重复加载</strong>（<strong>JVM 区分不同类的方式不仅仅根据类名，相同的类文件被不同的类加载器加载产生的是两个不同的类</strong>）</li>
+<li><strong>保证了 Java 的核心 API 不被篡改</strong>。如果没有使用双亲委派模型，而是每个类加载器加载自己的话就会出现一些问题，比如我们编写一个称为 java.lang.Object 类的话，那么程序运行的时候，系统就会出现多个不同的 Object 类</li>
+</ul>
+<h5 id="缺点"><a href="#缺点" class="headerlink" title="缺点"></a>缺点</h5><p><strong>父级加载器无法加载子级类加载器路径中的类</strong></p>
+<p>有时候比较局限，<strong>有时候必须打破双亲委派机制</strong>，例如：<strong>SPI机制</strong></p>
+<h4 id="类加载器分类"><a href="#类加载器分类" class="headerlink" title="类加载器分类"></a>类加载器分类</h4><ul>
+<li><strong>启动类加载器(引导类加载器)（Bootstrap ClassLoader）</strong>，是虚拟机自身的一部分，用来加载<strong>Java_HOME/lib/目录</strong>中的，或者被 -Xbootclasspath 参数所指定的路径中并且被虚拟机识别的类库</li>
+<li><strong>扩展类加载器（Extension ClassLoader）</strong>：负责加载<strong>\lib\ext目录</strong>或Java. ext. dirs系统变量指定的路径中的所有类库</li>
+<li><strong>应用程序类加载器(系统类加载器)（Application ClassLoader）</strong>：<strong>负责加载用户类路径（classpath）上的指定类库</strong>，我们可以直接使用这个类加载器。一般情况，如果我们没有自定义类加载器默认就是用这个加载器</li>
+<li><strong>用户自定义类加载器（程序员自己写的）：</strong>继承ClassLoader，继承ClassLoader</li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JVM/" rel="tag">JVM</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-Java垃圾回收机制"
   class="article article-type-post"
   itemscope
@@ -1113,145 +1326,6 @@
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%AE%9A%E6%97%B6%E5%99%A8/" rel="tag">定时器</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-redisson获取锁失败"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/07/17/redisson%E8%8E%B7%E5%8F%96%E9%94%81%E5%A4%B1%E8%B4%A5/"
-    >redisson获取锁失败</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/07/17/redisson%E8%8E%B7%E5%8F%96%E9%94%81%E5%A4%B1%E8%B4%A5/" class="article-date">
-  <time datetime="2022-07-17T08:31:06.000Z" itemprop="datePublished">2022-07-17</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/Redisson/">Redisson</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h5 id="lock-lock-方法"><a href="#lock-lock-方法" class="headerlink" title="lock.lock()方法"></a>lock.lock()方法</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redisson.getLock(<span class="string">&quot;className&quot;</span>);</span><br><span class="line">lock.lock();</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line"><span class="comment">// do sth.</span></span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">lock.unlock();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>lock()源码:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">lock</span><span class="params">()</span> &#123;</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">lockInterruptibly();</span><br><span class="line">&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">Thread.currentThread().interrupt();</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">lockInterruptibly</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">lockInterruptibly(-<span class="number">1</span>, <span class="literal">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>再看lockInterruptibly方法：</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">lockInterruptibly</span><span class="params">(<span class="type">long</span> leaseTime, TimeUnit unit)</span> <span class="keyword">throws</span> InterruptedException&#123;</span><br><span class="line">    <span class="type">long</span> <span class="variable">threadId</span> <span class="operator">=</span> Thread.currentThread().getId();</span><br><span class="line">    <span class="comment">// 获取锁</span></span><br><span class="line">    <span class="type">Long</span> <span class="variable">ttl</span> <span class="operator">=</span> tryAcquire(leaseTime, unit, threadId);</span><br><span class="line">    <span class="keyword">if</span> (ttl == <span class="literal">null</span>) &#123; <span class="comment">// 获取成功</span></span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="comment">// 异步订阅redis chennel</span></span><br><span class="line">RFuture&lt;RedissonLockEntry&gt; future = subscribe(threadId);</span><br><span class="line">commandExecutor.syncSubscription(future); <span class="comment">// 阻塞获取订阅结果</span></span><br><span class="line"> </span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>) &#123;<span class="comment">// 循环判断知道获取锁</span></span><br><span class="line">        ttl = tryAcquire(leaseTime, unit, threadId);</span><br><span class="line">        <span class="comment">// lock acquired</span></span><br><span class="line">        <span class="keyword">if</span> (ttl == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">	&#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// waiting for message</span></span><br><span class="line">    <span class="keyword">if</span> (ttl &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">    	getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    	getEntry(threadId).getLatch().acquire();</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">	unsubscribe(future, threadId);<span class="comment">// 取消订阅</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>总结lockInterruptibly：</p>
-<p>获取锁，<strong>不成功则订阅释放锁的消息，获得消息前阻塞</strong>。</p>
-<p><strong>得到释放通知后再去循环获取锁</strong>。</p>
-<h5 id="tryLock"><a href="#tryLock" class="headerlink" title="tryLock()"></a>tryLock()</h5><p>tryLock()方法是有返回值的，它表示用来尝试获取锁<br>如果获取成功，则返回true<br><strong>如果获取失败（即锁已被其他线程获取），则返回false</strong><br>这个方法无论如何都会立即返回。在拿不到锁时不会一直在那等待</p>
-<h5 id="tryLock-long-waitTime-long-leaseTime-TimeUnit-unit"><a href="#tryLock-long-waitTime-long-leaseTime-TimeUnit-unit" class="headerlink" title="tryLock(long waitTime, long leaseTime, TimeUnit unit)"></a>tryLock(long waitTime, long leaseTime, TimeUnit unit)</h5><p><strong>没获取到锁时，在指定的重试时间内，会尝试重新获取锁</strong></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">* 尝试获取锁</span></span><br><span class="line"><span class="comment">* waitTimeout 尝试获取锁的最大等待时间，超过这个值，则认为获取锁失败</span></span><br><span class="line"><span class="comment">* leaseTime   锁的持有时间,超过这个时间锁会自动失效（值应设置为大于业务处理的时间，确保在锁有效期内业务能处理完）</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="type">boolean</span> <span class="variable">res</span> <span class="operator">=</span> rLock.tryLock(waitTimeout, leaseTime, TimeUnit.SECONDS);</span><br></pre></td></tr></table></figure>
-
-<p>举例:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> RedissonClient redissonClient;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">tryLock</span><span class="params">(String lockKey, <span class="type">long</span> lockWaitTime, <span class="type">long</span> lockTime)</span> &#123;</span><br><span class="line">    <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(lockKey);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 第一个参数lockWaitTime是等待时间，n毫秒内获取不到锁，则直接返回</span></span><br><span class="line">        <span class="comment">// 第二个参数lockTime是锁超时时间，m毫秒后强制释放锁</span></span><br><span class="line">        <span class="keyword">return</span> lock.tryLock(lockWaitTime, lockTime, TimeUnit.MILLISECONDS);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">msg</span> <span class="operator">=</span> String.format(<span class="string">&quot;LOCK FAILED: key=%s||tryLockTime=%s||lockExpiredTime=%s&quot;</span>, lockKey, lockWaitTime, lockTime);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalStateException</span>(msg, e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>解锁:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">(String lockKey)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(lockKey);</span><br><span class="line">        <span class="keyword">if</span> (lock != <span class="literal">null</span>) &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">msg</span> <span class="operator">=</span> String.format(<span class="string">&quot;UNLOCK FAILED: key=%s&quot;</span>, lockKey);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalStateException</span>(msg, e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>执行解锁代码后，有时会出现以下报错，这是什么原因呢？</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Caused by: java.lang.IllegalMonitorStateException: attempt to unlock lock, not locked by current thread</span><br></pre></td></tr></table></figure>
-
-<p>比如下面这段代码，在获取锁成功之后，持有的时间是8秒，而<strong>如果你的锁内业务执行时间超过8秒后，锁会自动释放，锁自动释放后，而在你的finally里面又手动去释放锁，就导致了这个错误</strong></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">testLock</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> <span class="string">&quot;key&quot;</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 获取锁，持有8秒后，自动释放</span></span><br><span class="line">        tryLock(key, <span class="number">1000L</span>, <span class="number">8000L</span>);</span><br><span class="line">        TimeUnit.SECONDS.sleep(<span class="number">10</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        unlock(key);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>解决办法:</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">(String lockKey)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(lockKey);</span><br><span class="line">        <span class="keyword">if</span> (lock != <span class="literal">null</span> &amp;&amp; lock.isHeldByCurrentThread()) &#123; </span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">msg</span> <span class="operator">=</span> String.format(<span class="string">&quot;UNLOCK FAILED: key=%s&quot;</span>, lockKey);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalStateException</span>(msg, e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>解锁时，<strong>增加lock.isHeldByCurrentThread()判断</strong>，意思是<strong>查询当前线程是否持有该锁</strong>，如果还持有，则释放，未持有，说明已释放</p>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redisson/" rel="tag">Redisson</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-IntelliJ-IDEA常用快捷键"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/07/15/IntelliJ-IDEA%E5%B8%B8%E7%94%A8%E5%BF%AB%E6%8D%B7%E9%94%AE/"
-    >IntelliJ IDEA常用快捷键</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/07/15/IntelliJ-IDEA%E5%B8%B8%E7%94%A8%E5%BF%AB%E6%8D%B7%E9%94%AE/" class="article-date">
-  <time datetime="2022-07-15T05:04:57.000Z" itemprop="datePublished">2022-07-15</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E5%B7%A5%E5%85%B7/">工具</a> / <a class="article-category-link" href="/categories/%E5%B7%A5%E5%85%B7/IDEA/">IDEA</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">双击Shift：查找所有</span><br><span class="line">Ctrl+Shift+R：全局搜索</span><br><span class="line">ALT+INSERT: 生成代码(如GET,SET方法,构造函数等)</span><br><span class="line">Ctrl + Shift + v: 自动补全对象返回类型</span><br><span class="line">Ctrl+I: 实现方法</span><br><span class="line">Ctrl+O: 重写方法    </span><br><span class="line">Ctrl + Alt + B：跳转到实现方法  </span><br><span class="line">Ctrl + G: 跳至指定行、列</span><br><span class="line">Ctrl + Shift + U：大小写转换</span><br><span class="line">    </span><br><span class="line">Alt + Enter：显示建议操作</span><br><span class="line">Ctrl + Alt + L：格式化代码</span><br><span class="line">Ctrl + P：参数信息提醒</span><br><span class="line">Alt + <span class="number">7</span>：显示结构窗口</span><br><span class="line">Ctrl + Alt + l: 自动对齐代码    </span><br><span class="line">Ctrl + Tab：切换活动文件</span><br><span class="line">Ctrl + E：最近的文件</span><br><span class="line">Ctrl + Shift + Backspace：返回上次编辑位置    </span><br><span class="line">Ctrl + Alt + Left：后退</span><br><span class="line">Ctrl + Alt + Right：前进</span><br><span class="line">    </span><br><span class="line">Ctrl + /：添加行注释</span><br><span class="line">Ctrl + Shift + /：添加块注释</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/IDEA/" rel="tag">IDEA</a></li></ul>
 
     </footer>
   </div>
