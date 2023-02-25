@@ -155,6 +155,101 @@
     
     
     <article
+  id="post-Java定时器"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/19/Java%E5%AE%9A%E6%97%B6%E5%99%A8/"
+    >Java定时器</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/19/Java%E5%AE%9A%E6%97%B6%E5%99%A8/" class="article-date">
+  <time datetime="2022-07-19T05:17:41.000Z" itemprop="datePublished">2022-07-19</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a> / <a class="article-category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/%E5%AE%9A%E6%97%B6%E5%99%A8/">定时器</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="Java定时器任务"><a href="#Java定时器任务" class="headerlink" title="Java定时器任务"></a>Java定时器任务</h4><h5 id="Timer"><a href="#Timer" class="headerlink" title="Timer"></a><strong>Timer</strong></h5><p><strong>JDK 自带的定时任务执行类</strong>，无论任何项目都可以直接使用 Timer 来实现定时任务，所以 Timer 的优点就是使用方便</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义一个任务</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>缺点分析</p>
+<p><strong>①任务执行时间长影响其他任务</strong></p>
+<p>当一个任务的执行时间过长时，会影响其他任务的调度，如下代码所示：</p>
+<p>当任务 1 运行时间超过设定的间隔时间时，任务 2 也会延迟执行。 原本任务 1 和任务 2 的执行时间间隔都是 3s，但因为任务 1 执行了 5s，因此任务 2 的执行时间间隔也变成了 10s（和原定时间不符）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义任务 1</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;进入 timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="comment">// 休眠 5 秒</span></span><br><span class="line">                    TimeUnit.SECONDS.sleep(<span class="number">5</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 定义任务 2</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 2：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">        timer.schedule(timerTask2, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:08 CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span>  Run timerTask <span class="number">2</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">18</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">18</span> CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span>  Run timerTask <span class="number">2</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>②任务异常影响其他任务</strong></p>
+<p>使用 Timer 类实现定时任务时，当一个任务抛出异常，其他任务也会终止运行，如下代码所示：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义任务 1</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;进入 timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                <span class="comment">// 模拟异常</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">8</span> / <span class="number">0</span>;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 定义任务 2</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 2：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">        timer.schedule(timerTask2, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>Timer 小结</p>
+<p><strong>Timer 类实现定时任务的优点是方便，因为它是 JDK 自定的定时任务，但缺点是任务如果执行时间太长或者是任务执行异常，会影响其他任务调度</strong>，所以在生产环境下建议谨慎使用</p>
+<h5 id="ScheduledExecutorService"><a href="#ScheduledExecutorService" class="headerlink" title="ScheduledExecutorService"></a><strong>ScheduledExecutorService</strong></h5><p><strong>ScheduledExecutorService 也是 JDK 1.5 自带的 API</strong>，我们可以使用它来实现定时任务的功能，也就是说 ScheduledExecutorService <strong>可以实现 Timer 类具备的所有功能，并且它可以解决了 Timer 类存在的所有问题。</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyScheduledExecutorService</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建任务队列</span></span><br><span class="line">        <span class="type">ScheduledExecutorService</span> <span class="variable">scheduledExecutorService</span> <span class="operator">=</span></span><br><span class="line">                Executors.newScheduledThreadPool(<span class="number">10</span>); <span class="comment">// 10 为线程数量</span></span><br><span class="line">  		<span class="comment">// 执行任务</span></span><br><span class="line">        scheduledExecutorService.scheduleAtFixedRate(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;Run Schedule：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">        &#125;, <span class="number">1</span>, <span class="number">3</span>, TimeUnit.SECONDS); <span class="comment">// 1s 后开始执行，每 3s 执行一次</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>ScheduledExecutorService 小结</p>
+<p><strong>在单机生产环境下建议使用 ScheduledExecutorService 来执行定时任务</strong>，它是 JDK 1.5 之后自带的 API，因此使用起来也比较方便，并且使用 ScheduledExecutorService 来执行任务，不会造成任务间的相互影响。</p>
+<h5 id="Spring-Task"><a href="#Spring-Task" class="headerlink" title="Spring Task"></a><strong>Spring Task</strong></h5><p>如果使用的是 <strong>Spring 或 Spring Boot 框架</strong>，可以直接使用 Spring Framework 自带的定时任务，使用上面两种定时任务的实现方式，很难实现设定了<strong>具体时间的定时任务</strong>，比如当我们需要每周五来执行某项任务时，但如果使用 Spring Task 就可轻松的实现此需求。</p>
+<p>以 Spring Boot 为例，实现定时任务只需两步：</p>
+<ul>
+<li>开启定时任务</li>
+<li>添加定时任务</li>
+</ul>
+<p>① 开启定时任务</p>
+<p>开启定时任务只需要在 Spring Boot 的启动类上声明 <strong>@EnableScheduling</strong> 即可</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="meta">@EnableScheduling</span> <span class="comment">// 开启定时任务</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DemoApplication</span> &#123;</span><br><span class="line">    <span class="comment">// do someing</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>② 添加定时任务</p>
+<p>定时任务的添加只需要使用 <strong>@Scheduled 注解标注</strong>即可，如果有多个定时任务可以创建多个 @Scheduled 注解标注的方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span> <span class="comment">// 把此类托管给 Spring，不能省略</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TaskUtils</span> &#123;</span><br><span class="line">    <span class="comment">// 添加定时任务</span></span><br><span class="line">    <span class="meta">@Scheduled(cron = &quot;59 59 23 0 0 5&quot;)</span> <span class="comment">// cron 表达式，每周五 23:59:59 执行</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">doTask</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;我是定时任务~&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Spring Task 的实现需要使用 cron 表达式来声明执行的频率和规则</p>
+<p><img src="/2022/07/19/Java%E5%AE%9A%E6%97%B6%E5%99%A8/42E5476AD7944654AD48B290D4FE0629.jpg"></p>
+<ul>
+<li><p>缺点：<strong>jvm启动之后会记录系统时间，然后jvm根据CPU ticks自己来算时间</strong>，此时<strong>获取的是定时任务的基准时间</strong>。如果此时将<strong>系统时间进行了修改</strong>，当Spring将之前获取的基准时间与当下获取的系统时间进行比对时，就会造成<strong>Spring内部定时任务失效</strong>。因为此时系统时间发生变化了，不会触发定时任务。</p>
+</li>
+<li><p>方案：为了避免使用@Scheduled注解，在修改服务器时间导致定时任务不执行情况的发生。在项目中需要使用定时任务场景的情况下，使<strong>ScheduledThreadPoolExecutor进行替代</strong>，它任务的调度是<strong>基于相对时间的</strong>，原因是它在任务的内部 存储了该任务距离下次调度还需要的时间（使用的是基于 System.nanoTime实现的相对时间 ，不会因为系统时间改变而改变，如距离下次执行还有10秒，不会因为将系统时间调前6秒而变成4秒后执行）</p>
+</li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%AE%9A%E6%97%B6%E5%99%A8/" rel="tag">定时器</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-redisson获取锁失败"
   class="article article-type-post"
   itemscope
@@ -1032,7 +1127,7 @@
     <!--<ul>
       <li>
         Copyrights &copy;
-        2019-2022
+        2019-2023
         <i class="ri-heart-fill heart_icon"></i> heliqing
       </li>
     </ul> -->

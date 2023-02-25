@@ -1303,4 +1303,16 @@
         <tag>MySQL</tag>
       </tags>
   </entry>
+  <entry>
+    <title>设计模式</title>
+    <url>/2022/08/01/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[<h4 id="设计模式是什么"><a href="#设计模式是什么" class="headerlink" title="设计模式是什么"></a>设计模式是什么</h4><p>​        代表了最佳的实践，通常被有经验的面向对象的软件开发人员所采用。<strong>设计模式是软件开发人员在软件开发过程中面临的一般问题的解决方案</strong>。这些解决方案是众多软件开发人员经过相当长的一段时间的<strong>试验和错误总结出来的</strong>。</p>
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
+      </tags>
+  </entry>
 </search>
