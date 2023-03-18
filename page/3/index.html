@@ -155,6 +155,705 @@
     
     
     <article
+  id="post-redisson获取锁失败"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/17/redisson%E8%8E%B7%E5%8F%96%E9%94%81%E5%A4%B1%E8%B4%A5/"
+    >redisson获取锁失败</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/17/redisson%E8%8E%B7%E5%8F%96%E9%94%81%E5%A4%B1%E8%B4%A5/" class="article-date">
+  <time datetime="2022-07-17T08:31:06.000Z" itemprop="datePublished">2022-07-17</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/Redisson/">Redisson</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h5 id="lock-lock-方法"><a href="#lock-lock-方法" class="headerlink" title="lock.lock()方法"></a>lock.lock()方法</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redisson.getLock(<span class="string">&quot;className&quot;</span>);</span><br><span class="line">lock.lock();</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line"><span class="comment">// do sth.</span></span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">lock.unlock();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>lock()源码:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">lock</span><span class="params">()</span> &#123;</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">lockInterruptibly();</span><br><span class="line">&#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">Thread.currentThread().interrupt();</span><br><span class="line">&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">lockInterruptibly</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException &#123;</span><br><span class="line">lockInterruptibly(-<span class="number">1</span>, <span class="literal">null</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再看lockInterruptibly方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">lockInterruptibly</span><span class="params">(<span class="type">long</span> leaseTime, TimeUnit unit)</span> <span class="keyword">throws</span> InterruptedException&#123;</span><br><span class="line">    <span class="type">long</span> <span class="variable">threadId</span> <span class="operator">=</span> Thread.currentThread().getId();</span><br><span class="line">    <span class="comment">// 获取锁</span></span><br><span class="line">    <span class="type">Long</span> <span class="variable">ttl</span> <span class="operator">=</span> tryAcquire(leaseTime, unit, threadId);</span><br><span class="line">    <span class="keyword">if</span> (ttl == <span class="literal">null</span>) &#123; <span class="comment">// 获取成功</span></span><br><span class="line">    <span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="comment">// 异步订阅redis chennel</span></span><br><span class="line">RFuture&lt;RedissonLockEntry&gt; future = subscribe(threadId);</span><br><span class="line">commandExecutor.syncSubscription(future); <span class="comment">// 阻塞获取订阅结果</span></span><br><span class="line"> </span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>) &#123;<span class="comment">// 循环判断知道获取锁</span></span><br><span class="line">        ttl = tryAcquire(leaseTime, unit, threadId);</span><br><span class="line">        <span class="comment">// lock acquired</span></span><br><span class="line">        <span class="keyword">if</span> (ttl == <span class="literal">null</span>) &#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">	&#125;</span><br><span class="line"> </span><br><span class="line">    <span class="comment">// waiting for message</span></span><br><span class="line">    <span class="keyword">if</span> (ttl &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">    	getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    	getEntry(threadId).getLatch().acquire();</span><br><span class="line">    &#125;</span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">	unsubscribe(future, threadId);<span class="comment">// 取消订阅</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>总结lockInterruptibly：</p>
+<p>获取锁，<strong>不成功则订阅释放锁的消息，获得消息前阻塞</strong>。</p>
+<p><strong>得到释放通知后再去循环获取锁</strong>。</p>
+<h5 id="tryLock"><a href="#tryLock" class="headerlink" title="tryLock()"></a>tryLock()</h5><p>tryLock()方法是有返回值的，它表示用来尝试获取锁<br>如果获取成功，则返回true<br><strong>如果获取失败（即锁已被其他线程获取），则返回false</strong><br>这个方法无论如何都会立即返回。在拿不到锁时不会一直在那等待</p>
+<h5 id="tryLock-long-waitTime-long-leaseTime-TimeUnit-unit"><a href="#tryLock-long-waitTime-long-leaseTime-TimeUnit-unit" class="headerlink" title="tryLock(long waitTime, long leaseTime, TimeUnit unit)"></a>tryLock(long waitTime, long leaseTime, TimeUnit unit)</h5><p><strong>没获取到锁时，在指定的重试时间内，会尝试重新获取锁</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment">* 尝试获取锁</span></span><br><span class="line"><span class="comment">* waitTimeout 尝试获取锁的最大等待时间，超过这个值，则认为获取锁失败</span></span><br><span class="line"><span class="comment">* leaseTime   锁的持有时间,超过这个时间锁会自动失效（值应设置为大于业务处理的时间，确保在锁有效期内业务能处理完）</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"><span class="type">boolean</span> <span class="variable">res</span> <span class="operator">=</span> rLock.tryLock(waitTimeout, leaseTime, TimeUnit.SECONDS);</span><br></pre></td></tr></table></figure>
+
+<p>举例:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> RedissonClient redissonClient;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">tryLock</span><span class="params">(String lockKey, <span class="type">long</span> lockWaitTime, <span class="type">long</span> lockTime)</span> &#123;</span><br><span class="line">    <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(lockKey);</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 第一个参数lockWaitTime是等待时间，n毫秒内获取不到锁，则直接返回</span></span><br><span class="line">        <span class="comment">// 第二个参数lockTime是锁超时时间，m毫秒后强制释放锁</span></span><br><span class="line">        <span class="keyword">return</span> lock.tryLock(lockWaitTime, lockTime, TimeUnit.MILLISECONDS);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">msg</span> <span class="operator">=</span> String.format(<span class="string">&quot;LOCK FAILED: key=%s||tryLockTime=%s||lockExpiredTime=%s&quot;</span>, lockKey, lockWaitTime, lockTime);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalStateException</span>(msg, e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>解锁:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">(String lockKey)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(lockKey);</span><br><span class="line">        <span class="keyword">if</span> (lock != <span class="literal">null</span>) &#123;</span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">msg</span> <span class="operator">=</span> String.format(<span class="string">&quot;UNLOCK FAILED: key=%s&quot;</span>, lockKey);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalStateException</span>(msg, e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>执行解锁代码后，有时会出现以下报错，这是什么原因呢？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Caused by: java.lang.IllegalMonitorStateException: attempt to unlock lock, not locked by current thread</span><br></pre></td></tr></table></figure>
+
+<p>比如下面这段代码，在获取锁成功之后，持有的时间是8秒，而<strong>如果你的锁内业务执行时间超过8秒后，锁会自动释放，锁自动释放后，而在你的finally里面又手动去释放锁，就导致了这个错误</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Test</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">testLock</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="type">String</span> <span class="variable">key</span> <span class="operator">=</span> <span class="string">&quot;key&quot;</span>;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="comment">// 获取锁，持有8秒后，自动释放</span></span><br><span class="line">        tryLock(key, <span class="number">1000L</span>, <span class="number">8000L</span>);</span><br><span class="line">        TimeUnit.SECONDS.sleep(<span class="number">10</span>);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">        unlock(key);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>解决办法:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">unlock</span><span class="params">(String lockKey)</span> &#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redissonClient.getLock(lockKey);</span><br><span class="line">        <span class="keyword">if</span> (lock != <span class="literal">null</span> &amp;&amp; lock.isHeldByCurrentThread()) &#123; </span><br><span class="line">            lock.unlock();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">msg</span> <span class="operator">=</span> String.format(<span class="string">&quot;UNLOCK FAILED: key=%s&quot;</span>, lockKey);</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">IllegalStateException</span>(msg, e);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>解锁时，<strong>增加lock.isHeldByCurrentThread()判断</strong>，意思是<strong>查询当前线程是否持有该锁</strong>，如果还持有，则释放，未持有，说明已释放</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redisson/" rel="tag">Redisson</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-IntelliJ-IDEA常用快捷键"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/15/IntelliJ-IDEA%E5%B8%B8%E7%94%A8%E5%BF%AB%E6%8D%B7%E9%94%AE/"
+    >IntelliJ IDEA常用快捷键</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/15/IntelliJ-IDEA%E5%B8%B8%E7%94%A8%E5%BF%AB%E6%8D%B7%E9%94%AE/" class="article-date">
+  <time datetime="2022-07-15T05:04:57.000Z" itemprop="datePublished">2022-07-15</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%B7%A5%E5%85%B7/">工具</a> / <a class="article-category-link" href="/categories/%E5%B7%A5%E5%85%B7/IDEA/">IDEA</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <figure class="highlight css"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">双击Shift：查找所有</span><br><span class="line">Ctrl+Shift+R：全局搜索</span><br><span class="line">ALT+INSERT: 生成代码(如GET,SET方法,构造函数等)</span><br><span class="line">Ctrl + Shift + v: 自动补全对象返回类型</span><br><span class="line">Ctrl+I: 实现方法</span><br><span class="line">Ctrl+O: 重写方法    </span><br><span class="line">Ctrl + Alt + B：跳转到实现方法  </span><br><span class="line">Ctrl + G: 跳至指定行、列</span><br><span class="line">Ctrl + Shift + U：大小写转换</span><br><span class="line">    </span><br><span class="line">Alt + Enter：显示建议操作</span><br><span class="line">Ctrl + Alt + L：格式化代码</span><br><span class="line">Ctrl + P：参数信息提醒</span><br><span class="line">Alt + <span class="number">7</span>：显示结构窗口</span><br><span class="line">Ctrl + Alt + l: 自动对齐代码    </span><br><span class="line">Ctrl + Tab：切换活动文件</span><br><span class="line">Ctrl + E：最近的文件</span><br><span class="line">Ctrl + Shift + Backspace：返回上次编辑位置    </span><br><span class="line">Ctrl + Alt + Left：后退</span><br><span class="line">Ctrl + Alt + Right：前进</span><br><span class="line">    </span><br><span class="line">Ctrl + /：添加行注释</span><br><span class="line">Ctrl + Shift + /：添加块注释</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/IDEA/" rel="tag">IDEA</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-Vue的生命周期"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/"
+    >Vue的生命周期</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/" class="article-date">
+  <time datetime="2022-07-12T11:45:44.000Z" itemprop="datePublished">2022-07-12</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%89%8D%E7%AB%AF/">前端</a> / <a class="article-category-link" href="/categories/%E5%89%8D%E7%AB%AF/Vue/">Vue</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="Vue的优点"><a href="#Vue的优点" class="headerlink" title="Vue的优点"></a>Vue的优点</h4><ul>
+<li><strong>轻量级框架</strong>：只<strong>关注视图层</strong></li>
+<li><strong>双向数据绑定</strong>：保留了 angular 的特点，在数据操作方面更为简单</li>
+<li><strong>组件化</strong>：保留了 react 的优点，实现了 html 的封装和重用，在构建单页面应用方面有着独特的优势</li>
+<li><strong>虚拟DOM</strong>：dom 操作是非常耗费性能的， 不再使用原生的 dom 操作节点。而是预先通过JavaScript进行各种计算，把最终的DOM操作计算出来并优化。由于这个DOM操作属于预处理操作，并没有真实的操作DOM，所以叫做虚拟DOM。只有最后在计算完毕才真正将DOM操作提交，将DOM操作变化反映到DOM树上</li>
+</ul>
+<h4 id="对MVVM的理解？"><a href="#对MVVM的理解？" class="headerlink" title="对MVVM的理解？"></a>对MVVM的理解？</h4><p>MVVM 由 <strong>Model、View、ViewModel</strong> 三部分构成，<strong>Model 层代表数据模型</strong>，也可以在Model中定义数据修改和操作的业务逻辑；<strong>View 代表UI 组件</strong>，它负责将数据模型转化成UI 展现出来；<strong>ViewModel 是一个同步View 和 Model的对象</strong>。</p>
+<p>在MVVM架构下，<strong>View 和 Model 之间并没有直接的联系，而是通过ViewModel进行交互</strong>，Model 和 ViewModel 之间的交互是双向的， 因此View 数据的变化会同步到Model中，而Model 数据的变化也会立即反应到View 上。</p>
+<p><strong>ViewModel 通过双向数据绑定把 View 层和 Model 层连接了起来，而View 和 Model 之间的同步工作完全是自动的</strong>，无需人为干涉，因此开发者只需关注业务逻辑，不需要手动操作DOM， 不需要关注数据状态的同步问题，复杂的数据状态维护完全由 MVVM 来统一管理</p>
+<h4 id="Vue数据双向绑定原理"><a href="#Vue数据双向绑定原理" class="headerlink" title="Vue数据双向绑定原理"></a>Vue数据双向绑定原理</h4><p>实现mvvm的数据双向绑定，是采用<strong>数据劫持结合发布者-订阅者模式的方式</strong>，通过<strong>Object.defineProperty()来给各个属性添加setter，getter并劫持监听</strong>，在<strong>数据变动时发布消息给订阅者，触发相应的监听回调</strong>。就必须要实现以下几点：</p>
+<ol>
+<li>实现一个数据监听器Observer，能够对数据对象的所有属性进行监听，如有变动可拿到最新值并通知订阅者</li>
+<li>实现一个指令解析器Compile，对每个元素节点的指令进行扫描和解析，根据指令模板替换数据，以及绑定相应的更新函数</li>
+<li>实现一个Watcher，作为连接Observer和Compile的桥梁，能够订阅并收到每个属性变动的通知，执行指令绑定的相应回调函数，从而更新视图</li>
+</ol>
+<p><img src="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/clipboard.png"></p>
+<h4 id="生命周期简介"><a href="#生命周期简介" class="headerlink" title="生命周期简介"></a>生命周期简介</h4><p><strong>每个Vue实例在被创建时都要经过一系列的初始化过程</strong>，例如：需要设置<strong>数据的监听</strong>，编译模板，将<strong>实例挂载</strong>到DOM上，并且在<strong>数据变化时更新DOM</strong>等，这些过程统称为Vue实例的生命周期。</p>
+<p>这个过程中也会运行一些叫做<strong>生命周期钩子的函数</strong>，这给了用户在不同阶段添加自己的代码的机会</p>
+<p>Vue实例的生命周期，主要分为三个阶段，每个阶段都会执行不同的钩子函数</p>
+<h5 id="挂载-初始化相关属性-例如watch属性，method属性"><a href="#挂载-初始化相关属性-例如watch属性，method属性" class="headerlink" title="挂载(初始化相关属性,例如watch属性，method属性)"></a><strong>挂载</strong>(初始化相关属性,例如watch属性，method属性)</h5><ul>
+<li>beforeCreate</li>
+<li>created</li>
+<li>beforeMount</li>
+<li>mounted</li>
+</ul>
+<h5 id="更新-元素或组件的变更操作"><a href="#更新-元素或组件的变更操作" class="headerlink" title="**更新(**元素或组件的变更操作)"></a>**更新(**元素或组件的变更操作)</h5><ul>
+<li>beforeUpdate</li>
+<li>updated</li>
+</ul>
+<h5 id="销毁（销毁相关属性）"><a href="#销毁（销毁相关属性）" class="headerlink" title="销毁（销毁相关属性）"></a><strong>销毁</strong>（销毁相关属性）</h5><ul>
+<li>beforeDestroy</li>
+<li>destroyed</li>
+</ul>
+<p><img src="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/clipboard2.png"></p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">beforeCreate</span>( )<span class="comment">// 该钩子函数执行时，组件实例还未创建.</span></span><br><span class="line"><span class="title function_">created</span>()<span class="comment">//组件初始化完毕，各种数据可以使用，可以使用ajax发送异步请求获取数据</span></span><br><span class="line"><span class="title function_">beforeMounted</span>()<span class="comment">// 未执行渲染，更新，虚拟DOM完成，真实DOM未创建</span></span><br><span class="line"><span class="title function_">mounted</span>()<span class="comment">// 初始化阶段结束，真实DOM已经创建，可以发送异步请求获取数据,也可以访问dom元素</span></span><br><span class="line"><span class="title function_">beforeUpdate</span>()<span class="comment">//更新前，可用于获取更新前各种状态数据</span></span><br><span class="line"><span class="title function_">updated</span>()<span class="comment">//更新后执行该钩子函数，所有的状态数据是最新的。</span></span><br><span class="line"><span class="title function_">beforeDestroy</span>() <span class="comment">// 销毁前执行，可以用于一些定时器的清除。</span></span><br><span class="line"><span class="title function_">destroyed</span>()<span class="comment">//组件已经销毁，事件监听器被移除，所有的子实例也会被销毁。</span></span><br></pre></td></tr></table></figure>
+
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Vue/" rel="tag">Vue</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-分布式Session解决方案"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/12/%E5%88%86%E5%B8%83%E5%BC%8FSession%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"
+    >分布式Session解决方案</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/12/%E5%88%86%E5%B8%83%E5%BC%8FSession%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="article-date">
+  <time datetime="2022-07-12T11:08:23.000Z" itemprop="datePublished">2022-07-12</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a> / <a class="article-category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/Session/">Session</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="分布式session解决方案"><a href="#分布式session解决方案" class="headerlink" title="分布式session解决方案"></a>分布式session解决方案</h4><h5 id="cookie和session的区别和联系"><a href="#cookie和session的区别和联系" class="headerlink" title="cookie和session的区别和联系"></a>cookie和session的区别和联系</h5><ul>
+<li>cookie是本地客户端用来存储少量数据信息的，保存在客户端，用户能够很容易的获取，安全性不高，存储的数据量小</li>
+<li>session是服务器用来存储部分数据信息，保存在服务器，用户不容易获取，安全性高，储存的数据量相对大，存储在服务器，会占用一些服务器资源，但是对于它的优点来说，这个缺点可以忽略了</li>
+</ul>
+<h5 id="session有什么用"><a href="#session有什么用" class="headerlink" title="session有什么用"></a>session有什么用</h5><ul>
+<li><p>在一次客户端和服务器为之间的会话中，客户端(浏览器)向服务器发送请求，首先cookie会自动携带上次请求存储的数据(JSESSIONID)到服务器，服务器根据请求参数中的JSESSIONID到服务器中的session库中查询是否存在此JSESSIONID的信息，如果存在，那么服务器就知道此用户是谁，如果不存在，就会创建一个JSESSIONID，并在本次请求结束后将JSESSIONID返回给客户端，同时将此JSESSIONID在客户端cookie中进行保存</p>
+</li>
+<li><p>客户端和服务器之间是通过http协议进行通信，但是http协议是无状态的，不同次请求会话是没有任何关联的，但是优点是处理速度快</p>
+</li>
+<li><p>session是一次浏览器和服务器的交互的会话，当浏览器关闭的时候，会话就结束了，但是会话session还在，默认session是还保留30分钟的</p>
+</li>
+</ul>
+<h5 id="分布式session一致性"><a href="#分布式session一致性" class="headerlink" title="分布式session一致性"></a>分布式session一致性</h5><p>客户端发送一个请求，经过负载均衡后该请求会被分配到服务器中的其中一个，由于不同服务器含有不同的web服务器(例如Tomcat)，不同的web服务器中并不能发现之前web服务器保存的session信息，就会再次生成一个JSESSIONID，之前的状态就会丢失</p>
+<h5 id="分布式session的几种实现方式"><a href="#分布式session的几种实现方式" class="headerlink" title="分布式session的几种实现方式"></a>分布式session的几种实现方式</h5><ul>
+<li><p><strong>粘性session</strong></p>
+<p><strong>原理</strong>：粘性Session是指将用户锁定到某一个服务器上，比如上面说的例子，用户第一次请求时，负载均衡器将用户的请求转发到了A服务器上，如果负载均衡器设置了粘性Session的话，那么用户以后的每次请求都会转发到A服务器上，相当于把用户和A服务器粘到了一块，这就是粘性Session机制。</p>
+<p><strong>优点</strong>：简单，不需要对session做任何处理。</p>
+<p><strong>缺点</strong>：缺乏容错性，如果当前访问的服务器发生故障，用户被转移到第二个服务器上时，他的session信息都将失效。</p>
+<p><strong>适用场景</strong>：发生故障对客户产生的影响较小；服务器发生故障是低概率事件。</p>
+<p><strong>实现方式</strong>：以Nginx为例，在upstream模块配置ip_hash属性即可实现粘性Session。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">upstream mycluster&#123;</span><br><span class="line">    #这里添加的是上面启动好的两台Tomcat服务器</span><br><span class="line">    ip_hash;#粘性Session</span><br><span class="line">     server 192.168.22.229:8080 weight=1;</span><br><span class="line">     server 192.168.22.230:8080 weight=1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p><strong>服务器session复制</strong></p>
+<p><strong>原理</strong>：任何一个服务器上的session发生改变（增删改），该节点会把这个 session的所有内容序列化，然后广播给所有其它节点，不管其他服务器需不需要session，以此来保证Session同步。</p>
+<p><strong>优点</strong>：可容错，各个服务器间session能够实时响应。</p>
+<p><strong>缺点</strong>：会对网络负荷造成一定压力，如果session量大的话可能会造成网络堵塞，拖慢服务器性能。</p>
+<p><strong>实现方式</strong>：</p>
+<p>① 设置tomcat ，server.xml 开启tomcat集群功能</p>
+<p><img src="/2022/07/12/%E5%88%86%E5%B8%83%E5%BC%8FSession%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/80CB811C-CC17-4a43-A2E9-9324813A4B0C.png"></p>
+</li>
+</ul>
+<p>​        Address:填写本机ip即可，设置端口号，预防端口冲突。</p>
+<p>​       ② 在应用里增加信息：通知应用当前处于集群环境中，支持分布式，在web.xml中添加选项</p>
+<p>**session共享机制 ** <strong>基于redis存储session方案</strong></p>
+<p>基于redis存储session方案流程示意图</p>
+<p><img src="/2022/07/12/%E5%88%86%E5%B8%83%E5%BC%8FSession%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/2019070810495327.png"></p>
+<p>引入pom依赖</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">	&lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;</span><br><span class="line">	&lt;artifactId&gt;spring-session-data-redis&lt;/artifactId&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">	&lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;</span><br><span class="line">	&lt;artifactId&gt;spring-boot-data-starter-redis&lt;/artifactId&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+
+<p><strong>优点</strong>：</p>
+<ul>
+<li><p>这是企业中使用的最多的一种方式</p>
+</li>
+<li><p>spring为我们封装好了spring-session，直接引入依赖即可</p>
+</li>
+<li><p>数据保存在redis中，无缝接入，不存在任何安全隐患</p>
+</li>
+<li><p>redis自身可做集群，搭建主从，同时方便管理</p>
+</li>
+</ul>
+<p><strong>缺点</strong>：多了一次网络调用，web容器需要向redis访问</p>
+<p><strong>总结</strong>：一般会将web容器所在的服务器和redis所在的服务器放在同一个机房，减少网络开销，走内网进行连接 </p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Session/" rel="tag">Session</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-MySQL索引"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/"
+    >MySQL索引</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/" class="article-date">
+  <time datetime="2022-07-12T09:15:04.000Z" itemprop="datePublished">2022-07-12</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h4><p>索引是一种<strong>数据结构</strong>，用于帮助我们<strong>在大量数据中快速定位到我们想要查找的数据</strong>。<br>索引最形象的比喻就是图书的目录了。注意这里的大量，数据量大了索引才显得有意义。</p>
+<h4 id="InnoDB-存储引擎中的-B-树索引"><a href="#InnoDB-存储引擎中的-B-树索引" class="headerlink" title="InnoDB 存储引擎中的 B+ 树索引"></a>InnoDB 存储引擎中的 B+ 树索引</h4><p>要介绍 B+ 树索引，就不得不提<strong>二叉查找树，平衡二叉树和 B 树</strong>这三种数据结构。B+ 树就是从他们仨<strong>演化来的</strong>。</p>
+<ul>
+<li><h5 id="二叉查找树"><a href="#二叉查找树" class="headerlink" title="二叉查找树"></a><strong>二叉查找树</strong></h5></li>
+</ul>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard.png"></p>
+<p>图示：我们为 user 表（用户信息表）建立了一个二叉查找树的索引</p>
+<p>图中的圆为二叉查找树的节点，<strong>节点中存储了键（key）和数据（data）</strong>。键对应 user 表中的 id，数据对应 user 表中的行数据。</p>
+<p>二叉查找树的特点就是<strong>任何节点的左子节点的键值都小于当前节点的键值</strong>，<strong>右子节点的键值都大于当前节点的键值</strong>。<strong>顶端的节点我们称为根节点，没有子节点的节点我们称之为叶节点</strong>。</p>
+<p>如果我们需要查找 id=12 的用户信息，利用我们创建的二叉查找树索引，查找流程如下：</p>
+<p>将根节点作为当前节点，把 12 与当前节点的键值 10 比较，12 大于 10，接下来我们把当前节点&gt;的右子节点作为当前节点。</p>
+<p>继续把 12 和当前节点的键值 13 比较，发现 12 小于 13，把当前节点的左子节点作为当前节点。</p>
+<p>把 12 和当前节点的键值 12 对比，12 等于 12，满足条件，我们从当前节点中取出 data，即 id=12，name=xm。</p>
+<p>利用二叉查找树我们只需要 3 次即可找到匹配的数据。如果在表中一条条的查找的话，我们需要 6 次才能找到</p>
+<ul>
+<li><h5 id="平衡二叉树"><a href="#平衡二叉树" class="headerlink" title="平衡二叉树"></a><strong>平衡二叉树</strong></h5><p>假如二叉查找树是这样的构造的：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard2.png"></p>
+</li>
+</ul>
+<p><strong>二叉查找树变成了一个链表</strong>。如果我们需要查找 id=17 的用户信息，我们需要查找 7 次，也就相当于<strong>全表扫描</strong>了。 </p>
+<p>原因：二叉查找树变得不平衡了，也就是<strong>高度太高</strong>了，从而导致<strong>查找效率的不稳定</strong>。</p>
+<p>解决：保证二叉查找树一直保持平衡，就需要用到<strong>平衡二叉树</strong>。平衡二叉树又称 <strong>AVL 树</strong>，<strong>在满足二叉查找树特性的基础上，要求每个节点的左右子树的高度差不能超过 1。</strong></p>
+<p>平衡二叉树和非平衡二叉树的对比：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard3.png"></p>
+<p>平衡二叉树保证了树的构造是平衡的，当我们<strong>插入或删除数据</strong>导致不满足平衡二叉树不平衡时，平衡二叉树会进行<strong>调整树上的节点来保持平衡</strong></p>
+<p>平衡二叉树相比于二叉查找树来说，<strong>查找效率更稳定，总体的查找速度也更快</strong></p>
+<ul>
+<li><h5 id="B-树"><a href="#B-树" class="headerlink" title="B 树"></a><strong>B 树</strong></h5><p>因为<strong>内存的易失性</strong>，我们都会选择将 user 表中的<strong>数据和索引存储在磁盘</strong>这种外围设备中。</p>
+<p>和内存相比，<strong>从磁盘中读取数据的速度会慢上百倍千倍甚至万倍</strong>，应当<strong>尽量减少从磁盘中读取数据的次数</strong></p>
+<p>从磁盘中读取数据时，都是按照<strong>磁盘块来读取的</strong>，并不是一条一条的读</p>
+<p>如果我们能<strong>把尽量多的数据放进磁盘块</strong>中，那<strong>一次磁盘读取操作就会读取更多数据</strong>，那我们<strong>查找数据的时间也会大幅度降低</strong>。</p>
+<p>如果我们用树这种数据结构作为索引的数据结构，那我们每查找一次数据就需要从磁盘中读取一个节点，也就是我们说的一个磁盘块。</p>
+<p>我们都知道<strong>平衡二叉树可是每个节点只存储一个键值和数据的</strong>。那说明什么？说明每个磁盘块仅仅存储一个键值和数据！那如果我们<strong>要存储海量的数据</strong>呢？</p>
+<p>可以想象到二叉树的节点将会非常多，高度也会极其高，我们查找数据时也会进行很多次磁盘 IO，我们查找数据的效率将会极低！</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard4.png"></p>
+</li>
+</ul>
+<p>为了解决平衡二叉树的这个弊端，我们应该<strong>寻找一种单个节点可以存储多个键值和数据的平衡树</strong>。也就是我们接下来要说的 B 树。</p>
+<p><strong>B 树（Balance Tree）即为平衡树的意思</strong>，下图即是一棵 B 树：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard5.png"></p>
+<p>图中的 <strong>p 节点为指向子节点的指针</strong></p>
+<p>图中的<strong>每个节点称为页</strong>，页就是我们上面说的<strong>磁盘块</strong>，在 MySQL 中数据读取的基本单位都是页，所以我们这里叫做页更符合 MySQL 中索引的底层数据结构。</p>
+<p>从上图可以看出，B 树相对于平衡二叉树，<strong>每个节点存储了更多的键值（key）和数据（data）</strong>，并且<strong>每个节点拥有更多的子节点</strong>，子节点的个数一般称为阶，上述图中的 B 树为 3 阶 B 树，<strong>高度也会很低。</strong></p>
+<p>基于这个特性，<strong>B 树查找数据读取磁盘的次数将会很少</strong>，<strong>数据的查找效率也会比平衡二叉树高很多</strong>。</p>
+<p>假如我们要查找 id=28 的用户信息，那么我们在上图 B 树中查找的流程如下：</p>
+<p>先找到根节点也就是页 1，判断 28 在键值 17 和 35 之间，那么根据页 1 中的指针 p2 找到页 3。</p>
+<p>将 28 和页 3 中的键值相比较，28 在 26 和 30 之间，我们根据页 3 中的指针 p2 找到页 8。</p>
+<p>将 28 和页 8 中的键值相比较，发现有匹配的键值 28，键值 28 对应的用户信息为（28，bv）。</p>
+<ul>
+<li><h5 id="B-树-1"><a href="#B-树-1" class="headerlink" title="B+ 树"></a><strong>B+ 树</strong></h5><p><strong>B+ 树是对 B 树的进一步优化</strong>。让我们先来看下 B+ 树的结构图：（<strong>聚集索引的实现方式</strong>）</p>
+</li>
+</ul>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard6.png"></p>
+<p>根据上图我们来看下 B+ 树和 B 树有什么不同：</p>
+<ul>
+<li><strong>B+ 树非叶子节点上是不存储数据的，仅存储键值</strong>，而 <strong>B 树节点中不仅存储键值，也会存储数据</strong>。</li>
+</ul>
+<p>之所以这么做是因为在<strong>数据库中页的大小是固定的，InnoDB 中页的默认大小是 16KB</strong>。</p>
+<p>如果<strong>不存储数据</strong>，那么就会<strong>存储更多的键值</strong>，相应的<strong>树的阶数</strong>（节点的子节点树）就会<strong>更大</strong>，树就会<strong>更矮更胖</strong>，如此一来我们<strong>查找数据进行磁盘的 IO 次数又会再次减少</strong>，数据查询的效率也会更快。</p>
+<p>另外，B+ 树的阶数是等于键值的数量的，如果我们的 B+ 树一个节点可以存储 1000 个键值，那么 3 层 B+ 树可以存储 1000×1000×1000=10 亿个数据。</p>
+<p>一般<strong>根节点是常驻内存</strong>的，所以一般我们查找 10 亿数据，只需要 2 次磁盘 IO。</p>
+<ul>
+<li>因为 <strong>B+ 树索引的所有数据均存储在叶子节点</strong>，而且<strong>数据是按照顺序排列</strong>的。</li>
+</ul>
+<p>那么 B+ 树使得<strong>范围查找，排序查找，分组查找以及去重查找</strong>变得异常简单。而 B 树因为数据分散在各个节点，要实现这一点是很不容易的。</p>
+<p>通过上图可以看到，在 InnoDB 中，我们通过<strong>数据页之间通过双向链表连接</strong>以及<strong>叶子节点中数据之间通过单向链表连接</strong>的方式可以找到表中所有的数据。</p>
+<h4 id="MyISAM-中，B-树索引"><a href="#MyISAM-中，B-树索引" class="headerlink" title="MyISAM 中，B+ 树索引"></a>MyISAM 中，B+ 树索引</h4><p>MyISAM 中的 B+ 树索引实现与 InnoDB 中的略有不同。<strong>在 MyISAM 中，B+ 树索引的叶子节点并不存储数据，而是存储数据的文件地址。</strong></p>
+<h4 id="聚集索引-VS-非聚集索引"><a href="#聚集索引-VS-非聚集索引" class="headerlink" title="聚集索引 VS 非聚集索引"></a><strong>聚集索引 VS 非聚集索引</strong></h4><p>在 MySQL 中，B+ 树索引按照存储方式的不同分为聚集索引和非聚集索引</p>
+<p> InnoDB 中的聚集索引和非聚集索引：</p>
+<ul>
+<li><strong>聚集索引（聚簇索引）</strong>：以 InnoDB 作为存储引擎的表，表中的数据都会有一个主键，即使你不创建主键，<strong>系统也会帮你创建一个隐式的主键</strong>。</li>
+</ul>
+<p>自增ID，防止页分裂</p>
+<p>这是因为 InnoDB 是把数据存放在 B+ 树中的，而 B+ 树的键值就是主键，在 B+ 树的叶子节点中，存储了表中所有的数据。</p>
+<p>这种<strong>以主键作为 B+ 树索引的键值而构建的 B+ 树索引</strong>，我们称之为聚集索引。</p>
+<ul>
+<li><strong>非聚集索引（非聚簇索引）</strong>：<strong>以主键以外的列值作为键值构建的 B+ 树索引</strong>，我们称之为非聚集索引。</li>
+</ul>
+<p>非聚集索引与聚集索引的区别在于<strong>非聚集索引的叶子节点不存储表中的数据</strong>，而是<strong>存储该列对应的主键</strong>，想要查找数据我们<strong>还需要根据主键再去聚集索引中进行查找</strong>，这个再根据聚集索引查找数据的过程，我们称为<strong>回表</strong>。</p>
+<p>利用聚集索引查找数据：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard7.png"></p>
+<p>假设我们要查找 id&gt;=18 并且 id&lt;40 的用户数据。对应的 sql 语句为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from user where id&gt;=18 and id &lt;40</span><br></pre></td></tr></table></figure>
+
+<p>其中 id 为主键，具体的查找过程如下：</p>
+<p>①一般根节点都是常驻内存的，也就是说页 1 已经在内存中了，此时不需要到磁盘中读取数据，直接从内存中读取即可。</p>
+<p>从内存中读取到页 1，要查找这个 id&gt;=18 and id &lt;40 或者范围值，我们首先需要找到 id=18 的键值。</p>
+<p>从页 1 中我们可以找到键值 18，此时我们需要根据指针 p2，定位到页 3。</p>
+<p>②要从页 3 中查找数据，我们就需要拿着 p2 指针去磁盘中进行读取页 3。</p>
+<p>从磁盘中读取页 3 后将页 3 放入内存中，然后进行查找，我们可以找到键值 18，然后再拿到页 3 中的指针 p1，定位到页 8。</p>
+<p>③同样的页 8 页不在内存中，我们需要再去磁盘中将页 8 读取到内存中。</p>
+<p>将页 8 读取到内存中后。因为页中的数据是链表进行连接的，而且键值是按照顺序存放的，此时可以根据二分查找法定位到键值 18。</p>
+<p>此时因为已经到数据页了，此时我们已经找到一条满足条件的数据了，就是键值 18 对应的数据。</p>
+<p>因为是范围查找，而且此时所有的数据又都存在叶子节点，并且是有序排列的，那么我们就可以对页 8 中的键值依次进行遍历查找并匹配满足条件的数据。</p>
+<p>我们可以一直找到键值为 22 的数据，然后页 8 中就没有数据了，此时我们需要拿着页 8 中的 p 指针去读取页 9 中的数据。</p>
+<p>④因为页 9 不在内存中，就又会加载页 9 到内存中，并通过和页 8 中一样的方式进行数据的查找，直到将页 12 加载到内存中，发现 41 大于 40，此时不满足条件。那么查找到此终止。</p>
+<p>最终我们找到满足条件的所有数据，总共 12 条记录：</p>
+<p>(18,kl), (19,kl), (22,hj), (24,io), (25,vg) , (29,jk), (31,jk) , (33,rt) , (34,ty) , (35,yu) , (37,rt) , (39,rt) 。</p>
+<p>下面看下具体的查找流程图：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard8.png"></p>
+<p>利用非聚集索引查找数据:</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard9.png"></p>
+<p>首先，这个非聚集索引表示的是用户幸运数字的索引（为什么是幸运数字？一时兴起想起来的:-)），此时表结构是这样的。</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard12.png"></p>
+<p>在叶子节点中，不再存储所有的数据了，存储的是键值和主键。对于叶子节点中的 x-y，比如 1-1。左边的 1 表示的是索引的键值，右边的 1 表示的是主键值。</p>
+<p>如果我们要找到幸运数字为 33 的用户信息，对应的 sql 语句为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">select * from user where luckNum=33</span><br></pre></td></tr></table></figure>
+
+<p>查找的流程跟聚集索引一样，这里就不详细介绍了。我们最终会找到主键值 47，找到主键后我们需要再到聚集索引中查找具体对应的数据信息，此时又回到了聚集索引的查找流程。</p>
+<p>下面看下具体的查找流程图：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard10.png"></p>
+<p><strong>数据即索引，索引即数据</strong></p>
+<p><strong>聚集索引和非聚集索引区别：</strong></p>
+<p>聚集索引和非聚集索引的根本区别是<strong>表记录的排列顺序和与索引的排列顺序是否一致</strong>。</p>
+<p>聚集索引： <strong>聚集索引表记录的排列顺序和索引的排列顺序一致</strong>，所以查询效率快，<strong>只要找到第一个索引值记录，其余就连续性的记录在物理也一样连续存放</strong>。聚集索引对应的<strong>缺点就是修改慢</strong>，因为<strong>为了保证表中记录的物理和索引顺序一致</strong>，在<strong>记录插入</strong>的时候，会对<strong>数据页重新排序</strong>。</p>
+<p>非聚集索引：<strong>非聚集索引制定了表中记录的逻辑顺序，但是记录的物理和索引不一定一致</strong>，两种索引都采用B+树结构，非聚集索引的叶子层并不和实际数据页相重叠，而<strong>采用叶子层包含一个指向表中的记录在数据页中的指针方式</strong>。非聚集索引层次多，不会造成数据重排。</p>
+<p>例子对比两种索引：</p>
+<p>聚集索引就类似新华字典中的<strong>拼音排序索引</strong>，都是按<strong>顺序</strong>进行，<strong>例如找到字典中的“爱”，就里面顺序执行找到“癌”</strong>。而非聚集索引则类似于<strong>笔画排序</strong>，<strong>索引顺序和物理顺序并不是按顺序存放</strong>的。</p>
+<h4 id="什么是覆盖索引？"><a href="#什么是覆盖索引？" class="headerlink" title="什么是覆盖索引？"></a><strong>什么是覆盖索引？</strong></h4><p>如果一个<strong>索引包含（或者说覆盖）所有需要查询的字段的值</strong>，我们就称之为“覆盖索引”</p>
+<p>InnoDB存储引擎中，如果不是主键索引，叶子节点存储的是主键+列值。最终还是要“<strong>回表</strong>”，也就是要通过主键再查找一次。这样就会比较慢<strong>覆盖索引就是把要查询出的列和索引是对应的，不做回表操作！</strong></p>
+<p>覆盖索引使用实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">//创建了索引(username,age)</span><br><span class="line">select username , age from user where username = &#x27;Java&#x27; and age = 22</span><br></pre></td></tr></table></figure>
+
+<p>在查询数据的时候：要<strong>查询出的列在叶子节点都存在</strong>！所以，就不用回表</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard11.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SELECT age FROM student WHERE name = &#x27;小李&#x27;；</span><br><span class="line">流程为：</span><br><span class="line">在name,age联合索引树上找到名称为小李的节点</span><br><span class="line">此时节点索引里包含信息age 直接返回 12</span><br></pre></td></tr></table></figure>
+
+<h4 id="最左前缀原则-最左优先"><a href="#最左前缀原则-最左优先" class="headerlink" title="最左前缀原则  最左优先"></a><strong>最左前缀原则  最左优先</strong></h4><p>MySQL中的索<strong>引可以以一定顺序引用多列</strong>，这种索引叫作<strong>联合索引</strong></p>
+<p>如User表的name和city加联合索引就是(name,city)，而最左前缀原则指的是，如果查询的时候查询条件精确匹配索引的左边连续一列或几列，则此列就可以被用到。如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">select * from user where name=xx and city=xx ; //可以命中索引</span><br><span class="line">select * from user where name=xx ; // 可以命中索引</span><br><span class="line">select * from user where city=xx ; // 无法命中索引</span><br></pre></td></tr></table></figure>
+
+<p>查询的时候如果两个条件都用上了，但是顺序不同，如 city= xx and name ＝xx，那么现在的查询引擎会自动优化为匹配联合索引的顺序，这样是能够命中索引的。</p>
+<p>注：在创建多列索引时，要根据业务需求，<strong>where子句中使用最频繁的一列放在最左边</strong>。</p>
+<p>如果表中只有id,a,b,c四个字段</p>
+<p><strong>主键id,组合索引(a,b,c)</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">select * from table where b=1 and c=1;</span><br><span class="line">select * from table where  c=1;</span><br></pre></td></tr></table></figure>
+
+<p>都会用到索引，因为索引(a,b,c)包含除了主键的所有字段，会用到覆盖索引</p>
+<h4 id="Mysql如何为表字段添加索引"><a href="#Mysql如何为表字段添加索引" class="headerlink" title="Mysql如何为表字段添加索引?"></a><strong>Mysql如何为表字段添加索引?</strong></h4><p>添加PRIMARY KEY（主键索引）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD PRIMARY KEY ( `column` ) </span><br></pre></td></tr></table></figure>
+
+<p>添加UNIQUE(唯一索引)</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD UNIQUE ( `column` ) </span><br></pre></td></tr></table></figure>
+
+<p>添加INDEX(普通索引)</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD INDEX index_name ( `column` )</span><br></pre></td></tr></table></figure>
+
+<p>添加FULLTEXT(全文索引)</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD FULLTEXT ( `column`) </span><br></pre></td></tr></table></figure>
+
+<p>添加多列索引</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD INDEX index_name ( `column1`, `column2`, `column3` )</span><br></pre></td></tr></table></figure>
+
+<p>CREATE 创建索引</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">CREATE INDEX indexName ON table_name (column_name)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Hash索引和-B-树索引优劣分析"><a href="#Hash索引和-B-树索引优劣分析" class="headerlink" title="Hash索引和 B+树索引优劣分析"></a><strong>Hash索引和 B+树索引优劣分析</strong></h4><ul>
+<li><p><strong>Hash索引定位快</strong>：Hash索引指的就是<strong>Hash表</strong>，最大的优点就是能够在很短的时间内，<strong>根据Hash函数定位到数据所在的位置</strong>，这是B+树所不能比的</p>
+</li>
+<li><p><strong>Hash冲突问题</strong></p>
+</li>
+<li><p><strong>Hash索引不支持顺序和范围查询</strong>(Hash索引不支持顺序和范围查询是它最大的缺点)。</p>
+</li>
+</ul>
+<h4 id="Mysql的覆盖索引和联合索引的区别"><a href="#Mysql的覆盖索引和联合索引的区别" class="headerlink" title="Mysql的覆盖索引和联合索引的区别"></a>Mysql的<strong>覆盖索引和联合索引</strong>的区别</h4><p><strong>覆盖索引</strong>指的是<strong>索引中已包含需要查询的数据，执行查询时无需回表</strong>，扫描一次B+数索引即可</p>
+<p><strong>联合索引，在多个属性，建立为一个索引，加快多条件查询</strong></p>
+<p><strong>索引覆盖是联合索引查询时的最优情况，不要回表</strong></p>
+<h4 id="索引最为常见的扫描方式"><a href="#索引最为常见的扫描方式" class="headerlink" title="索引最为常见的扫描方式"></a>索引最为常见的扫描方式</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">system：系统表，少量数据，往往不需要进行磁盘IO；</span><br><span class="line">const：常量连接；命中主键(primary key)或者唯一(unique)索引</span><br><span class="line">eq_ref：主键索引(primary key)或者非空唯一索引(unique not null)等值扫描；</span><br><span class="line">ref：非主键非唯一索引等值扫描；</span><br><span class="line">range：范围扫描；</span><br><span class="line">index：索引树扫描；</span><br><span class="line">ALL：全表扫描(full table scan)</span><br></pre></td></tr></table></figure>
+
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-Hexo使用"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/10/Hexo%E4%BD%BF%E7%94%A8/"
+    >Hexo使用</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/10/Hexo%E4%BD%BF%E7%94%A8/" class="article-date">
+  <time datetime="2022-07-10T10:32:13.000Z" itemprop="datePublished">2022-07-10</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Hexo/">Hexo</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="Hexo-官网-https-hexo-io-zh-cn"><a href="#Hexo-官网-https-hexo-io-zh-cn" class="headerlink" title="Hexo 官网 https://hexo.io/zh-cn/"></a>Hexo 官网 <a target="_blank" rel="noopener" href="https://hexo.io/zh-cn/">https://hexo.io/zh-cn/</a></h4><h5 id="安装相关工具"><a href="#安装相关工具" class="headerlink" title="安装相关工具"></a>安装相关工具</h5><ul>
+<li><p>安装Node.js</p>
+</li>
+<li><p>安装Git</p>
+</li>
+<li><p>安装Hexo脚手架</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-cli -g</span><br><span class="line">hexo -v</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="github上建项目"><a href="#github上建项目" class="headerlink" title="github上建项目"></a>github上建项目</h4><ul>
+<li><p>登录后点击“+”号，选择New repository，下一步</p>
+</li>
+<li><p>在Repository name下面填写你要创建的地址，这个地址是就是你的域名，以github.io结尾。**例如填写hlqhlq.github.io以后就在地址栏直接输入wapchief.github.io就可以访问网站</p>
+</li>
+<li><p>按照提示一步步完成创建。</p>
+</li>
+<li><p>创建之后，点击setting设置远程库：</p>
+</li>
+<li><p>找到GitHub Pages点击Automatic page generator</p>
+</li>
+<li><p>等待github pages创建完成，然后输入你创建的地址测试github pager是否创建成功。此时页面是空的没有任何东西。</p>
+<p><img src="/2022/07/10/Hexo%E4%BD%BF%E7%94%A8/52dcbd638f8efd76e8470d25a3f57c05.png"></p>
+</li>
+</ul>
+<p>使用hexo模板将源码放到github</p>
+<h4 id="初始化Hexo"><a href="#初始化Hexo" class="headerlink" title="初始化Hexo"></a>初始化Hexo</h4><ul>
+<li><p>创建一个文件夹用于存放hexo</p>
+</li>
+<li><p>安装hexo</p>
+</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo --save</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>初始化hexo基础配置文件</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo init</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>初始化hexo</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>生成网站静态文件到默认设置的 public 文件夹</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo g</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>启动本地服务器，用于预览主题。默认地址： <a target="_blank" rel="noopener" href="http://localhost:4000/">http://localhost:4000/</a></li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo s</span><br></pre></td></tr></table></figure>
+
+<h4 id="安装ayer主题"><a href="#安装ayer主题" class="headerlink" title="安装ayer主题"></a>安装ayer主题</h4><p><strong>方法一：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm i hexo-theme-ayer -S</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>如果是新安装本主题，安装完成后会在根目录生成一个<code>_config.ayer.yml</code>文件，直接编辑<code>_config.ayer.yml</code>文件进行配置即可。</li>
+<li>如果是主题升级，建议先把配置内容做备份，然后用<code>npm uninstall hexo-theme-ayer -S</code>先卸载主题，再<code>npm i hexo-theme-ayer -S</code>重新安装。</li>
+</ul>
+<p><strong>方法二（hexo &lt; 5.0）：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"># 国内用户如果速度较慢，可以把github地址替换为：https://gitee.com/mirrors/ayer.git</span><br><span class="line">git clone https://github.com/Shen-Yu/hexo-theme-ayer.git themes/ayer</span><br></pre></td></tr></table></figure>
+
+<h4 id="修改配置文件"><a href="#修改配置文件" class="headerlink" title="修改配置文件"></a>修改配置文件</h4><p>将博客根目录下的 <code>_config.yml</code> 里的 <code>theme</code> 值修改成 <code>ayer</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">theme: ayer</span><br></pre></td></tr></table></figure>
+
+<h4 id="更新主题"><a href="#更新主题" class="headerlink" title="更新主题"></a>更新主题</h4><p> npm 安装本主题，那么在根目录执行以下命令就可更新。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">COPYnpm update hexo-theme-ayer -S</span><br></pre></td></tr></table></figure>
+
+<h4 id="写作博客"><a href="#写作博客" class="headerlink" title="写作博客"></a>写作博客</h4><ul>
+<li><p>创建一篇新文章或者新的页面</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new [layout] &lt;title&gt;</span><br></pre></td></tr></table></figure></li>
+<li><p>分类</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new page categories</span><br></pre></td></tr></table></figure>
+
+<p>然后将以下复制到 /source/categories/index.md 文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">添加属性</span><br><span class="line">type: &quot;categories&quot;</span><br><span class="line">layout: &quot;categories&quot;	</span><br></pre></td></tr></table></figure></li>
+<li><p>标签</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new page tags</span><br></pre></td></tr></table></figure>
+
+<p>然后将以下复制到 /source/tags/index.md 文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">添加属性</span><br><span class="line">type: &quot;tags&quot;</span><br><span class="line">layout: &quot;tags&quot;	</span><br></pre></td></tr></table></figure></li>
+<li><p>​    设置文章分类和标签</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">title: Hexo使用</span><br><span class="line">date: 2022-07-10 18:32:13</span><br><span class="line">#分类</span><br><span class="line">categories:</span><br><span class="line">- Hexo</span><br><span class="line">- Hexo #二级分类</span><br><span class="line">#标签</span><br><span class="line">tags:</span><br><span class="line">- Hexo</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h4><ul>
+<li><p>安装部署插件 </p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install hexo-deployer-git --save</span><br></pre></td></tr></table></figure></li>
+<li><p>修改站点配置文件，打开站点下的<code>_config,yml</code>文件，添加<code>deploy</code>信息</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">deploy:</span><br><span class="line">    type: git</span><br><span class="line">    repo: https://github.com/username/username.github.io</span><br><span class="line">    branch: master					</span><br></pre></td></tr></table></figure></li>
+<li><p>部署命令</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">hexo clean    //清理缓存</span><br><span class="line">hexo g      //生成静态文件</span><br><span class="line">hexo d      //部署网站到创建的仓库</span><br></pre></td></tr></table></figure></li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Hexo/" rel="tag">Hexo</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-openFeign介绍"
   class="article article-type-post"
   itemscope
