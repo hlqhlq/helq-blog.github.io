@@ -385,38 +385,6 @@
       </tags>
   </entry>
   <entry>
-    <title>SpringMVC Controller并发安全问题</title>
-    <url>/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/</url>
-    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a><strong>背景</strong></h4><p>根据Tomcat官网中的介绍，<strong>对于一个浏览器请求，tomcat会指定一个处理线程</strong>，或是在线程池中选取空闲的，或者新建一个线程。</p>
-<p>在Tomcat容器中，每个servlet是单例的。<strong>在SpringMVC中，Controller 默认也是单例</strong>。 采用单例模式的最大好处，就是可以<strong>在高并发场景下极大地节省内存资源，提高服务抗压能力</strong>。</p>
-<p>单例模式容易出现的问题是：在Controller中定义的<strong>实例变量</strong>，在多个请求并发时会出现竞争访问，<strong>Controller中的实例变量不是线程安全的</strong>。</p>
-<h4 id="Controller不是线程安全的"><a href="#Controller不是线程安全的" class="headerlink" title="Controller不是线程安全的"></a><strong>Controller不是线程安全的</strong></h4><p>正因为Controller默认是单例，所以不是线程安全的。如果用SpringMVC 的 Controller时，尽量不在 Controller中使用实例变量，否则会出现线程不安全性的情况，导致数据逻辑混乱。</p>
-<p>举一个简单的例子，在一个Controller中定义一个非静态成员变量 num 。通过Controller成员方法来对 num 增加。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">首先访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是1</span></span><br><span class="line">再次访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是 2。</span></span><br><span class="line">两次访问得到的结果不同，num已经被修改，并不是我们希望的结果，接口的幂等性被破坏。</span><br></pre></td></tr></table></figure>
-
-<p>所有的请求访问同一个Controller实例，<strong>Controller的私有成员变量就是线程共用的</strong>。某个请求对应的线程如果修改了这个变量，那么在别的请求中也可以读到这个变量修改后的的值。</p>
-<h4 id="Controller并发安全的解决办法"><a href="#Controller并发安全的解决办法" class="headerlink" title="Controller并发安全的解决办法"></a><strong>Controller并发安全的解决办法</strong></h4><ul>
-<li><p>尽量不要在 Controller 中定义成员变量 ；</p>
-</li>
-<li><p>如果必须要定义一个非静态成员变量，那么可以通过注解 @Scope(“prototype”) ，将Controller设置为多例模式，容器在接受到该类型对象的请求时，每次都会重新生成一个新的对象给请求方。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="meta">@Scope(value=&quot;prototype&quot;)</span><span class="comment">// 多例</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p>Controller 中使用 ThreadLocal 变量。 每一个线程都有一个变量的副本</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ThreadLocal &lt;Integer&gt; uniqueNum =</span><br><span class="line">             <span class="keyword">new</span> <span class="title class_">ThreadLocal</span> &lt;Integer&gt; () &#123;</span><br><span class="line">                 <span class="meta">@Override</span> <span class="keyword">protected</span> Integer <span class="title function_">initialValue</span><span class="params">()</span> &#123;</span><br><span class="line">                     <span class="keyword">return</span> num;</span><br><span class="line">                 &#125;</span><br><span class="line">             &#125;;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">unum</span> <span class="operator">=</span> uniqueNum.get();</span><br><span class="line">       uniqueNum.set(++unum);</span><br><span class="line">       System.out.println(uniqueNum.get());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">以上代码运行以后，每次请求 http:<span class="comment">// localhost:8080 / addNum , 得到的结果都是1。</span></span><br><span class="line">更严格的做法是用AtomicInteger类型定义成员变量，对于成员变量的操作使用AtomicInteger的自增方法完成。</span><br></pre></td></tr></table></figure>
-
-
-
-</li>
-</ul>
-]]></content>
-      <categories>
-        <category>框架</category>
-        <category>SprigMVC</category>
-      </categories>
-      <tags>
-        <tag>SprigMVC</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>TCP/UDP协议</title>
     <url>/2022/07/27/TCP-UDP%E5%8D%8F%E8%AE%AE/</url>
     <content><![CDATA[<h4 id="TCP与UDP区别"><a href="#TCP与UDP区别" class="headerlink" title="TCP与UDP区别"></a>TCP与UDP区别</h4><ul>
@@ -505,6 +473,38 @@
       </categories>
       <tags>
         <tag>TCP/UDP</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>SpringMVC Controller并发安全问题</title>
+    <url>/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/</url>
+    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a><strong>背景</strong></h4><p>根据Tomcat官网中的介绍，<strong>对于一个浏览器请求，tomcat会指定一个处理线程</strong>，或是在线程池中选取空闲的，或者新建一个线程。</p>
+<p>在Tomcat容器中，每个servlet是单例的。<strong>在SpringMVC中，Controller 默认也是单例</strong>。 采用单例模式的最大好处，就是可以<strong>在高并发场景下极大地节省内存资源，提高服务抗压能力</strong>。</p>
+<p>单例模式容易出现的问题是：在Controller中定义的<strong>实例变量</strong>，在多个请求并发时会出现竞争访问，<strong>Controller中的实例变量不是线程安全的</strong>。</p>
+<h4 id="Controller不是线程安全的"><a href="#Controller不是线程安全的" class="headerlink" title="Controller不是线程安全的"></a><strong>Controller不是线程安全的</strong></h4><p>正因为Controller默认是单例，所以不是线程安全的。如果用SpringMVC 的 Controller时，尽量不在 Controller中使用实例变量，否则会出现线程不安全性的情况，导致数据逻辑混乱。</p>
+<p>举一个简单的例子，在一个Controller中定义一个非静态成员变量 num 。通过Controller成员方法来对 num 增加。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">首先访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是1</span></span><br><span class="line">再次访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是 2。</span></span><br><span class="line">两次访问得到的结果不同，num已经被修改，并不是我们希望的结果，接口的幂等性被破坏。</span><br></pre></td></tr></table></figure>
+
+<p>所有的请求访问同一个Controller实例，<strong>Controller的私有成员变量就是线程共用的</strong>。某个请求对应的线程如果修改了这个变量，那么在别的请求中也可以读到这个变量修改后的的值。</p>
+<h4 id="Controller并发安全的解决办法"><a href="#Controller并发安全的解决办法" class="headerlink" title="Controller并发安全的解决办法"></a><strong>Controller并发安全的解决办法</strong></h4><ul>
+<li><p>尽量不要在 Controller 中定义成员变量 ；</p>
+</li>
+<li><p>如果必须要定义一个非静态成员变量，那么可以通过注解 @Scope(“prototype”) ，将Controller设置为多例模式，容器在接受到该类型对象的请求时，每次都会重新生成一个新的对象给请求方。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="meta">@Scope(value=&quot;prototype&quot;)</span><span class="comment">// 多例</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>Controller 中使用 ThreadLocal 变量。 每一个线程都有一个变量的副本</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ThreadLocal &lt;Integer&gt; uniqueNum =</span><br><span class="line">             <span class="keyword">new</span> <span class="title class_">ThreadLocal</span> &lt;Integer&gt; () &#123;</span><br><span class="line">                 <span class="meta">@Override</span> <span class="keyword">protected</span> Integer <span class="title function_">initialValue</span><span class="params">()</span> &#123;</span><br><span class="line">                     <span class="keyword">return</span> num;</span><br><span class="line">                 &#125;</span><br><span class="line">             &#125;;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">unum</span> <span class="operator">=</span> uniqueNum.get();</span><br><span class="line">       uniqueNum.set(++unum);</span><br><span class="line">       System.out.println(uniqueNum.get());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">以上代码运行以后，每次请求 http:<span class="comment">// localhost:8080 / addNum , 得到的结果都是1。</span></span><br><span class="line">更严格的做法是用AtomicInteger类型定义成员变量，对于成员变量的操作使用AtomicInteger的自增方法完成。</span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>框架</category>
+        <category>SprigMVC</category>
+      </categories>
+      <tags>
+        <tag>SprigMVC</tag>
       </tags>
   </entry>
   <entry>
@@ -636,21 +636,6 @@
       </tags>
   </entry>
   <entry>
-    <title>享元模式</title>
-    <url>/2023/09/04/%E4%BA%AB%E5%85%83%E6%A8%A1%E5%BC%8F/</url>
-    <content><![CDATA[<h4 id="享元模式"><a href="#享元模式" class="headerlink" title="享元模式"></a>享元模式</h4><p>享元模式（Flyweight Pattern）主要用于<strong>减少创建对象的数量，以减少内存占用和提高性能</strong></p>
-<p><strong>String常量池、数据库连接池、缓冲池</strong>等等都是享元模式的应用，所以说享元模式是池技术的重要实现方式</p>
-<p>比如我们每次创建字符串对象时，都需要创建一个新的字符串对象的话，内存开销会很大，所以如果第一次创建了字符串对象“adam“，下次再创建相同的字符串”adam“时，只是把它的引用指向”adam“，这样就实现了”adam“字符串再内存中的共享</p>
-<p><strong>用HashMap/HashTable存储</strong> </p>
-]]></content>
-      <categories>
-        <category>设计模式</category>
-      </categories>
-      <tags>
-        <tag>设计模式</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>redisson获取锁失败</title>
     <url>/2022/07/17/redisson%E8%8E%B7%E5%8F%96%E9%94%81%E5%A4%B1%E8%B4%A5/</url>
     <content><![CDATA[<h5 id="lock-lock-方法"><a href="#lock-lock-方法" class="headerlink" title="lock.lock()方法"></a>lock.lock()方法</h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="type">RLock</span> <span class="variable">lock</span> <span class="operator">=</span> redisson.getLock(<span class="string">&quot;className&quot;</span>);</span><br><span class="line">lock.lock();</span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line"><span class="comment">// do sth.</span></span><br><span class="line">&#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">lock.unlock();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -693,6 +678,21 @@
       <tags>
         <tag>Redis</tag>
         <tag>Redisson</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>享元模式</title>
+    <url>/2023/09/04/%E4%BA%AB%E5%85%83%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[<h4 id="享元模式"><a href="#享元模式" class="headerlink" title="享元模式"></a>享元模式</h4><p>享元模式（Flyweight Pattern）主要用于<strong>减少创建对象的数量，以减少内存占用和提高性能</strong></p>
+<p><strong>String常量池、数据库连接池、缓冲池</strong>等等都是享元模式的应用，所以说享元模式是池技术的重要实现方式</p>
+<p>比如我们每次创建字符串对象时，都需要创建一个新的字符串对象的话，内存开销会很大，所以如果第一次创建了字符串对象“adam“，下次再创建相同的字符串”adam“时，只是把它的引用指向”adam“，这样就实现了”adam“字符串再内存中的共享</p>
+<p><strong>用HashMap/HashTable存储</strong> </p>
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
       </tags>
   </entry>
   <entry>
@@ -915,6 +915,11 @@
       </tags>
   </entry>
   <entry>
+    <title>工厂模式</title>
+    <url>/2023/03/18/%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[]]></content>
+  </entry>
+  <entry>
     <title>外观模式</title>
     <url>/2022/09/01/%E5%A4%96%E8%A7%82%E6%A8%A1%E5%BC%8F/</url>
     <content><![CDATA[<h4 id="外观模式"><a href="#外观模式" class="headerlink" title="外观模式"></a>外观模式</h4><p>定义： <strong>隐藏了系统的复杂性，并向客户端提供了一个可以访问系统的接口</strong></p>
@@ -930,11 +935,6 @@
       <tags>
         <tag>设计模式</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>工厂模式</title>
-    <url>/2023/03/18/%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/</url>
-    <content><![CDATA[]]></content>
   </entry>
   <entry>
     <title>数据库范式</title>
@@ -964,17 +964,17 @@
   <entry>
     <title>策略模式</title>
     <url>/2023/09/15/%E7%AD%96%E7%95%A5%E6%A8%A1%E5%BC%8F/</url>
-    <content><![CDATA[<h4 id="策略模式"><a href="#策略模式" class="headerlink" title="策略模式"></a>策略模式</h4><p>在策略模式（Strategy Pattern）中，一个类的行为或其算法可以在运行时更改</p>
-<h5 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h5><p><strong>意图：</strong>定义一系列的算法,把它们一个个封装起来, 并且使它们可相互替换。</p>
-<p><strong>主要解决：</strong>在有多种算法相似的情况下，使用 if…else 所带来的复杂和难以维护。</p>
+    <content><![CDATA[<h4 id="策略模式"><a href="#策略模式" class="headerlink" title="策略模式"></a>策略模式</h4><p>在策略模式（Strategy Pattern）中，<strong>一个类的行为或其算法可以在运行时更改</strong></p>
+<h5 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h5><p><strong>意图：定义一系列的算法,把它们一个个封装起来</strong>, 并且使它们可相互替换。</p>
+<p><strong>主要解决：</strong>在有多种算法相似的情况下，<strong>使用 if…else 所带来的复杂和难以维护</strong>。</p>
 <p><strong>何时使用：</strong>一个系统有许多许多类，而区分它们的只是他们直接的行为。</p>
-<p><strong>如何解决：</strong>将这些算法封装成一个一个的类，任意地替换。</p>
-<p><strong>关键代码：</strong>实现同一个接口。</p>
+<p><strong>如何解决：将这些算法封装成一个一个的类，任意地替换</strong>。</p>
+<p><strong>关键代码：实现同一个接口</strong>。</p>
 <p><strong>应用实例：</strong> 1、诸葛亮的锦囊妙计，每一个锦囊就是一个策略。 2、旅行的出游方式，选择骑自行车、坐汽车，每一种旅行方式都是一个策略。 3、JAVA AWT 中的 LayoutManager。</p>
-<p><strong>优点：</strong> 1、算法可以自由切换。 2、避免使用多重条件判断。 3、扩展性良好。</p>
-<p><strong>缺点：</strong> 1、策略类会增多。 2、所有策略类都需要对外暴露。</p>
-<p><strong>使用场景：</strong> 1、如果在一个系统里面有许多类，它们之间的区别仅在于它们的行为，那么使用策略模式可以动态地让一个对象在许多行为中选择一种行为。 2、一个系统需要动态地在几种算法中选择一种。 3、如果一个对象有很多的行为，如果不用恰当的模式，这些行为就只好使用多重的条件选择语句来实现。</p>
-<p><strong>注意事项：</strong>如果一个系统的策略多于四个，就需要考虑使用混合模式，解决策略类膨胀的问题。</p>
+<p><strong>优点：</strong> 1、<strong>算法可以自由切换</strong>。 2、<strong>避免使用多重条件判断</strong>。 3、<strong>扩展性良好</strong>。</p>
+<p><strong>缺点：</strong> 1、<strong>策略类会增多</strong>。 2、所有策略类都需要对外暴露。</p>
+<p><strong>使用场景：</strong> 1、如果在一个系统里面有许多类，它们之间的<strong>区别仅在于它们的行为</strong>，那么使用策略模式可以动态地让一个对象在许多行为中选择一种行为。 2、<strong>一个系统需要动态地在几种算法中选择一种</strong>。 3、如果一个对象有很多的行为，如果不用恰当的模式，这些行为就只好使用多重的条件选择语句来实现。</p>
+<p><strong>注意事项：</strong>如果一个系统的策略多于四个S就需要考虑使用混合模式，解决策略类膨胀的问题。</p>
 <h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>我们将创建一个定义活动的 <em>Strategy</em> 接口和实现了 <em>Strategy</em> 接口的实体策略类。<em>Context</em> 是一个使用了某种策略的类。</p>
 <p><em>StrategyPatternDemo</em>，我们的演示类使用 <em>Context</em> 和策略对象来演示 Context 在它所配置或使用的策略改变时的行为变化</p>
 <p><img src="https://www.runoob.com/wp-content/uploads/2014/08/strategy_pattern_uml_diagram.jpg" alt="策略模式的 UML 图"></p>
