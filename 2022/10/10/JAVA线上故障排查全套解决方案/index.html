@@ -11,7 +11,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>线上遇到了OOM |  迷途小书童</title>
+      <title>JAVA线上故障排查全套解决方案 |  迷途小书童</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/favicon.ico" />
@@ -53,7 +53,7 @@
     <main class="content on">
       <section class="outer">
   <article
-  id="post-线上遇到OOM"
+  id="post-JAVA线上故障排查全套解决方案"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -64,7 +64,7 @@
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  线上遇到了OOM
+  JAVA线上故障排查全套解决方案
 </h1>
  
 
@@ -72,8 +72,8 @@
     </header>
      
     <div class="article-meta">
-      <a href="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0OOM/" class="article-date">
-  <time datetime="2022-09-24T09:03:26.000Z" itemprop="datePublished">2022-09-24</time>
+      <a href="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="article-date">
+  <time datetime="2022-10-10T10:04:15.000Z" itemprop="datePublished">2022-10-10</time>
 </a> 
   <div class="article-category">
     <a class="article-category-link" href="/categories/%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C/">线上故障</a>
@@ -84,7 +84,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> Word count:</span>
-            <span class="post-count">1.6k</span>
+            <span class="post-count">1.5k</span>
         </span>
     </span>
 
@@ -93,7 +93,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> Reading time≈</span>
-            <span class="post-count">6 min</span>
+            <span class="post-count">5 min</span>
         </span>
     </span>
 </div>
@@ -108,92 +108,78 @@
   
     <div class="article-entry" itemprop="articleBody">
        
-  <h4 id="线上问题遇到了OOM"><a href="#线上问题遇到了OOM" class="headerlink" title="线上问题遇到了OOM"></a>线上问题遇到了OOM</h4><p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319170526058.png" alt="image-20230319170526059"></p>
-<h4 id="为什么会-OOM"><a href="#为什么会-OOM" class="headerlink" title="为什么会 OOM"></a>为什么会 OOM</h4><p><strong>OOM 全称 “Out Of Memory”，表示内存耗尽</strong>。当 <strong>JVM 因为没有足够的内存来为对象分配空间，并且垃圾回收器也已经没有空间可回收时</strong>，就会抛出这个错误</p>
-<ul>
-<li><p><strong>分配过少</strong>：JVM 初始化内存小，业务使用了大量内存；或者不同 JVM 区域分配内存不合理</p>
-</li>
-<li><p><strong>代码漏洞</strong>：某一个对象被频繁申请，不用了之后却没有被释放，导致内存耗尽</p>
-</li>
-<li><p><strong>内存泄漏</strong>：<strong>申请使用完的内存没有释放，导致虚拟机不能再次使用该内存</strong>，此时这段内存就泄露了。因为申请者不用了，而又不能被虚拟机分配给别人用</p>
-</li>
-<li><p><strong>内存溢出：申请的内存超出了 JVM 能提供的内存大小</strong>，此时称之为溢出</p>
-</li>
-</ul>
-<p>​                           <strong>内存泄漏持续存在，最后一定会溢出</strong>，两者是因果关系</p>
-<h4 id="常见的-OOM"><a href="#常见的-OOM" class="headerlink" title="常见的 OOM"></a>常见的 OOM</h4><ul>
-<li><strong>java.lang.OutOfMemoryError: PermGen space</strong></li>
-</ul>
-<p><strong>Java7 永久代（方法区）溢出</strong>，它用于存储已被<strong>虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码</strong>等数据。每当一个类初次加载的时候，元数据都会存放到永久代</p>
-<p><strong>一般出现于大量 Class 对象或者 JSP 页面，或者采用 CgLib 动态代理技术导致</strong></p>
-<p>通过 -XX：PermSize 和 -XX：MaxPermSize 修改方法区大小</p>
-<p><strong>Java8 将永久代变更为元空间</strong>，报错：<strong>java.lang.OutOfMemoryError: Metadata space</strong>，元空间内存不足默认进行动态扩展</p>
-<ul>
-<li><strong>java.lang.StackOverflowError</strong></li>
-</ul>
-<p><strong>虚拟机栈溢出</strong>，一般是由于<strong>程序中存在 死循环或者深度递归调用 造成的</strong>。如果<strong>栈大小设置过小也会</strong>出现溢出，可以通过 <strong>-Xss 设置栈的大小</strong></p>
-<p><strong>虚拟机抛出栈溢出错误，可以在日志中定位到错误的类、方法</strong></p>
-<ul>
-<li><strong>java.lang.OutOfMemoryError: Java heap space</strong></li>
-</ul>
-<p><strong>Java 堆内存溢出</strong>，溢出的原因一般由于 <strong>JVM 堆内存设置不合理或者内存泄漏导致</strong></p>
-<p>如果是内存泄漏，可以通过工具查看泄漏对象到 GC Roots 的引用链。掌握了泄漏对象的类型信息以及 GC Roots 引用链信息，就可以精准地定位出泄漏代码的位置</p>
-<p>如果不存在内存泄漏，就是内存中的对象确实都还必须存活着，那就应该检查虚拟机的堆参数（-Xmx 与 -Xms），查看是否可以将虚拟机的内存调大些</p>
-<h4 id="查看-JVM-内存分布"><a href="#查看-JVM-内存分布" class="headerlink" title="查看 JVM 内存分布"></a><strong>查看 JVM 内存分布</strong></h4><p>ps命令找到对应进程的pid</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ps -ef | grep 进程关键字  </span><br></pre></td></tr></table></figure>
+  <h4 id="JAVA线上故障排查全套解决方案"><a href="#JAVA线上故障排查全套解决方案" class="headerlink" title="JAVA线上故障排查全套解决方案"></a>JAVA线上故障排查全套解决方案</h4><p>线上故障主要会包括<strong>cpu、磁盘、内存以及网络</strong>问题，而大多数故障可能会包含不止一个层面的问题，所以进行排查时候尽量四个方面依次排查一遍。同时例如<strong>jstack、jmap</strong>等工具也是不囿于一个方面的问题的，基本上出问题就是<strong>df、free、top</strong> 三连，然后依次jstack、jmap伺候，具体问题具体分析即可</p>
+<h4 id="CPU"><a href="#CPU" class="headerlink" title="CPU"></a><strong>CPU</strong></h4><p>一般来讲我们首先会排查cpu方面的问题。cpu异常往往还是比较好定位的。原因包括<strong>业务逻辑问题(死循环)、频繁gc以及上下文切换过多</strong>。而最常见的往往是业务逻辑(或者框架逻辑)导致的，可以使用jstack来分析对应的堆栈情况</p>
+<p><strong>使用jstack分析cpu问题</strong></p>
+<p>ps命令找到对应进程的pid(如果你有好几个目标进程，可以先用top看一下哪个占用比较高)</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">1、对应进程的pid</span><br><span class="line">ps -ef | grep 进程关键字</span><br><span class="line">2、找到cpu使用率比较高的一些线程</span><br><span class="line">top -H -p pid</span><br><span class="line">3、将占用最高的pid转换为16进制printf &#x27;%x\n&#x27; pid得到nid</span><br><span class="line">printf &#x27;%x\n&#x27; pid</span><br><span class="line">4、直接在jstack中找到相应的堆栈信息</span><br><span class="line">jstack pid |grep &#x27;nid&#x27; -C5 –color</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
-<p>假设我们 Java 应用 PID 为 15162，输入命令查看 JVM 内存分布</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap 15162</span><br></pre></td></tr></table></figure>
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185335954.png" alt="image-20230319185335954"></p>
+<p>可以看到我们已经找到了nid为0x42的堆栈信息，接着只要仔细分析一番即可。</p>
+<p>当然更常见的是我们对整个jstack文件进行分析，通常我们会比较关注WAITING和TIMED_WAITING的部分，BLOCKED就不用说了。我们可以使用命令cat jstack.log | grep “java.lang.Thread.State” | sort -nr | uniq -c来对jstack的状态有一个整体的把握，如果WAITING之类的特别多，那么多半是有问题啦。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat jstack.log | grep &quot;java.lang.Thread.State&quot; | sort -nr | uniq -c</span><br></pre></td></tr></table></figure>
 
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">[xxx@xxx ~]# jmap -heap 15162</span><br><span class="line">Attaching to process ID 15162, please wait...</span><br><span class="line">Debugger attached successfully.</span><br><span class="line">Server compiler detected.</span><br><span class="line">JVM version is 25.161-b12</span><br><span class="line"></span><br><span class="line">using thread-local object allocation.</span><br><span class="line">Mark Sweep Compact GC</span><br><span class="line"></span><br><span class="line">Heap Configuration:</span><br><span class="line">   MinHeapFreeRatio         = 40 # 最小堆使用比例</span><br><span class="line">   MaxHeapFreeRatio         = 70 # 最大堆可用比例</span><br><span class="line">   MaxHeapSize              = 482344960 (460.0MB) # 最大堆空间大小</span><br><span class="line">   NewSize                  = 10485760 (10.0MB) # 新生代分配大小</span><br><span class="line">   MaxNewSize               = 160759808 (153.3125MB) # 最大新生代可分配大小</span><br><span class="line">   OldSize                  = 20971520 (20.0MB) # 老年代大小</span><br><span class="line">   NewRatio                 = 2 # 新生代比例</span><br><span class="line">   SurvivorRatio            = 8 # 新生代与 Survivor 比例</span><br><span class="line">   MetaspaceSize            = 21807104 (20.796875MB) # 元空间大小</span><br><span class="line">   CompressedClassSpaceSize = 1073741824 (1024.0MB) # Compressed Class Space 空间大小限制</span><br><span class="line">   MaxMetaspaceSize         = 17592186044415 MB # 最大元空间大小</span><br><span class="line">   G1HeapRegionSize         = 0 (0.0MB) # G1 单个 Region 大小</span><br><span class="line"></span><br><span class="line">Heap Usage:  # 堆使用情况</span><br><span class="line">New Generation (Eden + 1 Survivor Space): # 新生代</span><br><span class="line">   capacity = 9502720 (9.0625MB) # 新生代总容量</span><br><span class="line">   used     = 4995320 (4.763908386230469MB) # 新生代已使用</span><br><span class="line">   free     = 4507400 (4.298591613769531MB) # 新生代剩余容量</span><br><span class="line">   52.56726495150862% used # 新生代使用占比</span><br><span class="line">Eden Space:  </span><br><span class="line">   capacity = 8454144 (8.0625MB) # Eden 区总容量</span><br><span class="line">   used     = 4029752 (3.8430709838867188MB) # Eden 区已使用</span><br><span class="line">   free     = 4424392 (4.219429016113281MB) # Eden 区剩余容量</span><br><span class="line">   47.665996699370154% used  # Eden 区使用占比</span><br><span class="line">From Space: # 其中一个 Survivor 区的内存分布</span><br><span class="line">   capacity = 1048576 (1.0MB)</span><br><span class="line">   used     = 965568 (0.92083740234375MB)</span><br><span class="line">   free     = 83008 (0.07916259765625MB)</span><br><span class="line">   92.083740234375% used</span><br><span class="line">To Space: # 另一个 Survivor 区的内存分布</span><br><span class="line">   capacity = 1048576 (1.0MB)</span><br><span class="line">   used     = 0 (0.0MB)</span><br><span class="line">   free     = 1048576 (1.0MB)</span><br><span class="line">   0.0% used</span><br><span class="line">tenured generation: # 老年代</span><br><span class="line">   capacity = 20971520 (20.0MB)</span><br><span class="line">   used     = 10611384 (10.119804382324219MB)</span><br><span class="line">   free     = 10360136 (9.880195617675781MB)</span><br><span class="line">   50.599021911621094% used</span><br><span class="line"></span><br><span class="line">10730 interned Strings occupying 906232 bytes.</span><br></pre></td></tr></table></figure>
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185422418.png" alt="image-20230319185422418"></p>
+<h4 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a><strong>磁盘</strong></h4><p>1.利用 df 查询磁盘状态</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df -h</span><br></pre></td></tr></table></figure>
 
-<p><strong>通过查看 JVM 内存分配以及运行时使用情况，可以判断内存分配是否合理</strong></p>
-<p>另外，可以<strong>在 JVM 运行时查看最耗费资源的对象</strong>，<strong>jmap -histo:live 15162 | more</strong></p>
-<p><strong>jmap -histo:live 执行此命令，JVM 会先触发 GC，再统计信息</strong></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -histo:live 15162 | more</span><br></pre></td></tr></table></figure>
+<p>2.获取目录下文件夹大小</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">du -sh *</span><br></pre></td></tr></table></figure>
 
-<p>JVM 内存对象列表按照对象所占内存大小排序</p>
-<ul>
-<li><p>instances：实例数</p>
-</li>
-<li><p>bytes：单位 byte</p>
-</li>
-<li><p>class name：类名</p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319171713310.png" alt="image-20230319171713310"></p>
-</li>
-</ul>
-<h4 id="Dump-文件分析"><a href="#Dump-文件分析" class="headerlink" title="Dump 文件分析"></a><strong>Dump 文件分析</strong></h4><p>Dump 文件是 <strong>Java 进程的内存镜像</strong>，其中主要包括 <strong>系统信息、虚拟机属性、完整的线程 Dump、所有类和对象的状态 等信息</strong></p>
-<p>当程序发生内存溢出或 GC 异常情况时，怀疑 JVM 发生了 内存泄漏，这时我们就可以导出 Dump 文件分析</p>
-<p>JVM 启动参数配置添加以下参数</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-XX:+HeapDumpOnOutOfMemoryError</span><br><span class="line">-XX:HeapDumpPath=./（参数为 Dump 文件生成路径）</span><br></pre></td></tr></table></figure>
+<p>3.磁盘问题还是性能上的问题。我们可以通过iostat -d -k -x来进行分析</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1、iostat属于sysstat软件包</span><br><span class="line">yum install sysstat</span><br><span class="line">2、iostat -d -k -x 1</span><br></pre></td></tr></table></figure>
 
-<p><strong>当 JVM 发生 OOM 异常自动导出 Dump 文件，文件名称默认格式：java_pid{pid}.hprof</strong></p>
-<p>上面配置是在应用抛出 OOM 后自动导出 Dump，或者<strong>可以在 JVM 运行时导出 Dump 文件</strong></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jmap -dump:file=[文件路径] [pid]</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">示例</span></span><br><span class="line">jmap -dump:file=./jvmdump.hprof 15162</span><br></pre></td></tr></table></figure>
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185649578.png" alt="image-20230319185649578"></p>
+<p>%util可以看到每块磁盘写入的程度</p>
+<p>rrqpm/s以及wrqm/s分别表示读写速度，一般就能帮助定位到具体哪块磁盘出现问题</p>
+<p>4.需要知道是哪个进程在进行读写，用iotop命令来进行定位文件读写的来源</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iotop</span><br></pre></td></tr></table></figure>
 
-<p>在本地写一个测试代码，验证下 OOM 以及分析 Dump 文件</p>
-<p>设置 VM 参数：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">-Xms3m -Xmx3m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./</span><br><span class="line">设置 VM 参数：</span><br><span class="line">-Xms3m -Xmx3m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./</span><br><span class="line"></span><br><span class="line">public static void main(String[] args) &#123;</span><br><span class="line">    List&lt;Object&gt; oomList = Lists.newArrayList();</span><br><span class="line">  	// 无限循环创建对象</span><br><span class="line">    while (true) &#123;</span><br><span class="line">        oomList.add(new Object());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185746056.png" alt="image-20230319185746056"></p>
+<p>5.不过这边拿到的是tid，我们要转换成pid，可以通过readlink来找到</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">readlink -f /proc/*/task/tid/../..</span><br></pre></td></tr></table></figure>
 
-<p>通过报错信息得知，java heap space 表示 OOM 发生在堆区，并生成了 hprof 二进制文件在当前文件夹下</p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172025932.png" alt="image-20230319172025932"></p>
-<h5 id="JvisualVM-分析"><a href="#JvisualVM-分析" class="headerlink" title="JvisualVM 分析"></a><strong>JvisualVM 分析</strong></h5><p><strong>Dump 分析工具有很多</strong>，相对而言 <strong>JvisualVM、JProfiler、Eclipse Mat</strong>，使用人群更多一些。下面以 JvisualVM 举例分析 Dump 文件</p>
-<p><strong>运行JvisualVM</strong>    ./bin/jvisualvm.exe</p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172220985.png" alt="image-20230319172220985"></p>
-<p><strong>载入Dump 文件</strong></p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172238653.png" alt="image-20230319172238653"></p>
-<p><strong>查看触发 OOM 的线程堆栈，清晰得知程序溢出的原因</strong></p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172306804.png" alt="image-20230319172306804"></p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172422965.png" alt="image-20230319172422965"></p>
-<p><strong>查看 JVM 内存里保留大小最大的对象，可以自由选择排查个<img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172456139.png" alt="image-20230319172456139">数</strong></p>
-<p>点击对象还可以跳转具体的对象引用详情页面</p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172519873.png" alt="image-20230319172519873"></p>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>线上如遇到 JVM 内存溢出，可以分以下几步排查</p>
-<ol>
-<li><strong>jmap -heap 查看是否内存分配过小</strong></li>
-<li><strong>jmap -histo 查看是否有明显的对象分配过多且没有释放情况</strong></li>
-<li><strong>jmap -dump 导出 JVM 当前内存快照，使用 JDK 自带或 MAT 等工具分析快照</strong></li>
-</ol>
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185902218.png" alt="image-20230319185902218"></p>
+<p>6.找到pid之后就可以看这个进程具体的读写情况cat /proc/pid/io</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/pid/io</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185953457.png" alt="image-20230319185953457"></p>
+<p>7.lsof命令来确定具体的文件读写情况lsof -p pid</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsof -p pid</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190034159.png" alt="image-20230319190034159"></p>
+<h4 id="内存"><a href="#内存" class="headerlink" title="内存"></a><strong>内存</strong></h4><p>主要包括OOM、GC问题和堆外内存。一般来讲，我们会先用free命令先来检查一发内存的各种情况</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">free</span><br><span class="line">free -g</span><br><span class="line">free -m</span><br></pre></td></tr></table></figure>
+
+<h4 id="堆内内存"><a href="#堆内内存" class="headerlink" title="堆内内存"></a>堆内内存</h4><p>内存问题大多还都是堆内内存问题。表象上主要分为OOM和StackOverflow</p>
+<p>OOM</p>
+<p>JMV中的内存不足，OOM大致可以分为以下几种：</p>
+<p><strong>Exception in thread “main” java.lang.OutOfMemoryError: unable to create new native thread</strong></p>
+<p>这个意思是<strong>没有足够的内存空间给线程分配java栈，基本上还是线程池代码写的有问题</strong>，比如说忘记shutdown，所以说应该首先从代码层面来寻找问题，<strong>使用jstack或者jmap</strong>。如果一切都正常，JVM方面可以通过指定<strong>Xss来减少单个thread stack的大小</strong>。另外也可以在系统层面，可以通过修改/etc/security/limits.conf  nofile和nproc来增大os对线程的限制</p>
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190209877.png" alt="image-20230319190209877"></p>
+<p><strong>Exception in thread “main” java.lang.OutOfMemoryError: Java heap space</strong></p>
+<p>这个意思是堆的内存占用已经达到-Xmx设置的最大值，应该是最常见的OOM错误了。解决思路仍然是先应该在代码中找，<strong>怀疑存在内存泄漏</strong>，<strong>通过jstack和jmap去定位问题</strong>。如果说一切都正常，才需要通过<strong>调整Xmx的值来扩大内存</strong>。</p>
+<p><strong>Caused by: java.lang.OutOfMemoryError: Meta space</strong></p>
+<p>这个意思是<strong>元数据区的内存占用已经达到XX:MaxMetaspaceSize设置的最大值</strong>，排查思路和上面的一致，参数方面可以通过<strong>XX:MaxPermSize来进行调整</strong>(这里就不说1.8以前的永久代了)</p>
+<p><strong>Stack Overflow</strong></p>
+<p><strong>栈内存溢出</strong>，这个大家见到也比较多。</p>
+<p><strong>Exception in thread “main” java.lang.StackOverflowError</strong></p>
+<p>表示线程栈需要的内存大于<strong>Xss值</strong>，同样也是先进行排查，参数方面通过Xss来调整，但调整的太大可能又会引起OOM</p>
+<h4 id="使用JMAP定位代码内存泄漏"><a href="#使用JMAP定位代码内存泄漏" class="headerlink" title="使用JMAP定位代码内存泄漏"></a>使用<strong>JMAP</strong>定位代码内存泄漏</h4><p>上述关于OOM和StackOverflow的代码排查方面，我们一般使用JMAP</p>
+<p> jmap -dump:format=b,file=filename pid来导出dump文件</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -dump:format=b,file=filename pid</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190407933.png" alt="image-20230319190407933"></p>
+<p><strong>mat(Eclipse Memory Analysis Tools)导入dump文件进行分析</strong>，内存泄漏问题一般我们直接选Leak Suspects即可，mat给出了内存泄漏的建议。另外也可以选择Top Consumers来查看最大对象报告。和线程相关的问题可以选择thread overview进行分析。除此之外就是选择Histogram类概览来自己慢慢分析，大家可以搜搜mat的相关教程。（idea插件篇之java内存分析工具(<strong>JProfiler</strong>)）</p>
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190439697.png" alt="image-20230319190439697"></p>
+<p>日常开发中，代码产生内存泄漏是比较常见的事，并且比较隐蔽，需要开发者更加关注细节。比如说每次请求都new对象，导致大量重复创建对象；进行文件流操作但未正确关闭；手动不当触发gc；ByteBuffer缓存分配不合理等都会造成代码OOM。</p>
+<p>另一方面，我们可以在<strong>启动参数中指定-XX:+HeapDumpOnOutOfMemoryError来保存OOM时的dump文件</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">内存OOM时，自动生成dump文件</span> </span><br><span class="line">-XX:+HeapDumpOnOutOfMemoryError</span><br><span class="line">-XX:HeapDumpPath=/data/logs/</span><br></pre></td></tr></table></figure>
+
+<p>GC问题</p>
+<p>通过GC日志来排查问题的，在启动参数中加上**-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps**来开启GC日志。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-verbose:gc -XX:+PrintGCDetails </span><br><span class="line">-XX:+PrintGCDateStamps </span><br><span class="line">-XX:+PrintGCTimeStamps</span><br></pre></td></tr></table></figure>
+
  
       <!-- reward -->
       
@@ -264,12 +250,12 @@
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://example.com/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0OOM/" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://example.com/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" alt="微信分享二维码">
     </div>
 </div>
 
 <div id="share-mask"></div>  
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/OOM/" rel="tag">OOM</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C/" rel="tag">线上故障</a></li></ul>
 
     </footer>
   </div>
@@ -277,19 +263,10 @@
    
   <nav class="article-nav">
     
-      <a href="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="article-nav-link">
-        <strong class="article-nav-caption">上一篇</strong>
-        <div class="article-nav-title">
-          
-            JAVA线上故障排查全套解决方案
-          
-        </div>
-      </a>
     
-    
-      <a href="/2022/09/18/%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/" class="article-nav-link">
+      <a href="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0OOM/" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
-        <div class="article-nav-title">工厂模式</div>
+        <div class="article-nav-title">线上遇到了OOM</div>
       </a>
     
   </nav>

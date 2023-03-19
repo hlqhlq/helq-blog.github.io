@@ -155,6 +155,94 @@
     
     
     <article
+  id="post-分布式定时器解决方案"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/07/19/%E5%88%86%E5%B8%83%E5%BC%8F%E5%AE%9A%E6%97%B6%E5%99%A8%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"
+    >分布式定时器解决方案</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/07/19/%E5%88%86%E5%B8%83%E5%BC%8F%E5%AE%9A%E6%97%B6%E5%99%A8%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="article-date">
+  <time datetime="2022-07-19T07:29:51.000Z" itemprop="datePublished">2022-07-19</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/">分布式</a> / <a class="article-category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F/%E5%AE%9A%E6%97%B6%E5%99%A8/">定时器</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="背景问题"><a href="#背景问题" class="headerlink" title="背景问题"></a>背景问题</h4><p>项目同时部署在多台集群机器上，因此到达指定的定时时间时，<strong>多台机器上的定时器可能会同时启动，造成重复数据或者程序异常等问题</strong></p>
+<h4 id="一般的解决方案"><a href="#一般的解决方案" class="headerlink" title="一般的解决方案"></a>一般的解决方案</h4><h5 id="固定执行定时任务的机器"><a href="#固定执行定时任务的机器" class="headerlink" title="固定执行定时任务的机器"></a><strong>固定执行定时任务的机器</strong></h5><p>在多台机器中选择一台执行定时任务，<strong>每次执行的时候回判断当前机器和指定的机器是否一致</strong>或者启动时就指定好执行机器</p>
+<p>优缺点：这种方法是可以有效避免多次执行的情况，，但是最明显的缺点就是<strong>单点故障问题</strong>，如果你指定的机器出现了宕机，，任务就不会执行了，业务逻辑就会奔溃</p>
+<h5 id="ShedLock"><a href="#ShedLock" class="headerlink" title="ShedLock"></a><strong>ShedLock</strong></h5><p><strong>通过对公用的数据库中的某个表进行记录和加锁，使得同一时间点只有第一个执行定时任务并成功在数据库表中写入相应记录的节点能够成功执行而其他节点直接跳过该任务。</strong></p>
+<p><strong>ShedLock</strong>：分布式环境中使用的定时任务框架，用于解决在分布式环境中的多个实例的相同定时任务在同一时间点重复执行的问题。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">  &lt;groupId&gt;net.javacrumbs.shedlock&lt;/groupId&gt;</span><br><span class="line">  &lt;artifactId&gt;shedlock-spring&lt;/artifactId&gt;</span><br><span class="line">  &lt;version&gt;<span class="number">0.18</span><span class="number">.2</span>&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br><span class="line"><span class="keyword">import</span> net.javacrumbs.shedlock.core.SchedulerLock;</span><br><span class="line"></span><br><span class="line"><span class="meta">@Scheduled(cron = &quot;0 0/10 0 * * ?&quot;)</span></span><br><span class="line"><span class="meta">@SchedulerLock(name = &quot;scheduledTaskName&quot;, lockAtMostFor = 60 * 1000, lockAtLeastFor = 60 * 1000)</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">scheduledTask</span><span class="params">()</span> &#123;</span><br><span class="line">   System.out.println(<span class="string">&quot;scheduledTask&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>shedlockd的优点：<strong>通过注解的方式</strong>，把所有的一切都交给框架处理，使得<strong>代码不会受到影响</strong>，更加符合<strong>非侵入式</strong>编程的思想，使得代码更加简洁明了。</p>
+<p>详细参考：<a target="_blank" rel="noopener" href="https://blog.csdn.net/RenshenLi/article/details/121643790">https://blog.csdn.net/RenshenLi/article/details/121643790</a></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> shedlock (</span><br><span class="line">  name <span class="type">varchar</span>(<span class="number">64</span>) <span class="keyword">COLLATE</span> utf8mb4_bin <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  lock_until <span class="type">timestamp</span>(<span class="number">3</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  locked_at <span class="type">timestamp</span>(<span class="number">3</span>) <span class="keyword">NOT</span> <span class="keyword">NULL</span> <span class="keyword">DEFAULT</span> <span class="built_in">CURRENT_TIMESTAMP</span>(<span class="number">3</span>),</span><br><span class="line">  locked_by <span class="type">varchar</span>(<span class="number">255</span>) <span class="keyword">COLLATE</span> utf8mb4_bin <span class="keyword">NOT</span> <span class="keyword">NULL</span>,</span><br><span class="line">  <span class="keyword">PRIMARY</span> KEY (name)</span><br><span class="line">) ENGINE<span class="operator">=</span>InnoDB <span class="keyword">DEFAULT</span> CHARSET<span class="operator">=</span>utf8mb4 <span class="keyword">COLLATE</span><span class="operator">=</span>utf8mb4_bin;</span><br></pre></td></tr></table></figure>
+
+<p>尝试向shedlock表插入一条记录，而name作为主键，如果不存在相同名称的锁，则插入记录，并成功占用该锁</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> shedlock(name, lock_until, locked_at, locked_by) </span><br><span class="line"><span class="keyword">VALUES</span>(:name, :lockUntil, :now, :lockedBy)</span><br></pre></td></tr></table></figure>
+
+<p>如果已经存在同名的锁，则将违反主键唯一约束，插入失败，此时会尝试筛选出shedlock表中锁名称相同并且已经释放（lock_until&lt;当前时间）的记录，如果有符合条件的，则更新该记录，并成功占用该锁</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> shedlock <span class="keyword">SET</span> lock_until <span class="operator">=</span> :lockUntil, locked_at <span class="operator">=</span> :now, </span><br><span class="line">locked_by <span class="operator">=</span> :lockedBy <span class="keyword">WHERE</span> name <span class="operator">=</span> :name <span class="keyword">AND</span> lock_until <span class="operator">&lt;=</span> :now</span><br></pre></td></tr></table></figure>
+
+<p>释放锁lock.get().unlock()</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> shedlock <span class="keyword">SET</span> lock_until <span class="operator">=</span> :unlockTime <span class="keyword">WHERE</span> name <span class="operator">=</span> :name</span><br></pre></td></tr></table></figure>
+
+<h5 id="Redis-过期时间和分布式锁"><a href="#Redis-过期时间和分布式锁" class="headerlink" title="Redis 过期时间和分布式锁"></a>Redis 过期时间和分布式锁</h5><h6 id="setnx"><a href="#setnx" class="headerlink" title="setnx"></a>setnx</h6><p>为你的定时器在<strong>Redis中定义一个键值对，可以用项目名称和服务器ip</strong>，<strong>执行任务前先从Redis中读取键，若没有值代表任务未被执行，同样的该台机器先更新redis，再触发定时任务。由于Redis存在过期机制，因此可以设置过期时间保证下次判断正常</strong></p>
+<p>优缺点：该方法个人比较推荐，简单，对业务逻辑的改变也会少很多，只需要在原来的定时器上加上简单判断即可</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">AutoInsertVuserToGroupBuying</span> &#123;</span><br><span class="line">    <span class="meta">@Autowired</span></span><br><span class="line">    <span class="keyword">private</span> RedisTemplate redisTemplate;</span><br><span class="line">    <span class="meta">@Scheduled(cron = &quot;0 */10 * * * ?&quot;)</span>  <span class="comment">//定时器10分钟一次</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">shTask</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="comment">//先判断redis中是否有锁记录,如果能设值成功,代表拿到锁，不能设值成功就是锁还没释放</span></span><br><span class="line">        <span class="keyword">if</span>(redisTemplate.opsForValue().setIfAbsent(key, value))&#123;</span><br><span class="line">            <span class="comment">//设值成功后,设置锁超时时间 (我这里是9分钟)</span></span><br><span class="line">            redisTemplate.expire(key, <span class="number">9</span>, TimeUnit.MINUTES);</span><br><span class="line">            <span class="comment">//业务</span></span><br><span class="line">            dojob();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h6 id="ZSet-实现方式"><a href="#ZSet-实现方式" class="headerlink" title="ZSet 实现方式"></a><strong>ZSet 实现方式</strong></h6><p>将<strong>定时任务存放到 ZSet 集合</strong>中，并且<strong>将过期时间存储到 ZSet 的 Score 字段中</strong>，然后通过一个无线循环来判断当前时间内是否有需要执行的定时任务，如果有则进行执行</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">zrange zs1 <span class="number">0</span> -<span class="number">1</span></span><br></pre></td></tr></table></figure>
+
+<h6 id="键空间通知"><a href="#键空间通知" class="headerlink" title="键空间通知"></a><strong>键空间通知</strong></h6><p>给所有的定时任务设置一个过期时间，等到了过期之后，我们<strong>通过订阅过期消息就能感知到定时任务需要被执行了</strong>，此时我们执行定时任务即可。</p>
+<p>默认情况下 Redis 是不开启<strong>键空间通知</strong>的，需要我们通过 <strong>config set notify-keyspace-events Ex 的命令手动开启</strong>，开启之后定时任务的代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> redis.clients.jedis.Jedis;</span><br><span class="line"><span class="keyword">import</span> redis.clients.jedis.JedisPubSub;</span><br><span class="line"><span class="keyword">import</span> utils.JedisUtils;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TaskExample</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">String</span> <span class="variable">_TOPIC</span> <span class="operator">=</span> <span class="string">&quot;__keyevent@0__:expired&quot;</span>; <span class="comment">// 订阅频道名称</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">Jedis</span> <span class="variable">jedis</span> <span class="operator">=</span> JedisUtils.getJedis();</span><br><span class="line">        <span class="comment">// 执行定时任务</span></span><br><span class="line">        doTask(jedis);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 订阅过期消息，执行定时任务</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@param</span> jedis Redis 客户端</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">doTask</span><span class="params">(Jedis jedis)</span> &#123;</span><br><span class="line">        <span class="comment">// 订阅过期消息</span></span><br><span class="line">        jedis.psubscribe(<span class="keyword">new</span> <span class="title class_">JedisPubSub</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onPMessage</span><span class="params">(String pattern, String channel, String message)</span> &#123;</span><br><span class="line">                <span class="comment">// 接收到消息，执行定时任务</span></span><br><span class="line">                System.out.println(<span class="string">&quot;收到消息：&quot;</span> + message);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;, _TOPIC);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="分布式任务的开源框架"><a href="#分布式任务的开源框架" class="headerlink" title="分布式任务的开源框架"></a><strong>分布式任务的开源框架</strong></h5><p><strong>Quartz</strong></p>
+<p>方法：如果你的项目使用的是Spring自带有Task定时任务机制，quartz框架本身就是支持集群环境，可以搭建集群环境下的定时器，也能解决上述问题 不过需要配置11张数据库表</p>
+<p>优缺点：该解决方案最大的问题是需要配置11张左右的数据库表，工作量非常大</p>
+<p><strong>Elastic-job、XXL-JOB</strong></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%AE%9A%E6%97%B6%E5%99%A8/" rel="tag">定时器</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-Java定时器"
   class="article article-type-post"
   itemscope
