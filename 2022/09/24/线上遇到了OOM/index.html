@@ -108,7 +108,7 @@
   
     <div class="article-entry" itemprop="articleBody">
        
-  <h4 id="线上问题遇到了OOM"><a href="#线上问题遇到了OOM" class="headerlink" title="线上问题遇到了OOM"></a>线上问题遇到了OOM</h4><p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319170526058.png" alt="image-20230319170526059"></p>
+  <h4 id="线上问题遇到了OOM"><a href="#线上问题遇到了OOM" class="headerlink" title="线上问题遇到了OOM"></a>线上问题遇到了OOM</h4><p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319170526058.png" alt="image-20230319170526059"></p>
 <h4 id="为什么会-OOM"><a href="#为什么会-OOM" class="headerlink" title="为什么会 OOM"></a>为什么会 OOM</h4><p><strong>OOM 全称 “Out Of Memory”，表示内存耗尽</strong>。当 <strong>JVM 因为没有足够的内存来为对象分配空间，并且垃圾回收器也已经没有空间可回收时</strong>，就会抛出这个错误</p>
 <ul>
 <li><p><strong>分配过少</strong>：JVM 初始化内存小，业务使用了大量内存；或者不同 JVM 区域分配内存不合理</p>
@@ -159,7 +159,7 @@
 <li><p>bytes：单位 byte</p>
 </li>
 <li><p>class name：类名</p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319171713310.png" alt="image-20230319171713310"></p>
+<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319171713310.png" alt="image-20230319171713310"></p>
 </li>
 </ul>
 <h4 id="Dump-文件分析"><a href="#Dump-文件分析" class="headerlink" title="Dump 文件分析"></a><strong>Dump 文件分析</strong></h4><p>Dump 文件是 <strong>Java 进程的内存镜像</strong>，其中主要包括 <strong>系统信息、虚拟机属性、完整的线程 Dump、所有类和对象的状态 等信息</strong></p>
@@ -176,18 +176,18 @@
 <figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">-Xms3m -Xmx3m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./</span><br><span class="line">设置 VM 参数：</span><br><span class="line">-Xms3m -Xmx3m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./</span><br><span class="line"></span><br><span class="line">public static void main(String[] args) &#123;</span><br><span class="line">    List&lt;Object&gt; oomList = Lists.newArrayList();</span><br><span class="line">  	// 无限循环创建对象</span><br><span class="line">    while (true) &#123;</span><br><span class="line">        oomList.add(new Object());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
 <p>通过报错信息得知，java heap space 表示 OOM 发生在堆区，并生成了 hprof 二进制文件在当前文件夹下</p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172025932.png" alt="image-20230319172025932"></p>
+<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172025932.png" alt="image-20230319172025932"></p>
 <h5 id="JvisualVM-分析"><a href="#JvisualVM-分析" class="headerlink" title="JvisualVM 分析"></a><strong>JvisualVM 分析</strong></h5><p><strong>Dump 分析工具有很多</strong>，相对而言 <strong>JvisualVM、JProfiler、Eclipse Mat</strong>，使用人群更多一些。下面以 JvisualVM 举例分析 Dump 文件</p>
 <p><strong>运行JvisualVM</strong>    ./bin/jvisualvm.exe</p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172220985.png" alt="image-20230319172220985"></p>
+<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172220985.png" alt="image-20230319172220985"></p>
 <p><strong>载入Dump 文件</strong></p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172238653.png" alt="image-20230319172238653"></p>
+<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172238653.png" alt="image-20230319172238653"></p>
 <p><strong>查看触发 OOM 的线程堆栈，清晰得知程序溢出的原因</strong></p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172306804.png" alt="image-20230319172306804"></p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172422965.png" alt="image-20230319172422965"></p>
-<p><strong>查看 JVM 内存里保留大小最大的对象，可以自由选择排查个<img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172456139.png" alt="image-20230319172456139">数</strong></p>
+<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172306804.png" alt="image-20230319172306804"></p>
+<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172422965.png" alt="image-20230319172422965"></p>
+<p><strong>查看 JVM 内存里保留大小最大的对象，可以自由选择排查个<img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172456139.png" alt="image-20230319172456139">数</strong></p>
 <p>点击对象还可以跳转具体的对象引用详情页面</p>
-<p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230319172519873.png" alt="image-20230319172519873"></p>
+<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172519873.png" alt="image-20230319172519873"></p>
 <h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>线上如遇到 JVM 内存溢出，可以分以下几步排查</p>
 <ol>
 <li><strong>jmap -heap 查看是否内存分配过小</strong></li>
