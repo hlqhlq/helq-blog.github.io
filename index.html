@@ -279,6 +279,673 @@
 
     
     <article
+  id="post-Read-view-在MVCC里如何工作的"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/03/17/Read-view-%E5%9C%A8MVCC%E9%87%8C%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84/"
+    >Read view 在MVCC里如何工作的</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/03/17/Read-view-%E5%9C%A8MVCC%E9%87%8C%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84/" class="article-date">
+  <time datetime="2024-03-17T12:51:15.000Z" itemprop="datePublished">2024-03-17</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/MVCC/">MVCC</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="Read-View-在-MVCC-里如何工作的？"><a href="#Read-View-在-MVCC-里如何工作的？" class="headerlink" title="Read View 在 MVCC 里如何工作的？"></a>Read View 在 MVCC 里如何工作的？</h2><p>对于「读提交」和「可重复读」隔离级别的事务来说，它们是通过 **Read View **来实现的，它们的区别在于创建 Read View 的时机不同，大家可以把 Read View 理解成一个数据快照，就像相机拍照那样，定格某一时刻的风景。**「读提交」隔离级别是在「每个语句执行前」都会重新生成一个 Read View，而「可重复读」隔离级别是「启动事务时」生成一个 Read View，然后整个事务期间都在用这个 Read View**。</p>
+<p>我们需要了解两个知识：</p>
+<ul>
+<li>Read View 中四个字段作用；</li>
+<li>聚簇索引记录中两个跟事务有关的隐藏列；</li>
+</ul>
+<p>那 Read View 到底是个什么东西？</p>
+<p><img src="/2024/03/17/Read-view-%E5%9C%A8MVCC%E9%87%8C%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84/readview%E7%BB%93%E6%9E%84.drawio.png" alt="img"></p>
+<p>Read View 有四个重要的字段：</p>
+<ul>
+<li>m_ids ：指的是在创建 Read View 时，当前数据库中「活跃事务」的<strong>事务 id 列表</strong>，注意是一个列表，<strong>“活跃事务”指的就是，启动了但还没提交的事务</strong>。</li>
+<li>min_trx_id ：指的是在创建 Read View 时，当前数据库中「活跃事务」中事务 <strong>id 最小的事务</strong>，也就是 m_ids 的最小值。</li>
+<li>max_trx_id ：这个并不是 m_ids 的最大值，而是<strong>创建 Read View 时当前数据库中应该给下一个事务的 id 值</strong>，也就是全局事务中最大的事务 id 值 + 1；</li>
+<li>creator_trx_id ：指的是<strong>创建该 Read View 的事务的事务 id</strong>。</li>
+</ul>
+<p>知道了 Read View 的字段，我们还需要了解聚簇索引记录中的两个隐藏列。</p>
+<p>假设在账户余额表插入一条小林余额为 100 万的记录，然后我把这两个隐藏列也画出来，该记录的整个示意图如下：</p>
+<p><img src="/2024/03/17/Read-view-%E5%9C%A8MVCC%E9%87%8C%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84/f595d13450878acd04affa82731f76c5.png" alt="图片"></p>
+<p>对于使用 InnoDB 存储引擎的数据库表，它的聚簇索引记录中都包含下面两个隐藏列：</p>
+<ul>
+<li>trx_id，当一个事务对某条聚簇索引记录进行改动时，就会<strong>把该事务的事务 id 记录在 trx_id 隐藏列里</strong>；</li>
+<li>roll_pointer，每次对某条聚簇索引记录进行改动时，都会把旧版本的记录写入到 undo 日志中，然后<strong>这个隐藏列是个指针，指向每一个旧版本记录</strong>，于是就可以通过它找到修改前的记录。</li>
+</ul>
+<p>在创建 Read View 后，我们可以将记录中的 trx_id 划分这三种情况：</p>
+<p><img src="/2024/03/17/Read-view-%E5%9C%A8MVCC%E9%87%8C%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%E7%9A%84/ReadView.drawio.png" alt="img"></p>
+<p>一个事务去访问记录的时候，除了自己的更新记录总是可见之外，还有这几种情况：</p>
+<ul>
+<li>如果记录的 trx_id 值小于 Read View 中的 <code>min_trx_id</code> 值，表示这个版本的记录是在创建 Read View <strong>前</strong>已经提交的事务生成的，所以该版本的记录对当前事务<strong>可见</strong>。</li>
+<li>如果记录的 trx_id 值大于等于 Read View 中的 <code>max_trx_id</code> 值，表示这个版本的记录是在创建 Read View <strong>后</strong>才启动的事务生成的，所以该版本的记录对当前事务<strong>不可见</strong>。</li>
+<li>如果记录的 trx_id 值在 Read View 的min_trx_id和max_trx_id之间，需要判断 trx_id 是否在 m_ids 列表中：<ul>
+<li>如果记录的 trx_id <strong>在</strong> <code>m_ids</code> 列表中，表示生成该版本记录的活跃事务依然活跃着（还没提交事务），所以该版本的记录对当前事务<strong>不可见</strong>。</li>
+<li>如果记录的 trx_id <strong>不在</strong> <code>m_ids</code>列表中，表示生成该版本记录的活跃事务已经被提交，所以该版本的记录对当前事务<strong>可见</strong>。</li>
+</ul>
+</li>
+</ul>
+<p><strong>这种通过「版本链」来控制并发事务访问同一个记录时的行为就叫 MVCC（多版本并发控制）。</strong></p>
+<p>MVCC是在<strong>并发访问数据库</strong>时，通过<strong>对数据做多版本管理</strong>，<strong>避免因为写锁的阻塞而造成读数据的并发阻塞问题</strong>。</p>
+<p>如果某个版本的数据对当前事务不可见的话，那就顺着版本链找到下一个版本的数据，继续按照上边的步骤判断可见性，依此类推，直到版本链中的最后一个版本。如果最后一个版本也不可见的话，那么就意味着该条记录对该事务完全不可见，查询结果就不包含该记录。InnoDB中，MVCC是通过Undo Log + Read View进行数据读取，Undo Log保存了历史快照，而Read View规则帮我们判断当前版本的数据是否可见</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>事务是在 MySQL 引擎层实现的，我们常见的 InnoDB 引擎是支持事务的，事务的四大特性是原子性、一致性、隔离性、持久性，我们这次主要讲的是隔离性。</p>
+<p>当多个事务并发执行的时候，会引发脏读、不可重复读、幻读这些问题，那为了避免这些问题，SQL 提出了四种隔离级别，分别是读未提交、读已提交、可重复读、串行化，从左往右隔离级别顺序递增，隔离级别越高，意味着性能越差，InnoDB 引擎的默认隔离级别是可重复读。</p>
+<p>要解决脏读现象，就要将隔离级别升级到读已提交以上的隔离级别，要解决不可重复读现象，就要将隔离级别升级到可重复读以上的隔离级别。</p>
+<p>而对于幻读现象，不建议将隔离级别升级为串行化，因为这会导致数据库并发时性能很差。MySQL InnoDB 引擎的默认隔离级别虽然是「可重复读」，但是它很大程度上避免幻读现象（并不是完全解决了，详见这篇<a target="_blank" rel="noopener" href="https://xiaolincoding.com/mysql/transaction/phantom.html">文章 (opens new window)</a>），解决的方案有两种：</p>
+<ul>
+<li>针对<strong>快照读</strong>（普通 select 语句），是<strong>通过 MVCC 方式解决了幻读</strong>，因为可重复读隔离级别下，事务执行过程中看到的数据，一直跟这个事务启动时看到的数据是一致的，即使中途有其他事务插入了一条数据，是查询不出来这条数据的，所以就很好了避免幻读问题。</li>
+<li>针对<strong>当前读</strong>（select … for update 等语句），是<strong>通过 next-key lock（记录锁+间隙锁）方式解决了幻读</strong>，因为当执行 select … for update 语句的时候，会加上 next-key lock，如果有其他事务在 next-key lock 锁范围内插入了一条记录，那么这个插入语句就会被阻塞，无法成功插入，所以就很好了避免幻读问题。</li>
+</ul>
+<p>对于「读提交」和「可重复读」隔离级别的事务来说，它们是通过 Read View 来实现的，它们的区别在于创建 Read View 的时机不同：</p>
+<ul>
+<li>「读提交」隔离级别是在每个 select 都会生成一个新的 Read View，也意味着，事务期间的多次读取同一条数据，前后两次读的数据可能会出现不一致，因为可能这期间另外一个事务修改了该记录，并提交了事务。</li>
+<li>「可重复读」隔离级别是启动事务时生成一个 Read View，然后整个事务期间都在用这个 Read View，这样就保证了在事务期间读到的数据都是事务启动前的记录。</li>
+</ul>
+<p>这两个隔离级别实现是通过「事务的 Read View 里的字段」和「记录中的两个隐藏列」的比对，来控制并发事务访问同一个记录时的行为，这就叫 MVCC（多版本并发控制）。</p>
+<p>在可重复读隔离级别中，普通的 select 语句就是基于 MVCC 实现的快照读，也就是不会加锁的。而 select .. for update 语句就不是快照读了，而是当前读了，也就是每次读都是拿到最新版本的数据，但是它会对读到的记录加上 next-key lock 锁。</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MVCC/" rel="tag">MVCC</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-MySQL日志的作用"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/09/08/MySQL%E6%97%A5%E5%BF%97%E7%9A%84%E4%BD%9C%E7%94%A8/"
+    >MySQL日志的作用</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/09/08/MySQL%E6%97%A5%E5%BF%97%E7%9A%84%E4%BD%9C%E7%94%A8/" class="article-date">
+  <time datetime="2023-09-08T13:34:25.000Z" itemprop="datePublished">2023-09-08</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/%E6%97%A5%E5%BF%97/">日志</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="MySQL-日志：undo-log、redo-log、binlog-有什么用？"><a href="#MySQL-日志：undo-log、redo-log、binlog-有什么用？" class="headerlink" title="MySQL 日志：undo log、redo log、binlog 有什么用？"></a>MySQL 日志：undo log、redo log、binlog 有什么用？</h1><p><strong>执行一条 update 语句，期间发生了什么？</strong>，比如这一条 update 语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> t_user <span class="keyword">SET</span> name <span class="operator">=</span> <span class="string">&#x27;xiaolin&#x27;</span> <span class="keyword">WHERE</span> id <span class="operator">=</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<p>查询语句的那一套流程，更新语句也是同样会走一遍：</p>
+<ul>
+<li>客户端先通过连接器建立连接，连接器自会判断用户身份；</li>
+<li>因为这是一条 update 语句，所以不需要经过查询缓存，但是表上有更新语句，是会把整个表的查询缓存清空的，所以说查询缓存很鸡肋，在 MySQL 8.0 就被移除这个功能了；</li>
+<li>解析器会通过词法分析识别出关键字 update，表名等等，构建出语法树，接着还会做语法分析，判断输入的语句是否符合 MySQL 语法；</li>
+<li>预处理器会判断表和字段是否存在；</li>
+<li>优化器确定执行计划，因为 where 条件中的 id 是主键索引，所以决定要使用 id 这个索引；</li>
+<li>执行器负责具体执行，找到这一行，然后更新。</li>
+</ul>
+<p>不过，更新语句的流程会涉及到 undo log（回滚日志）、redo log（重做日志） 、binlog （归档日志）这三种日志：</p>
+<ul>
+<li><strong>undo log（回滚日志）</strong>：是 Innodb 存储引擎层生成的日志，实现了事务中的<strong>原子性</strong>，主要<strong>用于事务回滚和 MVCC</strong>。</li>
+<li><strong>redo log（重做日志）</strong>：是 Innodb 存储引擎层生成的日志，实现了事务中的<strong>持久性</strong>，主要<strong>用于掉电等故障恢复</strong>；</li>
+<li><strong>binlog （归档日志）</strong>：是 Server 层生成的日志，主要<strong>用于数据备份和主从复制</strong>；</li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-更新一条记录的流程"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/07/21/%E6%9B%B4%E6%96%B0%E4%B8%80%E6%9D%A1%E8%AE%B0%E5%BD%95%E7%9A%84%E6%B5%81%E7%A8%8B/"
+    >更新一条记录的流程</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/07/21/%E6%9B%B4%E6%96%B0%E4%B8%80%E6%9D%A1%E8%AE%B0%E5%BD%95%E7%9A%84%E6%B5%81%E7%A8%8B/" class="article-date">
+  <time datetime="2023-07-21T14:21:54.000Z" itemprop="datePublished">2023-07-21</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="更新一条记录的流程"><a href="#更新一条记录的流程" class="headerlink" title="更新一条记录的流程"></a>更新一条记录的流程</h2><p>具体更新一条记录 <code>UPDATE t_user SET name = &#39;xiaolin&#39; WHERE id = 1;</code> 的流程如下:</p>
+<ol>
+<li>执行器负责具体执行，会调用存储引擎的接口，通过主键索引树搜索获取 id = 1 这一行记录：<ul>
+<li>如果 id=1 这一行所在的数据页本来就在 buffer pool 中，就直接返回给执行器更新；</li>
+<li>如果记录不在 buffer pool，将数据页从磁盘读入到 buffer pool，返回记录给执行器。</li>
+</ul>
+</li>
+<li>执行器得到聚簇索引记录后，会看一下更新前的记录和更新后的记录是否一样：<ul>
+<li>如果一样的话就不进行后续更新流程；</li>
+<li>如果不一样的话就把更新前的记录和更新后的记录都当作参数传给 InnoDB 层，让 InnoDB 真正的执行更新记录的操作；</li>
+</ul>
+</li>
+<li>开启事务， InnoDB 层更新记录前，首先要记录相应的 undo log，因为这是更新操作，需要把被更新的列的旧值记下来，也就是要生成一条 undo log，undo log 会写入 Buffer Pool 中的 Undo 页面，不过在内存修改该 Undo 页面后，需要记录对应的 redo log。</li>
+<li>InnoDB 层开始更新记录，会先更新内存（同时标记为脏页），然后将记录写到 redo log 里面，这个时候更新就算完成了。为了减少磁盘I/O，不会立即将脏页写入磁盘，后续由后台线程选择一个合适的时机将脏页写入到磁盘。这就是 <strong>WAL 技术</strong>（Write-Ahead Logging）技术，<strong>WAL 技术指的是， MySQL 的写操作并不是立刻写到磁盘上，而是先写日志，然后在合适的时间再写到磁盘上</strong>，MySQL 的写操作并不是立刻写到磁盘上，而是先写 redo 日志，然后在合适的时间再将修改的行数据写到磁盘上。</li>
+<li>至此，一条记录更新完了。</li>
+<li>在一条更新语句执行完成后，然后开始记录该语句对应的 binlog，此时记录的 binlog 会被保存到 binlog cache，并没有刷新到硬盘上的 binlog 文件，在事务提交时才会统一将该事务运行过程中的所有 binlog 刷新到硬盘。</li>
+<li>事务提交（为了方便说明，这里不说组提交的过程，只说两阶段提交）：<ul>
+<li><strong>prepare 阶段</strong>：将 redo log 对应的事务状态设置为 prepare，然后将 redo log 刷新到硬盘；</li>
+<li><strong>commit 阶段</strong>：将 binlog 刷新到磁盘，接着调用引擎的提交事务接口，将 redo log 状态设置为 commit（将事务设置为 commit 状态后，刷入到磁盘 redo log 文件）；</li>
+</ul>
+</li>
+<li>至此，一条更新语句执行完成。</li>
+</ol>
+<p>redo log 要写到磁盘，数据也要写磁盘，为什么要多此一举？</p>
+<p>写入 redo log 的方式使用了追加操作， 所以磁盘操作是<strong>顺序写</strong>，而写入数据需要先找到写入位置，然后才写到磁盘，所以磁盘操作是<strong>随机写</strong>。</p>
+<p>磁盘的「顺序写 」比「随机写」 高效的多，因此 redo log 写入磁盘的开销更小。</p>
+<p>针对「顺序写」为什么比「随机写」更快这个问题，可以比喻为你有一个本子，按照顺序一页一页写肯定比写一个字都要找到对应页写快得多。</p>
+<p>可以说这是 WAL 技术的另外一个优点：-<strong>MySQL 的写操作从磁盘的「随机写」变成了「顺序写」</strong>，提升语句的执行性能。这是因为 MySQL 的写操作并不是立刻更新到磁盘上，而是先记录在日志上，然后在合适的时间再更新到磁盘上 。</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-如何避免死锁"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/05/12/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81/"
+    >如何避免死锁</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/05/12/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81/" class="article-date">
+  <time datetime="2023-05-12T13:04:42.000Z" itemprop="datePublished">2023-05-12</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/%E6%AD%BB%E9%94%81/">死锁</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="如何避免死锁？"><a href="#如何避免死锁？" class="headerlink" title="如何避免死锁？"></a>如何避免死锁？</h2><p>死锁的四个必要条件：<strong>互斥、占有且等待、不可强占用、循环等待</strong>。只要系统发生死锁，这些条件必然成立，但是只要破坏任意一个条件就死锁就不会成立。</p>
+<p>死锁产生的条件</p>
+<ul>
+<li><strong>互斥使用</strong>，即当资源被一个线程占用时，别的线程不能使用</li>
+<li><strong>不可抢占</strong>，资源请求者不能强制从资源占有者手中抢夺资源，资源只能由占有者主动释放</li>
+<li><strong>请求和保持</strong>，当资源请求者在请求其他资源的同时保持对原因资源的占有</li>
+<li><strong>循环等待</strong>，多个线程存在环路的锁依赖关系而永远等待下去，例如T1占有T2的资源，T2占有T3的资源，T3占有T1的资源，这种情况可能会形成一个等待环路</li>
+</ul>
+<p>在数据库层面，有两种策略通过「打破循环等待条件」来解除死锁状态：</p>
+<ul>
+<li><p><strong>设置事务等待锁的超时时间</strong>。当一个事务的等待时间超过该值后，就对这个事务进行回滚，于是锁就释放了，另一个事务就可以继续执行了。在 InnoDB 中，参数 <code>innodb_lock_wait_timeout</code> 是用来设置超时时间的，默认值时 50 秒。</p>
+<p>当发生超时后，就出现下面这个提示：</p>
+<p><img src="/2023/05/12/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81/c296c1889f0101d335699311b4ef20a8.png" alt="图片"></p>
+</li>
+<li><p><strong>开启主动死锁检测</strong>。主动死锁检测在发现死锁后，主动回滚死锁链条中的某一个事务，让其他事务得以继续执行。将参数 <code>innodb_deadlock_detect</code> 设置为 on，表示开启这个逻辑，默认就开启。</p>
+<p>当检测到死锁后，就会出现下面这个提示：</p>
+<p><img src="/2023/05/12/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81/f380ef357d065498d8d54ad07f145e09.png" alt="图片"></p>
+<p>检测到死锁之后，选择插入更新或者删除的行数最少的事务回滚，基于 INFORMATION_SCHEMA.INNODB_TRX 表中的 trx_weight 字段来判断。如果插入更新或者删除的行数一样则回滚后面执行的那条事务。</p>
+</li>
+</ul>
+<p>避免死锁:</p>
+<p>有多种方法可以避免死锁，这里只介绍常见的三种：</p>
+<ol>
+<li>如果不同程序会并发存取多个表，<strong>尽量约定以相同的顺序访问表</strong>，可以大大降低死锁机会。</li>
+<li>在同一个事务中，<strong>尽可能做到一次锁定所需要的所有资源，减少死锁产生概率</strong>；</li>
+<li>对于非常容易产生死锁的业务部分，<strong>可以尝试使用升级锁粒度，通过表级锁定来减少死锁产生的概率</strong>；</li>
+<li><strong>尽可能的缩小锁的范围，防止锁住的资源过多引发阻塞和饥饿</strong></li>
+<li><strong>使用定时锁，比如Lock中的tryLock()</strong></li>
+<li><strong>为表添加合理的索引</strong>。如果不走索引将会为表的每一行记录添加上锁，死锁的概率大大增大</li>
+<li><strong>降低隔离级别</strong>，如果业务允许</li>
+<li><strong>按顺序申请锁</strong>，不会造成互相等待</li>
+<li>在同一个事务中，<strong>尽可能做到一次锁定所需要的所有资源</strong>，减少死锁概率。</li>
+</ol>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E6%AD%BB%E9%94%81/" rel="tag">死锁</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-为什么MySQL采用B-树作为索引"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/03/10/%E4%B8%BA%E4%BB%80%E4%B9%88MySQL%E9%87%87%E7%94%A8B-%E6%A0%91%E4%BD%9C%E4%B8%BA%E7%B4%A2%E5%BC%95/"
+    >为什么MySQL采用B+树作为索引</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/03/10/%E4%B8%BA%E4%BB%80%E4%B9%88MySQL%E9%87%87%E7%94%A8B-%E6%A0%91%E4%BD%9C%E4%B8%BA%E7%B4%A2%E5%BC%95/" class="article-date">
+  <time datetime="2023-03-10T13:44:05.000Z" itemprop="datePublished">2023-03-10</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="为什么-MySQL-采用-B-树作为索引？"><a href="#为什么-MySQL-采用-B-树作为索引？" class="headerlink" title="为什么 MySQL 采用 B+ 树作为索引？"></a>为什么 MySQL 采用 B+ 树作为索引？</h1><p>MySQL 是会将数据持久化在硬盘，而存储功能是由 MySQL 存储引擎实现的，所以讨论 MySQL 使用哪种数据结构作为索引，实际上是在讨论存储引使用哪种数据结构作为索引，InnoDB 是 MySQL 默认的存储引擎，它就是采用了 B+ 树作为索引的数据结构。</p>
+<p>要设计一个 MySQL 的索引数据结构，不仅仅考虑数据结构增删改的时间复杂度，更重要的是要考虑磁盘 I/0 的操作次数。因为索引和记录都是存放在硬盘，硬盘是一个非常慢的存储设备，我们在查询数据的时候，最好能在尽可能少的磁盘 I/0 的操作次数内完成。</p>
+<p>二分查找树虽然是一个天然的二分结构，能很好的利用二分查找快速定位数据，但是它存在一种极端的情况，每当插入的元素都是树内最大的元素，就会导致二分查找树退化成一个链表，此时查询复杂度就会从 O(logn)降低为 O(n)。</p>
+<p>为了解决二分查找树退化成链表的问题，就出现了自平衡二叉树，保证了查询操作的时间复杂度就会一直维持在 O(logn) 。但是它本质上还是一个二叉树，每个节点只能有 2 个子节点，随着元素的增多，树的高度会越来越高。</p>
+<p>而树的高度决定于磁盘 I/O 操作的次数，因为树是存储在磁盘中的，访问每个节点，都对应一次磁盘 I/O 操作，也就是说树的高度就等于每次查询数据时磁盘 IO 操作的次数，所以树的高度越高，就会影响查询性能。</p>
+<p>B 树和 B+ 都是通过多叉树的方式，会将树的高度变矮，所以这两个数据结构非常适合检索存于磁盘中的数据。</p>
+<p>但是 MySQL 默认的存储引擎 InnoDB 采用的是 B+ 作为索引的数据结构，原因有：</p>
+<ul>
+<li>B+ 树的非叶子节点不存放实际的记录数据，仅存放索引，因此数据量相同的情况下，相比存储即存索引又存记录的 B 树，B+树的非叶子节点可以存放更多的索引，因此 B+ 树可以比 B 树更「矮胖」，查询底层节点的磁盘 I/O次数会更少。</li>
+<li>B+ 树有大量的冗余节点（所有非叶子节点都是冗余索引），这些冗余索引让 B+ 树在插入、删除的效率都更高，比如删除根节点的时候，不会像 B 树那样会发生复杂的树的变化；</li>
+<li>B+ 树叶子节点之间用链表连接了起来，有利于范围查询，而 B 树要实现范围查询，因此只能通过树的遍历来完成范围查询，这会涉及多个节点的磁盘 I/O 操作，范围查询效率不如 B+ 树。</li>
+</ul>
+<p>完！</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-执行一条select语句，期间发生了什么"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/"
+    >执行一条select语句，期间发生了什么</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/" class="article-date">
+  <time datetime="2023-02-22T12:17:30.000Z" itemprop="datePublished">2023-02-22</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="执行一条-select-语句，期间发生了什么？"><a href="#执行一条-select-语句，期间发生了什么？" class="headerlink" title="执行一条 select 语句，期间发生了什么？"></a>执行一条 select 语句，期间发生了什么？</h1><p>学习 SQL 的时候，大家肯定第一个先学到的就是 select 查询语句了，比如下面这句查询语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span> 在 product 表中，查询 id <span class="operator">=</span> <span class="number">1</span> 的记录</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> product <span class="keyword">where</span> id <span class="operator">=</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+
+<p>但是有没有想过，<strong>MySQL 执行一条 select 查询语句，在 MySQL 中期间发生了什么？</strong></p>
+<p>带着这个问题，我们可以很好的了解 MySQL 内部的架构，所以这次就带大家拆解一下 MySQL 内部的结构，看看内部里的每一个“零件”具体是负责做什么的。</p>
+<h2 id="MySQL-执行流程是怎样的？"><a href="#MySQL-执行流程是怎样的？" class="headerlink" title="MySQL 执行流程是怎样的？"></a>MySQL 执行流程是怎样的？</h2><p>先来一个上帝视角图，下面就是 MySQL 执行一条 SQL 查询语句的流程，也从图中可以看到 MySQL 内部架构里的各个功能模块。</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/mysql%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B.png" alt="查询语句执行流程"></p>
+<p>可以看到， MySQL 的架构共分为两层：<strong>Server 层和存储引擎层</strong>，</p>
+<ul>
+<li><strong>Server 层负责建立连接、分析和执行 SQL</strong>。MySQL 大多数的核心功能模块都在这实现，主要包括连接器，查询缓存、解析器、预处理器、优化器、执行器等。另外，所有的内置函数（如日期、时间、数学和加密函数等）和所有跨存储引擎的功能（如存储过程、触发器、视图等。）都在 Server 层实现。</li>
+<li><strong>存储引擎层负责数据的存储和提取</strong>。支持 InnoDB、MyISAM、Memory 等多个存储引擎，不同的存储引擎共用一个 Server 层。现在最常用的存储引擎是 InnoDB，从 MySQL 5.5 版本开始， InnoDB 成为了 MySQL 的默认存储引擎。我们常说的索引数据结构，就是由存储引擎层实现的，不同的存储引擎支持的索引类型也不相同，比如 InnoDB 支持索引类型是 B+树 ，且是默认使用，也就是说在数据表中创建的主键索引和二级索引默认使用的是 B+ 树索引。</li>
+</ul>
+<p>好了，现在我们对 Server 层和存储引擎层有了一个简单认识，接下来，就详细说一条 SQL 查询语句的执行流程，依次看看每一个功能模块的作用。</p>
+<h2 id="第一步：连接器"><a href="#第一步：连接器" class="headerlink" title="第一步：连接器"></a>第一步：连接器</h2><p>如果你在 Linux 操作系统里要使用 MySQL，那你第一步肯定是要先连接 MySQL 服务，然后才能执行 SQL 语句，普遍我们都是使用下面这条命令进行连接：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">-h 指定 MySQL 服务得 IP 地址，如果是连接本地的 MySQL服务，可以不用这个参数；</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">-u 指定用户名，管理员角色名为 root；</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">-p 指定密码，如果命令行中不填写密码（为了密码安全，建议不要在命令行写密码），就需要在交互对话里面输入密码</span></span><br><span class="line">mysql -h$ip -u$user -p</span><br></pre></td></tr></table></figure>
+
+<p>连接的过程需要先经过 TCP 三次握手，因为 MySQL 是基于 TCP 协议进行传输的，如果 MySQL 服务并没有启动，则会收到如下的报错：</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/mysql%E8%BF%9E%E6%8E%A5%E9%94%99%E8%AF%AF.png" alt="img"></p>
+<p>如果 MySQL 服务正常运行，完成 TCP 连接的建立后，连接器就要开始验证你的用户名和密码，如果用户名或密码不对，就收到一个”Access denied for user”的错误，然后客户端程序结束执行。</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E5%AF%86%E7%A0%81%E9%94%99%E8%AF%AF.png" alt="img"></p>
+<p>如果用户密码都没有问题，连接器就会获取该用户的权限，然后保存起来，后续该用户在此连接里的任何操作，都会基于连接开始时读到的权限进行权限逻辑的判断。</p>
+<p>所以，如果一个用户已经建立了连接，即使管理员中途修改了该用户的权限，也不会影响已经存在连接的权限。修改完成后，只有再新建的连接才会使用新的权限设置。</p>
+<blockquote>
+<p>如何查看 MySQL 服务被多少个客户端连接了？</p>
+</blockquote>
+<p>如果你想知道当前 MySQL 服务被多少个客户端连接了，你可以执行 <code>show processlist</code> 命令进行查看。</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E6%9F%A5%E7%9C%8B%E8%BF%9E%E6%8E%A5.png" alt="img"></p>
+<p>比如上图的显示结果，共有两个用户名为 root 的用户连接了 MySQL 服务，其中 id 为 6 的用户的 Command 列的状态为 <code>Sleep</code> ，这意味着该用户连接完 MySQL 服务就没有再执行过任何命令，也就是说这是一个空闲的连接，并且空闲的时长是 736 秒（ Time 列）。</p>
+<blockquote>
+<p>空闲连接会一直占用着吗？</p>
+</blockquote>
+<p>当然不是了，MySQL 定义了空闲连接的最大空闲时长，由 <code>wait_timeout</code> 参数控制的，默认值是 8 小时（28880秒），如果空闲连接超过了这个时间，连接器就会自动将它断开。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">show</span> variables <span class="keyword">like</span> <span class="string">&#x27;wait_timeout&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name <span class="operator">|</span> <span class="keyword">Value</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-------+</span></span><br><span class="line"><span class="operator">|</span> wait_timeout  <span class="operator">|</span> <span class="number">28800</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-------+</span></span><br><span class="line"><span class="number">1</span> <span class="type">row</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>当然，我们自己也可以手动断开空闲的连接，使用的是 kill connection + id 的命令。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> kill connection <span class="operator">+</span><span class="number">6</span>;</span><br><span class="line">Query OK, <span class="number">0</span> <span class="keyword">rows</span> affected (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>一个处于空闲状态的连接被服务端主动断开后，这个客户端并不会马上知道，等到客户端在发起下一个请求的时候，才会收到这样的报错“ERROR 2013 (HY000): Lost connection to MySQL server during query”</p>
+<blockquote>
+<p>MySQL 的连接数有限制吗？</p>
+</blockquote>
+<p>MySQL 服务支持的最大连接数由 max_connections 参数控制，比如我的 MySQL 服务默认是 151 个,超过这个值，系统就会拒绝接下来的连接请求，并报错提示“Too many connections”。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">show</span> variables <span class="keyword">like</span> <span class="string">&#x27;max_connections&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+-------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name   <span class="operator">|</span> <span class="keyword">Value</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+-------+</span></span><br><span class="line"><span class="operator">|</span> max_connections <span class="operator">|</span> <span class="number">151</span>   <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+-------+</span></span><br><span class="line"><span class="number">1</span> <span class="type">row</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>MySQL 的连接也跟 HTTP 一样，有短连接和长连接的概念，它们的区别如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 短连接</span></span><br><span class="line">连接 mysql 服务（TCP 三次握手）</span><br><span class="line">执行sql</span><br><span class="line">断开 mysql 服务（TCP 四次挥手）</span><br><span class="line"></span><br><span class="line"><span class="comment">// 长连接</span></span><br><span class="line">连接 mysql 服务（TCP 三次握手）</span><br><span class="line">执行sql</span><br><span class="line">执行sql</span><br><span class="line">执行sql</span><br><span class="line">....</span><br><span class="line">断开 mysql 服务（TCP 四次挥手）</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，使用长连接的好处就是可以减少建立连接和断开连接的过程，所以一般是推荐使用长连接。</p>
+<p>但是，使用长连接后可能会占用内存增多，因为 MySQL 在执行查询过程中临时使用内存管理连接对象，这些连接对象资源只有在连接断开时才会释放。如果长连接累计很多，将导致 MySQL 服务占用内存太大，有可能会被系统强制杀掉，这样会发生 MySQL 服务异常重启的现象。</p>
+<blockquote>
+<p>怎么解决长连接占用内存的问题？</p>
+</blockquote>
+<p>有两种解决方式。</p>
+<p>第一种，<strong>定期断开长连接</strong>。既然断开连接后就会释放连接占用的内存资源，那么我们可以定期断开长连接。</p>
+<p>第二种，<strong>客户端主动重置连接</strong>。MySQL 5.7 版本实现了 <code>mysql_reset_connection()</code> 函数的接口，注意这是接口函数不是命令，那么当客户端执行了一个很大的操作后，在代码里调用 mysql_reset_connection 函数来重置连接，达到释放内存的效果。这个过程不需要重连和重新做权限验证，但是会将连接恢复到刚刚创建完时的状态。</p>
+<p>至此，连接器的工作做完了，简单总结一下：</p>
+<ul>
+<li>与客户端进行 TCP 三次握手建立连接；</li>
+<li>校验客户端的用户名和密码，如果用户名或密码不对，则会报错；</li>
+<li>如果用户名和密码都对了，会读取该用户的权限，然后后面的权限逻辑判断都基于此时读取到的权限；</li>
+</ul>
+<h2 id="第二步：查询缓存"><a href="#第二步：查询缓存" class="headerlink" title="第二步：查询缓存"></a>第二步：查询缓存</h2><p>连接器得工作完成后，客户端就可以向 MySQL 服务发送 SQL 语句了，MySQL 服务收到 SQL 语句后，就会解析出 SQL 语句的第一个字段，看看是什么类型的语句。</p>
+<p>如果 SQL 是查询语句（select 语句），MySQL 就会先去查询缓存（ Query Cache ）里查找缓存数据，看看之前有没有执行过这一条命令，这个查询缓存是以 key-value 形式保存在内存中的，key 为 SQL 查询语句，value 为 SQL 语句查询的结果。</p>
+<p>如果查询的语句命中查询缓存，那么就会直接返回 value 给客户端。如果查询的语句没有命中查询缓存中，那么就要往下继续执行，等执行完后，查询的结果就会被存入查询缓存中。</p>
+<p>这么看，查询缓存还挺有用，但是其实<strong>查询缓存挺鸡肋</strong>的。</p>
+<p>对于更新比较频繁的表，查询缓存的命中率很低的，因为只要一个表有更新操作，那么这个表的查询缓存就会被清空。如果刚缓存了一个查询结果很大的数据，还没被使用的时候，刚好这个表有更新操作，查询缓冲就被清空了，相当于缓存了个寂寞。</p>
+<p>所以，MySQL 8.0 版本直接将查询缓存删掉了，也就是说 MySQL 8.0 开始，执行一条 SQL 查询语句，不会再走到查询缓存这个阶段了。</p>
+<p>对于 MySQL 8.0 之前的版本，如果想关闭查询缓存，我们可以通过将参数 query_cache_type 设置成 DEMAND。</p>
+<p>TIP</p>
+<p>这里说的查询缓存是 server 层的，也就是 MySQL 8.0 版本移除的是 server 层的查询缓存，并不是 Innodb 存储引擎中的 buffer pool。</p>
+<h2 id="第三步：解析-SQL"><a href="#第三步：解析-SQL" class="headerlink" title="第三步：解析 SQL"></a>第三步：解析 SQL</h2><p>在正式执行 SQL 查询语句之前， MySQL 会先对 SQL 语句做解析，这个工作交由「解析器」来完成。</p>
+<h3 id="解析器"><a href="#解析器" class="headerlink" title="#解析器"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/mysql/base/how_select.html#%E8%A7%A3%E6%9E%90%E5%99%A8">#</a>解析器</h3><p>解析器会做如下两件事情。</p>
+<p>第一件事情，<strong>词法分析</strong>。MySQL 会根据你输入的字符串识别出关键字出来，例如，SQL语句 select username from userinfo，在分析之后，会得到4个Token，其中有2个Keyword，分别为select和from：</p>
+<table>
+<thead>
+<tr>
+<th>关键字</th>
+<th>非关键字</th>
+<th>关键字</th>
+<th>非关键字</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>select</td>
+<td>username</td>
+<td>from</td>
+<td>userinfo</td>
+</tr>
+</tbody></table>
+<p>第二件事情，<strong>语法分析</strong>。根据词法分析的结果，语法解析器会根据语法规则，判断你输入的这个 SQL 语句是否满足 MySQL 语法，如果没问题就会构建出 SQL 语法树，这样方便后面模块获取 SQL 类型、表名、字段名、 where 条件等等。</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/db-mysql-sql-parser-2.png" alt="img"></p>
+<p>如果我们输入的 SQL 语句语法不对，就会在解析器这个阶段报错。比如，我下面这条查询语句，把 from 写成了 form，这时 MySQL 解析器就会给报错。</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E8%AF%AD%E6%B3%95%E9%94%99%E8%AF%AF.png" alt="img"></p>
+<p>但是注意，表不存在或者字段不存在，并不是在解析器里做的，《MySQL 45 讲》说是在解析器做的，但是经过我和朋友看 MySQL 源码（5.7和8.0）得出结论是解析器只负责检查语法和构建语法树，但是不会去查表或者字段存不存在。</p>
+<p>那到底谁来做检测表和字段是否存在的工作呢？别急，接下来就是了</p>
+<h2 id="第四步：执行-SQL"><a href="#第四步：执行-SQL" class="headerlink" title="第四步：执行 SQL"></a>第四步：执行 SQL</h2><p>经过解析器后，接着就要进入执行 SQL 查询语句的流程了，每条<code>SELECT</code> 查询语句流程主要可以分为下面这三个阶段：</p>
+<ul>
+<li>prepare 阶段，也就是预处理阶段；</li>
+<li>optimize 阶段，也就是优化阶段；</li>
+<li>execute 阶段，也就是执行阶段；</li>
+</ul>
+<h3 id="预处理器"><a href="#预处理器" class="headerlink" title="预处理器"></a>预处理器</h3><p>我们先来说说预处理阶段做了什么事情。</p>
+<ul>
+<li>检查 SQL 查询语句中的表或者字段是否存在；</li>
+<li>将 <code>select *</code> 中的 <code>*</code> 符号，扩展为表上的所有列；</li>
+</ul>
+<p>我下面这条查询语句，test 这张表是不存在的，这时 MySQL 就会在执行 SQL 查询语句的 prepare 阶段中报错。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test;</span><br><span class="line">ERROR <span class="number">1146</span> (<span class="number">42</span>S02): <span class="keyword">Table</span> <span class="string">&#x27;mysql.test&#x27;</span> doesn<span class="string">&#x27;t exist</span></span><br></pre></td></tr></table></figure>
+
+<p>这里贴个 MySQL 8.0 源码来证明表或字段是否存在的判断，不是在解析器里做的，而是在 prepare 阶段。（<em>PS：下图是公众号「一树一溪」老哥帮我分析的，这位老哥专门写 MySQL 源码文章，感兴趣的朋友，可以微信搜索关注</em>）</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E8%A1%A8%E4%B8%8D%E5%AD%98%E5%9C%A8.jpeg" alt="img"></p>
+<p>上面的中间部分是 MySQL 报错表不存在时的函数调用栈，可以看到表不存在的错误是在get_table_share() 函数里报错的，而这个函数是在 prepare 阶段调用的。</p>
+<p>不过，对于 MySQL 5.7 判断表或字段是否存在的工作，是在词法分析&amp;语法分析之后，prepare 阶段之前做的。结论都一样，不是在解析器里做的。代码我就不放了，正因为 MySQL 5.7 代码结构不好，所以 MySQL 8.0 代码结构变化很大，后来判断表或字段是否存在的工作就被放入到 prepare 阶段做了。</p>
+<h3 id="优化器"><a href="#优化器" class="headerlink" title="优化器"></a>优化器</h3><p>经过预处理阶段后，还需要为 SQL 查询语句先制定一个执行计划，这个工作交由「优化器」来完成的。</p>
+<p><strong>优化器主要负责将 SQL 查询语句的执行方案确定下来</strong>，比如在表里面有多个索引的时候，优化器会基于查询成本的考虑，来决定选择使用哪个索引。</p>
+<p>当然，我们本次的查询语句（select * from product where id = 1）很简单，就是选择使用主键索引。</p>
+<p>要想知道优化器选择了哪个索引，我们可以在查询语句最前面加个 <code>explain</code> 命令，这样就会输出这条 SQL 语句的执行计划，然后执行计划中的 key 就表示执行过程中使用了哪个索引，比如下图的 key 为 <code>PRIMARY</code> 就是使用了主键索引。</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92.png" alt="img"></p>
+<p>如果查询语句的执行计划里的 key 为 null 说明没有使用索引，那就会全表扫描（type = ALL），这种查询扫描的方式是效率最低档次的，如下图：</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E5%85%A8%E8%A1%A8%E6%89%AB%E6%8F%8F.png" alt="img"></p>
+<p>这张 product 表只有一个索引就是主键，现在我在表中将 name 设置为普通索引（二级索引）。</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E4%BA%A7%E5%93%81%E8%A1%A8.png" alt="img"></p>
+<p>这时 product 表就有主键索引（id）和普通索引（name）。假设执行了这条查询语句：</p>
+<p><code>select id from product where id &gt; 1  and name like &#39;i%&#39;;</code></p>
+<p>这条查询语句的结果既可以使用主键索引，也可以使用普通索引，但是执行的效率会不同。这时，就需要优化器来决定使用哪个索引了。</p>
+<p>很显然这条查询语句是<strong>覆盖索引</strong>，直接在二级索引就能查找到结果（因为二级索引的 B+ 树的叶子节点的数据存储的是主键值），就没必要在主键索引查找了，因为查询主键索引的 B+ 树的成本会比查询二级索引的 B+ 的成本大，优化器基于查询成本的考虑，会选择查询代价小的普通索引。</p>
+<p>在下图中执行计划，我们可以看到，执行过程中使用了普通索引（name），Exta 为 Using index，这就是表明使用了覆盖索引优化。</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E9%80%89%E6%8B%A9%E7%B4%A2%E5%BC%95.png" alt="img"></p>
+<h3 id="执行器"><a href="#执行器" class="headerlink" title="执行器"></a>执行器</h3><p>经历完优化器后，就确定了执行方案，接下来 MySQL 就真正开始执行语句了，这个工作是由「执行器」完成的。在执行的过程中，执行器就会和存储引擎交互了，交互是以记录为单位的。</p>
+<p>接下来，用三种方式执行过程，跟大家说一下执行器和存储引擎的交互过程（PS ：为了写好这一部分，特地去看 MySQL 源码，也是第一次看哈哈）。</p>
+<ul>
+<li>主键索引查询</li>
+<li>全表扫描</li>
+<li>索引下推</li>
+</ul>
+<h4 id="主键索引查询"><a href="#主键索引查询" class="headerlink" title="#主键索引查询"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/mysql/base/how_select.html#%E4%B8%BB%E9%94%AE%E7%B4%A2%E5%BC%95%E6%9F%A5%E8%AF%A2">#</a>主键索引查询</h4><p>以本文开头查询语句为例，看看执行器是怎么工作的。</p>
+<p><code>select * from product where id = 1;</code></p>
+<p>这条查询语句的查询条件用到了主键索引，而且是等值查询，同时主键 id 是唯一，不会有 id 相同的记录，所以优化器决定选用访问类型为 const 进行查询，也就是使用主键索引查询一条记录，那么执行器与存储引擎的执行流程是这样的：</p>
+<ul>
+<li>执行器第一次查询，会调用 read_first_record 函数指针指向的函数，因为优化器选择的访问类型为 const，这个函数指针被指向为 InnoDB 引擎索引查询的接口，把条件 <code>id = 1</code> 交给存储引擎，<strong>让存储引擎定位符合条件的第一条记录</strong>。</li>
+<li>存储引擎通过主键索引的 B+ 树结构定位到 id = 1的第一条记录，如果记录是不存在的，就会向执行器上报记录找不到的错误，然后查询结束。如果记录是存在的，就会将记录返回给执行器；</li>
+<li>执行器从存储引擎读到记录后，接着判断记录是否符合查询条件，如果符合则发送给客户端，如果不符合则跳过该记录。</li>
+<li>执行器查询的过程是一个 while 循环，所以还会再查一次，但是这次因为不是第一次查询了，所以会调用 read_record 函数指针指向的函数，因为优化器选择的访问类型为 const，这个函数指针被指向为一个永远返回 - 1 的函数，所以当调用该函数的时候，执行器就退出循环，也就是结束查询了。</li>
+</ul>
+<p>至此，这个语句就执行完成了。</p>
+<h4 id="全表扫描"><a href="#全表扫描" class="headerlink" title="全表扫描"></a>全表扫描</h4><p>举个全表扫描的例子：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> product <span class="keyword">where</span> name <span class="operator">=</span> <span class="string">&#x27;iphone&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这条查询语句的查询条件没有用到索引，所以优化器决定选用访问类型为 ALL 进行查询，也就是全表扫描的方式查询，那么这时执行器与存储引擎的执行流程是这样的：</p>
+<ul>
+<li>执行器第一次查询，会调用 read_first_record 函数指针指向的函数，因为优化器选择的访问类型为 all，这个函数指针被指向为 InnoDB 引擎全扫描的接口，<strong>让存储引擎读取表中的第一条记录</strong>；</li>
+<li>执行器会判断读到的这条记录的 name 是不是 iphone，如果不是则跳过；如果是则将记录发给客户的（是的没错，Server 层每从存储引擎读到一条记录就会发送给客户端，之所以客户端显示的时候是直接显示所有记录的，是因为客户端是等查询语句查询完成后，才会显示出所有的记录）。</li>
+<li>执行器查询的过程是一个 while 循环，所以还会再查一次，会调用 read_record 函数指针指向的函数，因为优化器选择的访问类型为 all，read_record 函数指针指向的还是 InnoDB 引擎全扫描的接口，所以接着向存储引擎层要求继续读刚才那条记录的下一条记录，存储引擎把下一条记录取出后就将其返回给执行器（Server层），执行器继续判断条件，不符合查询条件即跳过该记录，否则发送到客户端；</li>
+<li>一直重复上述过程，直到存储引擎把表中的所有记录读完，然后向执行器（Server层） 返回了读取完毕的信息；</li>
+<li>执行器收到存储引擎报告的查询完毕的信息，退出循环，停止查询。</li>
+</ul>
+<p>至此，这个语句就执行完成了。</p>
+<h4 id="索引下推"><a href="#索引下推" class="headerlink" title="索引下推"></a>索引下推</h4><p>在这部分非常适合讲索引下推（MySQL 5.6 推出的查询优化策略），这样大家能清楚的知道，「下推」这个动作，下推到了哪里。</p>
+<p>索引下推能够减少<strong>二级索引</strong>在查询时的回表操作，提高查询的效率，因为它将 Server 层部分负责的事情，交给存储引擎层去处理了。</p>
+<p>举一个具体的例子，方便大家理解，这里一张用户表如下，我对 age 和 reward 字段建立了联合索引（age，reward）：</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E8%B7%AF%E9%A3%9E%E8%A1%A8.png" alt="img"></p>
+<p>现在有下面这条查询语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> t_user  <span class="keyword">where</span> age <span class="operator">&gt;</span> <span class="number">20</span> <span class="keyword">and</span> reward <span class="operator">=</span> <span class="number">100000</span>;</span><br></pre></td></tr></table></figure>
+
+<p>联合索引当遇到范围查询 (&gt;、&lt;) 就会停止匹配，也就是 <strong>age 字段能用到联合索引，但是 reward 字段则无法利用到索引</strong>。具体原因这里可以看这篇：<a target="_blank" rel="noopener" href="https://xiaolincoding.com/mysql/index/index_interview.html#%E6%8C%89%E5%AD%97%E6%AE%B5%E4%B8%AA%E6%95%B0%E5%88%86%E7%B1%BB">索引常见面试题(opens new window)</a></p>
+<p>那么，不使用索引下推（MySQL 5.6 之前的版本）时，执行器与存储引擎的执行流程是这样的：</p>
+<ul>
+<li><p>Server 层首先调用存储引擎的接口定位到满足查询条件的第一条二级索引记录，也就是定位到 age &gt; 20 的第一条记录；</p>
+</li>
+<li><p>存储引擎根据二级索引的 B+ 树快速定位到这条记录后，获取主键值，然后<strong>进行回表操作</strong>，将完整的记录返回给 Server 层；</p>
+</li>
+<li><p>Server 层在判断该记录的 reward 是否等于 100000，如果成立则将其发送给客户端；否则跳过该记录；</p>
+</li>
+<li><p>接着，继续向存储引擎索要下一条记录，存储引擎在二级索引定位到记录后，获取主键值，然后回表操作，将完整的记录返回给 Server 层；</p>
+</li>
+<li><p>如此往复，直到存储引擎把表中的所有记录读完。</p>
+<p>可以看到，没有索引下推的时候，每查询到一条二级索引记录，都要进行回表操作，然后将记录返回给 Server，接着 Server 再判断该记录的 reward 是否等于 100000。</p>
+<p>而使用索引下推后，判断记录的 reward 是否等于 100000 的工作交给了存储引擎层，过程如下 ：</p>
+<ul>
+<li>Server 层首先调用存储引擎的接口定位到满足查询条件的第一条二级索引记录，也就是定位到 age &gt; 20 的第一条记录；</li>
+<li>存储引擎定位到二级索引后，<strong>先不执行回表</strong>操作，而是先判断一下该索引中包含的列（reward列）的条件（reward 是否等于 100000）是否成立。如果<strong>条件不成立</strong>，则直接<strong>跳过该二级索引</strong>。如果<strong>成立</strong>，则<strong>执行回表</strong>操作，将完成记录返回给 Server 层。</li>
+<li>Server 层在判断其他的查询条件（本次查询没有其他条件）是否成立，如果成立则将其发送给客户端；否则跳过该记录，然后向存储引擎索要下一条记录。</li>
+<li>如此往复，直到存储引擎把表中的所有记录读完。</li>
+</ul>
+<p>可以看到，使用了索引下推后，虽然 reward 列无法使用到联合索引，但是因为它包含在联合索引（age，reward）里，所以直接在存储引擎过滤出满足 reward = 100000 的记录后，才去执行回表操作获取整个记录。相比于没有使用索引下推，节省了很多回表操作。</p>
+<p>当你发现执行计划里的 Extr 部分显示了 “Using index condition”，说明使用了索引下推。</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E7%B4%A2%E5%BC%95%E4%B8%8B%E6%8E%A8%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92.png" alt="img"></p>
+</li>
+</ul>
+<p>总结</p>
+<p>执行一条 SQL 查询语句，期间发生了什么？</p>
+<ul>
+<li>连接器：建立连接，管理连接、校验用户身份；</li>
+<li>查询缓存：查询语句如果命中查询缓存则直接返回，否则继续往下执行。MySQL 8.0 已删除该模块；</li>
+<li>解析 SQL，通过解析器对 SQL 查询语句进行词法分析、语法分析，然后构建语法树，方便后续模块读取表名、字段、语句类型；</li>
+<li>执行 SQL：执行 SQL 共有三个阶段：<ul>
+<li>预处理阶段：检查表或字段是否存在；将 <code>select *</code> 中的 <code>*</code> 符号扩展为表上的所有列。</li>
+<li>优化阶段：基于查询成本的考虑， 选择查询成本最小的执行计划；</li>
+<li>执行阶段：根据执行计划执行 SQL 查询语句，从存储引擎读取记录，返回给客户端；</li>
+</ul>
+</li>
+</ul>
+<p>怎么样？现在再看这张图，是不是很清晰了。</p>
+<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/mysql%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B2" alt="查询语句执行流程"></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-Redis-线程模型"
   class="article article-type-post"
   itemscope
@@ -684,562 +1351,13 @@
 </article>
 
     
-    <article
-  id="post-JAVA线上故障排查全套解决方案"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"
-    >JAVA线上故障排查全套解决方案</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="article-date">
-  <time datetime="2022-10-10T10:04:15.000Z" itemprop="datePublished">2022-10-10</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C/">线上故障</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="JAVA线上故障排查全套解决方案"><a href="#JAVA线上故障排查全套解决方案" class="headerlink" title="JAVA线上故障排查全套解决方案"></a>JAVA线上故障排查全套解决方案</h4><p>线上故障主要会包括<strong>cpu、磁盘、内存以及网络</strong>问题，而大多数故障可能会包含不止一个层面的问题，所以进行排查时候尽量四个方面依次排查一遍。同时例如<strong>jstack、jmap</strong>等工具也是不囿于一个方面的问题的，基本上出问题就是<strong>df、free、top</strong> 三连，然后依次jstack、jmap伺候，具体问题具体分析即可</p>
-<h4 id="CPU"><a href="#CPU" class="headerlink" title="CPU"></a><strong>CPU</strong></h4><p>一般来讲我们首先会排查cpu方面的问题。cpu异常往往还是比较好定位的。原因包括<strong>业务逻辑问题(死循环)、频繁gc以及上下文切换过多</strong>。而最常见的往往是业务逻辑(或者框架逻辑)导致的，可以使用jstack来分析对应的堆栈情况</p>
-<p><strong>使用jstack分析cpu问题</strong></p>
-<p>ps命令找到对应进程的pid(如果你有好几个目标进程，可以先用top看一下哪个占用比较高)</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">1、对应进程的pid</span><br><span class="line">ps -ef | grep 进程关键字</span><br><span class="line">2、找到cpu使用率比较高的一些线程</span><br><span class="line">top -H -p pid</span><br><span class="line">3、将占用最高的pid转换为16进制printf &#x27;%x\n&#x27; pid得到nid</span><br><span class="line">printf &#x27;%x\n&#x27; pid</span><br><span class="line">4、直接在jstack中找到相应的堆栈信息</span><br><span class="line">jstack pid |grep &#x27;nid&#x27; -C5 –color</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185335954.png" alt="image-20230319185335954"></p>
-<p>可以看到我们已经找到了nid为0x42的堆栈信息，接着只要仔细分析一番即可。</p>
-<p>当然更常见的是我们对整个jstack文件进行分析，通常我们会比较关注WAITING和TIMED_WAITING的部分，BLOCKED就不用说了。我们可以使用命令cat jstack.log | grep “java.lang.Thread.State” | sort -nr | uniq -c来对jstack的状态有一个整体的把握，如果WAITING之类的特别多，那么多半是有问题啦。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat jstack.log | grep &quot;java.lang.Thread.State&quot; | sort -nr | uniq -c</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185422418.png" alt="image-20230319185422418"></p>
-<h4 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a><strong>磁盘</strong></h4><p>1.利用 df 查询磁盘状态</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df -h</span><br></pre></td></tr></table></figure>
-
-<p>2.获取目录下文件夹大小</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">du -sh *</span><br></pre></td></tr></table></figure>
-
-<p>3.磁盘问题还是性能上的问题。我们可以通过iostat -d -k -x来进行分析</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1、iostat属于sysstat软件包</span><br><span class="line">yum install sysstat</span><br><span class="line">2、iostat -d -k -x 1</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185649578.png" alt="image-20230319185649578"></p>
-<p>%util可以看到每块磁盘写入的程度</p>
-<p>rrqpm/s以及wrqm/s分别表示读写速度，一般就能帮助定位到具体哪块磁盘出现问题</p>
-<p>4.需要知道是哪个进程在进行读写，用iotop命令来进行定位文件读写的来源</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iotop</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185746056.png" alt="image-20230319185746056"></p>
-<p>5.不过这边拿到的是tid，我们要转换成pid，可以通过readlink来找到</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">readlink -f /proc/*/task/tid/../..</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185902218.png" alt="image-20230319185902218"></p>
-<p>6.找到pid之后就可以看这个进程具体的读写情况cat /proc/pid/io</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/pid/io</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185953457.png" alt="image-20230319185953457"></p>
-<p>7.lsof命令来确定具体的文件读写情况lsof -p pid</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsof -p pid</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190034159.png" alt="image-20230319190034159"></p>
-<h4 id="内存"><a href="#内存" class="headerlink" title="内存"></a><strong>内存</strong></h4><p>主要包括OOM、GC问题和堆外内存。一般来讲，我们会先用free命令先来检查一发内存的各种情况</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">free</span><br><span class="line">free -g</span><br><span class="line">free -m</span><br></pre></td></tr></table></figure>
-
-<h4 id="堆内内存"><a href="#堆内内存" class="headerlink" title="堆内内存"></a>堆内内存</h4><p>内存问题大多还都是堆内内存问题。表象上主要分为OOM和StackOverflow</p>
-<p>OOM</p>
-<p>JMV中的内存不足，OOM大致可以分为以下几种：</p>
-<p><strong>Exception in thread “main” java.lang.OutOfMemoryError: unable to create new native thread</strong></p>
-<p>这个意思是<strong>没有足够的内存空间给线程分配java栈，基本上还是线程池代码写的有问题</strong>，比如说忘记shutdown，所以说应该首先从代码层面来寻找问题，<strong>使用jstack或者jmap</strong>。如果一切都正常，JVM方面可以通过指定<strong>Xss来减少单个thread stack的大小</strong>。另外也可以在系统层面，可以通过修改/etc/security/limits.conf  nofile和nproc来增大os对线程的限制</p>
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190209877.png" alt="image-20230319190209877"></p>
-<p><strong>Exception in thread “main” java.lang.OutOfMemoryError: Java heap space</strong></p>
-<p>这个意思是堆的内存占用已经达到-Xmx设置的最大值，应该是最常见的OOM错误了。解决思路仍然是先应该在代码中找，<strong>怀疑存在内存泄漏</strong>，<strong>通过jstack和jmap去定位问题</strong>。如果说一切都正常，才需要通过<strong>调整Xmx的值来扩大内存</strong>。</p>
-<p><strong>Caused by: java.lang.OutOfMemoryError: Meta space</strong></p>
-<p>这个意思是<strong>元数据区的内存占用已经达到XX:MaxMetaspaceSize设置的最大值</strong>，排查思路和上面的一致，参数方面可以通过<strong>XX:MaxPermSize来进行调整</strong>(这里就不说1.8以前的永久代了)</p>
-<p><strong>Stack Overflow</strong></p>
-<p><strong>栈内存溢出</strong>，这个大家见到也比较多。</p>
-<p><strong>Exception in thread “main” java.lang.StackOverflowError</strong></p>
-<p>表示线程栈需要的内存大于<strong>Xss值</strong>，同样也是先进行排查，参数方面通过Xss来调整，但调整的太大可能又会引起OOM</p>
-<h4 id="使用JMAP定位代码内存泄漏"><a href="#使用JMAP定位代码内存泄漏" class="headerlink" title="使用JMAP定位代码内存泄漏"></a>使用<strong>JMAP</strong>定位代码内存泄漏</h4><p>上述关于OOM和StackOverflow的代码排查方面，我们一般使用JMAP</p>
-<p> jmap -dump:format=b,file=filename pid来导出dump文件</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -dump:format=b,file=filename pid</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190407933.png" alt="image-20230319190407933"></p>
-<p><strong>mat(Eclipse Memory Analysis Tools)导入dump文件进行分析</strong>，内存泄漏问题一般我们直接选Leak Suspects即可，mat给出了内存泄漏的建议。另外也可以选择Top Consumers来查看最大对象报告。和线程相关的问题可以选择thread overview进行分析。除此之外就是选择Histogram类概览来自己慢慢分析，大家可以搜搜mat的相关教程。（idea插件篇之java内存分析工具(<strong>JProfiler</strong>)）</p>
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190439697.png" alt="image-20230319190439697"></p>
-<p>日常开发中，代码产生内存泄漏是比较常见的事，并且比较隐蔽，需要开发者更加关注细节。比如说每次请求都new对象，导致大量重复创建对象；进行文件流操作但未正确关闭；手动不当触发gc；ByteBuffer缓存分配不合理等都会造成代码OOM。</p>
-<p>另一方面，我们可以在<strong>启动参数中指定-XX:+HeapDumpOnOutOfMemoryError来保存OOM时的dump文件</strong></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">内存OOM时，自动生成dump文件</span> </span><br><span class="line">-XX:+HeapDumpOnOutOfMemoryError</span><br><span class="line">-XX:HeapDumpPath=/data/logs/</span><br></pre></td></tr></table></figure>
-
-<p>GC问题</p>
-<p>通过GC日志来排查问题的，在启动参数中加上**-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps**来开启GC日志。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-verbose:gc -XX:+PrintGCDetails </span><br><span class="line">-XX:+PrintGCDateStamps </span><br><span class="line">-XX:+PrintGCTimeStamps</span><br></pre></td></tr></table></figure>
-
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C/" rel="tag">线上故障</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-线上遇到了OOM"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/"
-    >线上遇到了OOM</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/" class="article-date">
-  <time datetime="2022-09-24T09:03:26.000Z" itemprop="datePublished">2022-09-24</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C/">线上故障</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="线上问题遇到了OOM"><a href="#线上问题遇到了OOM" class="headerlink" title="线上问题遇到了OOM"></a>线上问题遇到了OOM</h4><p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319170526058.png" alt="image-20230319170526059"></p>
-<h4 id="为什么会-OOM"><a href="#为什么会-OOM" class="headerlink" title="为什么会 OOM"></a>为什么会 OOM</h4><p><strong>OOM 全称 “Out Of Memory”，表示内存耗尽</strong>。当 <strong>JVM 因为没有足够的内存来为对象分配空间，并且垃圾回收器也已经没有空间可回收时</strong>，就会抛出这个错误</p>
-<ul>
-<li><p><strong>分配过少</strong>：JVM 初始化内存小，业务使用了大量内存；或者不同 JVM 区域分配内存不合理</p>
-</li>
-<li><p><strong>代码漏洞</strong>：某一个对象被频繁申请，不用了之后却没有被释放，导致内存耗尽</p>
-</li>
-<li><p><strong>内存泄漏</strong>：<strong>申请使用完的内存没有释放，导致虚拟机不能再次使用该内存</strong>，此时这段内存就泄露了。因为申请者不用了，而又不能被虚拟机分配给别人用</p>
-</li>
-<li><p><strong>内存溢出：申请的内存超出了 JVM 能提供的内存大小</strong>，此时称之为溢出</p>
-</li>
-</ul>
-<p>​                           <strong>内存泄漏持续存在，最后一定会溢出</strong>，两者是因果关系</p>
-<h4 id="常见的-OOM"><a href="#常见的-OOM" class="headerlink" title="常见的 OOM"></a>常见的 OOM</h4><ul>
-<li><strong>java.lang.OutOfMemoryError: PermGen space</strong></li>
-</ul>
-<p><strong>Java7 永久代（方法区）溢出</strong>，它用于存储已被<strong>虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码</strong>等数据。每当一个类初次加载的时候，元数据都会存放到永久代</p>
-<p><strong>一般出现于大量 Class 对象或者 JSP 页面，或者采用 CgLib 动态代理技术导致</strong></p>
-<p>通过 -XX：PermSize 和 -XX：MaxPermSize 修改方法区大小</p>
-<p><strong>Java8 将永久代变更为元空间</strong>，报错：<strong>java.lang.OutOfMemoryError: Metadata space</strong>，元空间内存不足默认进行动态扩展</p>
-<ul>
-<li><strong>java.lang.StackOverflowError</strong></li>
-</ul>
-<p><strong>虚拟机栈溢出</strong>，一般是由于<strong>程序中存在 死循环或者深度递归调用 造成的</strong>。如果<strong>栈大小设置过小也会</strong>出现溢出，可以通过 <strong>-Xss 设置栈的大小</strong></p>
-<p><strong>虚拟机抛出栈溢出错误，可以在日志中定位到错误的类、方法</strong></p>
-<ul>
-<li><strong>java.lang.OutOfMemoryError: Java heap space</strong></li>
-</ul>
-<p><strong>Java 堆内存溢出</strong>，溢出的原因一般由于 <strong>JVM 堆内存设置不合理或者内存泄漏导致</strong></p>
-<p>如果是内存泄漏，可以通过工具查看泄漏对象到 GC Roots 的引用链。掌握了泄漏对象的类型信息以及 GC Roots 引用链信息，就可以精准地定位出泄漏代码的位置</p>
-<p>如果不存在内存泄漏，就是内存中的对象确实都还必须存活着，那就应该检查虚拟机的堆参数（-Xmx 与 -Xms），查看是否可以将虚拟机的内存调大些</p>
-<h4 id="查看-JVM-内存分布"><a href="#查看-JVM-内存分布" class="headerlink" title="查看 JVM 内存分布"></a><strong>查看 JVM 内存分布</strong></h4><p>ps命令找到对应进程的pid</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ps -ef | grep 进程关键字  </span><br></pre></td></tr></table></figure>
-
-<p>假设我们 Java 应用 PID 为 15162，输入命令查看 JVM 内存分布</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -heap 15162</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">[xxx@xxx ~]# jmap -heap 15162</span><br><span class="line">Attaching to process ID 15162, please wait...</span><br><span class="line">Debugger attached successfully.</span><br><span class="line">Server compiler detected.</span><br><span class="line">JVM version is 25.161-b12</span><br><span class="line"></span><br><span class="line">using thread-local object allocation.</span><br><span class="line">Mark Sweep Compact GC</span><br><span class="line"></span><br><span class="line">Heap Configuration:</span><br><span class="line">   MinHeapFreeRatio         = 40 # 最小堆使用比例</span><br><span class="line">   MaxHeapFreeRatio         = 70 # 最大堆可用比例</span><br><span class="line">   MaxHeapSize              = 482344960 (460.0MB) # 最大堆空间大小</span><br><span class="line">   NewSize                  = 10485760 (10.0MB) # 新生代分配大小</span><br><span class="line">   MaxNewSize               = 160759808 (153.3125MB) # 最大新生代可分配大小</span><br><span class="line">   OldSize                  = 20971520 (20.0MB) # 老年代大小</span><br><span class="line">   NewRatio                 = 2 # 新生代比例</span><br><span class="line">   SurvivorRatio            = 8 # 新生代与 Survivor 比例</span><br><span class="line">   MetaspaceSize            = 21807104 (20.796875MB) # 元空间大小</span><br><span class="line">   CompressedClassSpaceSize = 1073741824 (1024.0MB) # Compressed Class Space 空间大小限制</span><br><span class="line">   MaxMetaspaceSize         = 17592186044415 MB # 最大元空间大小</span><br><span class="line">   G1HeapRegionSize         = 0 (0.0MB) # G1 单个 Region 大小</span><br><span class="line"></span><br><span class="line">Heap Usage:  # 堆使用情况</span><br><span class="line">New Generation (Eden + 1 Survivor Space): # 新生代</span><br><span class="line">   capacity = 9502720 (9.0625MB) # 新生代总容量</span><br><span class="line">   used     = 4995320 (4.763908386230469MB) # 新生代已使用</span><br><span class="line">   free     = 4507400 (4.298591613769531MB) # 新生代剩余容量</span><br><span class="line">   52.56726495150862% used # 新生代使用占比</span><br><span class="line">Eden Space:  </span><br><span class="line">   capacity = 8454144 (8.0625MB) # Eden 区总容量</span><br><span class="line">   used     = 4029752 (3.8430709838867188MB) # Eden 区已使用</span><br><span class="line">   free     = 4424392 (4.219429016113281MB) # Eden 区剩余容量</span><br><span class="line">   47.665996699370154% used  # Eden 区使用占比</span><br><span class="line">From Space: # 其中一个 Survivor 区的内存分布</span><br><span class="line">   capacity = 1048576 (1.0MB)</span><br><span class="line">   used     = 965568 (0.92083740234375MB)</span><br><span class="line">   free     = 83008 (0.07916259765625MB)</span><br><span class="line">   92.083740234375% used</span><br><span class="line">To Space: # 另一个 Survivor 区的内存分布</span><br><span class="line">   capacity = 1048576 (1.0MB)</span><br><span class="line">   used     = 0 (0.0MB)</span><br><span class="line">   free     = 1048576 (1.0MB)</span><br><span class="line">   0.0% used</span><br><span class="line">tenured generation: # 老年代</span><br><span class="line">   capacity = 20971520 (20.0MB)</span><br><span class="line">   used     = 10611384 (10.119804382324219MB)</span><br><span class="line">   free     = 10360136 (9.880195617675781MB)</span><br><span class="line">   50.599021911621094% used</span><br><span class="line"></span><br><span class="line">10730 interned Strings occupying 906232 bytes.</span><br></pre></td></tr></table></figure>
-
-<p><strong>通过查看 JVM 内存分配以及运行时使用情况，可以判断内存分配是否合理</strong></p>
-<p>另外，可以<strong>在 JVM 运行时查看最耗费资源的对象</strong>，<strong>jmap -histo:live 15162 | more</strong></p>
-<p><strong>jmap -histo:live 执行此命令，JVM 会先触发 GC，再统计信息</strong></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -histo:live 15162 | more</span><br></pre></td></tr></table></figure>
-
-<p>JVM 内存对象列表按照对象所占内存大小排序</p>
-<ul>
-<li><p>instances：实例数</p>
-</li>
-<li><p>bytes：单位 byte</p>
-</li>
-<li><p>class name：类名</p>
-<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319171713310.png" alt="image-20230319171713310"></p>
-</li>
-</ul>
-<h4 id="Dump-文件分析"><a href="#Dump-文件分析" class="headerlink" title="Dump 文件分析"></a><strong>Dump 文件分析</strong></h4><p>Dump 文件是 <strong>Java 进程的内存镜像</strong>，其中主要包括 <strong>系统信息、虚拟机属性、完整的线程 Dump、所有类和对象的状态 等信息</strong></p>
-<p>当程序发生内存溢出或 GC 异常情况时，怀疑 JVM 发生了 内存泄漏，这时我们就可以导出 Dump 文件分析</p>
-<p>JVM 启动参数配置添加以下参数</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">-XX:+HeapDumpOnOutOfMemoryError</span><br><span class="line">-XX:HeapDumpPath=./（参数为 Dump 文件生成路径）</span><br></pre></td></tr></table></figure>
-
-<p><strong>当 JVM 发生 OOM 异常自动导出 Dump 文件，文件名称默认格式：java_pid{pid}.hprof</strong></p>
-<p>上面配置是在应用抛出 OOM 后自动导出 Dump，或者<strong>可以在 JVM 运行时导出 Dump 文件</strong></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">jmap -dump:file=[文件路径] [pid]</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">示例</span></span><br><span class="line">jmap -dump:file=./jvmdump.hprof 15162</span><br></pre></td></tr></table></figure>
-
-<p>在本地写一个测试代码，验证下 OOM 以及分析 Dump 文件</p>
-<p>设置 VM 参数：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">-Xms3m -Xmx3m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./</span><br><span class="line">设置 VM 参数：</span><br><span class="line">-Xms3m -Xmx3m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./</span><br><span class="line"></span><br><span class="line">public static void main(String[] args) &#123;</span><br><span class="line">    List&lt;Object&gt; oomList = Lists.newArrayList();</span><br><span class="line">  	// 无限循环创建对象</span><br><span class="line">    while (true) &#123;</span><br><span class="line">        oomList.add(new Object());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>通过报错信息得知，java heap space 表示 OOM 发生在堆区，并生成了 hprof 二进制文件在当前文件夹下</p>
-<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172025932.png" alt="image-20230319172025932"></p>
-<h5 id="JvisualVM-分析"><a href="#JvisualVM-分析" class="headerlink" title="JvisualVM 分析"></a><strong>JvisualVM 分析</strong></h5><p><strong>Dump 分析工具有很多</strong>，相对而言 <strong>JvisualVM、JProfiler、Eclipse Mat</strong>，使用人群更多一些。下面以 JvisualVM 举例分析 Dump 文件</p>
-<p><strong>运行JvisualVM</strong>    ./bin/jvisualvm.exe</p>
-<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172220985.png" alt="image-20230319172220985"></p>
-<p><strong>载入Dump 文件</strong></p>
-<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172238653.png" alt="image-20230319172238653"></p>
-<p><strong>查看触发 OOM 的线程堆栈，清晰得知程序溢出的原因</strong></p>
-<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172306804.png" alt="image-20230319172306804"></p>
-<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172422965.png" alt="image-20230319172422965"></p>
-<p><strong>查看 JVM 内存里保留大小最大的对象，可以自由选择排查个<img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172456139.png" alt="image-20230319172456139">数</strong></p>
-<p>点击对象还可以跳转具体的对象引用详情页面</p>
-<p><img src="/2022/09/24/%E7%BA%BF%E4%B8%8A%E9%81%87%E5%88%B0%E4%BA%86OOM/image-20230319172519873.png" alt="image-20230319172519873"></p>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>线上如遇到 JVM 内存溢出，可以分以下几步排查</p>
-<ol>
-<li><strong>jmap -heap 查看是否内存分配过小</strong></li>
-<li><strong>jmap -histo 查看是否有明显的对象分配过多且没有释放情况</strong></li>
-<li><strong>jmap -dump 导出 JVM 当前内存快照，使用 JDK 自带或 MAT 等工具分析快照</strong></li>
-</ol>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/OOM/" rel="tag">OOM</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-工厂模式"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/09/18/%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/"
-    >工厂模式</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/09/18/%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/" class="article-date">
-  <time datetime="2022-09-18T07:51:09.000Z" itemprop="datePublished">2022-09-18</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="工厂模式"><a href="#工厂模式" class="headerlink" title="工厂模式"></a>工厂模式</h4><h4 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h4><p>对上层的使用者<strong>隔离对象创建的过程</strong></p>
-<p>对象创建的过程复杂，使用者不容易掌握</p>
-<p>对象创建要满足某种条件</p>
-<p>为了隔离一些复杂的过程，使得<strong>这些复杂的过程不向外暴露</strong></p>
-<p>在创建对象时不会对客户端暴露创建逻辑，并且是通过使用一个共同的接口来指向新创建的对象，实现了创建者和调用者分离</p>
-<p>利用工厂模式可以<strong>降低程序的耦合性</strong></p>
-<h4 id="简单工厂模式"><a href="#简单工厂模式" class="headerlink" title="简单工厂模式"></a>简单工厂模式</h4><p>简单工厂模式相当于是一个工厂中有各种产品，创建在一个类中，客户无需知道具体产品的名称，</p>
-<p><strong>只需要知道产品类所对应的参数即可</strong></p>
-<p>优点：</p>
-<p>工厂类包含必要的逻辑判断，可以决定在什么时候创建哪一个产品的实例。客户端可以免除直接创建产品对象的职责，很方便的创建出相应的产品。工厂和产品的职责区分明确。</p>
-<p>客户端无需知道所创建具体产品的类名，只需知道参数即可。</p>
-<p>缺点：</p>
-<p><strong>简单工厂模式的工厂类单一，负责所有产品的创建，职责过重</strong>，一旦异常，整个系统将受影响。且工厂类代码会非常臃肿，违背高聚合原则。</p>
-<p>使用简单工厂模式会增加系统中类的个数（引入新的工厂类），增加系统的复杂度和理解难度</p>
-<p>系统扩展困难，一旦增加新产品不得不修改工厂逻辑，在产品类型较多时，可能造成逻辑过于复杂</p>
-<p>简单工厂模式使用了 static 工厂方法，造成工厂角色无法形成基于继承的等级结构。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    MouseFactory mouseFactory=<span class="keyword">new</span> <span class="title class_">MouseFactory</span>();</span><br><span class="line">    <span class="type">IMouse</span> <span class="variable">mouse</span> <span class="operator">=</span> mouseFactory.createMouse(<span class="string">&quot;联想&quot;</span>);</span><br><span class="line">    mouse.getMouseInfo();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MouseFactory</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> IMouse <span class="title function_">createMouse</span><span class="params">(String type)</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(<span class="string">&quot;联想&quot;</span>.equals(type))&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">LenoveMouse</span>();</span><br><span class="line">        &#125;<span class="keyword">else</span> <span class="keyword">if</span>(<span class="string">&quot;惠普&quot;</span>.equals(type))&#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">HPMouse</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">IMouse</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">getMouseInfo</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HPMouse</span> <span class="keyword">implements</span> <span class="title class_">IMouse</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">getMouseInfo</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;这是惠普鼠标&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LenoveMouse</span> <span class="keyword">implements</span> <span class="title class_">IMouse</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">getMouseInfo</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;这是联想鼠标&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h4 id="工厂模式-1"><a href="#工厂模式-1" class="headerlink" title="工厂模式"></a>工厂模式</h4><p><strong>定义一个创建对象的接口，让其子类自己决定实例化哪一个工厂类</strong>，工厂模式使其创建过程延迟到子类进行</p>
-<p>工厂模式也就是鼠标工厂是个父类，有生产鼠标这个接口。</p>
-<p>戴尔鼠标工厂，惠普鼠标工厂继承它，可以分别生产戴尔鼠标，惠普鼠标。</p>
-<p>生产哪种鼠标不再由参数决定，而是创建鼠标工厂时，由戴尔鼠标工厂创建。</p>
-<p>后续直接调用鼠标工厂.生产鼠标()即可</p>
-<p><img src="/2022/09/18/%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/image-20230319174520291.png" alt="image-20230319174520291"></p>
-<p>优点：</p>
-<p><strong>用户只需要知道具体工厂的名称就可得到所要的产品，无须知道产品的具体创建过程</strong>。</p>
-<p>灵活性增强，对于新产品的创建，只需多写一个相应的工厂类。</p>
-<p>典型的解耦框架。高层模块只需要知道产品的抽象类，无须关心其他实现类，满足迪米特法则、依赖倒置原则和里氏替换原则。</p>
-<p>缺点：</p>
-<p>类的个数容易过多，增加复杂度</p>
-<p>增加了系统的抽象性和理解难度</p>
-<p>抽象产品<strong>只能生产一种产品</strong>，此弊端可使用抽象工厂模式解决。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">  IMouseFactory lenoveMouserFactory=<span class="keyword">new</span> <span class="title class_">LenoveMouserFactory</span>();</span><br><span class="line">  lenoveMouserFactory.createMouse();</span><br><span class="line">  <span class="comment">//实例化惠普鼠标工厂</span></span><br><span class="line">  IMouseFactory hpMouserFactory=<span class="keyword">new</span> <span class="title class_">HPMouserFactory</span>();</span><br><span class="line">  <span class="comment">//输出惠普鼠标品牌</span></span><br><span class="line">  hpMouserFactory.createMouse();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">IMouseFactory</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">createMouse</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HPMouserFactory</span> <span class="keyword">implements</span> <span class="title class_">IMouseFactory</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">createMouse</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;这是惠普工厂生产的惠普鼠标&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LenoveMouserFactory</span> <span class="keyword">implements</span> <span class="title class_">IMouseFactory</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">createMouse</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;这是联想工厂生产的联想鼠标&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>工厂方法模式中我们把生成产品类的时间延迟，就是通过对应的工厂类来生成对应的产品类，在这里我们就可以实现“开发-封闭”原则，无论加多少产品类，我们都不用修改原来类中的代码，而是<strong>通过增加工厂类来实现</strong>。但是这还是有缺点的，如果添加键盘产品，就需要添加键盘工厂类。假如我们要实现的产品接口不止一个，也就是有多个产品接口，不同产品接口有对应的产品族。什么是产品族呢？简单的理解就是，不同厂家的不仅有鼠标，还有键盘，音响，笔记本可以组成一个产品族。对于这种情况我们可以采用抽象工厂模式</p>
-<h4 id="抽象工厂模式"><a href="#抽象工厂模式" class="headerlink" title="抽象工厂模式"></a>抽象工厂模式</h4><p><strong>抽象工厂模式也就是不仅生产鼠标，同时生产键盘</strong>。  也就是PC厂商是个父类，有生产鼠标，生产键盘两个接口。  戴尔工厂，惠普工厂继承它，可以分别生产戴尔鼠标+戴尔键盘，和惠普鼠标+惠普键盘。  创建工厂时，由戴尔工厂创建。  后续工厂.生产鼠标()则生产戴尔鼠标，工厂.生产键盘()则生产戴尔键盘</p>
-<p><img src="/2022/09/18/%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/image-20230319174714596.png" alt="image-20230319174714596"></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    PCFactory lenoveFactory=<span class="keyword">new</span> <span class="title class_">LenoveFactory</span>();</span><br><span class="line">    lenoveFactory.createMouse().getMouseInfo();</span><br><span class="line">    lenoveFactory.createKeyBo().getKeyBoInfo();</span><br><span class="line"></span><br><span class="line">    PCFactory hpFactory=<span class="keyword">new</span> <span class="title class_">HPFactory</span>();</span><br><span class="line">    hpFactory.createMouse().getMouseInfo();</span><br><span class="line">    hpFactory.createKeyBo().getKeyBoInfo();</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">PCFactory</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> IMouse <span class="title function_">createMouse</span><span class="params">()</span>;</span><br><span class="line">    <span class="keyword">public</span> IKeyBo <span class="title function_">createKeyBo</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LenoveFactory</span> <span class="keyword">implements</span> <span class="title class_">PCFactory</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> IMouse <span class="title function_">createMouse</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">LenoveMouse</span>();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> IKeyBo <span class="title function_">createKeyBo</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">LenoveKeyBo</span>();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">IMouse</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">getMouseInfo</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LenoveMouse</span> <span class="keyword">implements</span> <span class="title class_">IMouse</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">getMouseInfo</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;这是联想鼠标&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>假设我们增加华硕工厂，则我们需要增加华硕工厂，和戴尔工厂一样，继承PC厂商。</p>
-<p>之后创建华硕鼠标，继承鼠标类。创建华硕键盘，继承键盘类即可</p>
-<p><img src="/2022/09/18/%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/image-20230319174825751.png" alt="image-20230319174825751"></p>
-<p>假设我们增加耳麦这个产品，则首先我们需要增加耳麦这个父类，再加上戴尔耳麦，惠普耳麦这两个子类。</p>
-<p>之后在PC厂商这个父类中，增加生产耳麦的接口。最后在戴尔工厂，惠普工厂这两个类中，分别实现生产戴尔耳麦，惠普耳麦的功能</p>
-<p><img src="/2022/09/18/%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/image-20230319174859556.png" alt="image-20230319174859556"></p>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-策略模式"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/09/15/%E7%AD%96%E7%95%A5%E6%A8%A1%E5%BC%8F/"
-    >策略模式</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/09/15/%E7%AD%96%E7%95%A5%E6%A8%A1%E5%BC%8F/" class="article-date">
-  <time datetime="2022-09-15T08:09:11.000Z" itemprop="datePublished">2022-09-15</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="策略模式"><a href="#策略模式" class="headerlink" title="策略模式"></a>策略模式</h4><p>在策略模式（Strategy Pattern）中，<strong>一个类的行为或其算法可以在运行时更改</strong></p>
-<h5 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h5><p><strong>意图：定义一系列的算法,把它们一个个封装起来</strong>, 并且使它们可相互替换。</p>
-<p><strong>主要解决：</strong>在有多种算法相似的情况下，<strong>使用 if…else 所带来的复杂和难以维护</strong>。</p>
-<p><strong>何时使用：</strong>一个系统有许多许多类，而区分它们的只是他们直接的行为。</p>
-<p><strong>如何解决：将这些算法封装成一个一个的类，任意地替换</strong>。</p>
-<p><strong>关键代码：实现同一个接口</strong>。</p>
-<p><strong>应用实例：</strong> 1、诸葛亮的锦囊妙计，每一个锦囊就是一个策略。 2、旅行的出游方式，选择骑自行车、坐汽车，每一种旅行方式都是一个策略。 3、JAVA AWT 中的 LayoutManager。</p>
-<p><strong>优点：</strong> 1、<strong>算法可以自由切换</strong>。 2、<strong>避免使用多重条件判断</strong>。 3、<strong>扩展性良好</strong>。</p>
-<p><strong>缺点：</strong> 1、<strong>策略类会增多</strong>。 2、所有策略类都需要对外暴露。</p>
-<p><strong>使用场景：</strong> 1、如果在一个系统里面有许多类，它们之间的<strong>区别仅在于它们的行为</strong>，那么使用策略模式可以动态地让一个对象在许多行为中选择一种行为。 2、<strong>一个系统需要动态地在几种算法中选择一种</strong>。 3、如果一个对象有很多的行为，如果不用恰当的模式，这些行为就只好使用多重的条件选择语句来实现。</p>
-<p><strong>注意事项：</strong>如果一个系统的策略多于四个S就需要考虑使用混合模式，解决策略类膨胀的问题。</p>
-<h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>我们将创建一个定义活动的 <em>Strategy</em> 接口和实现了 <em>Strategy</em> 接口的实体策略类。<em>Context</em> 是一个使用了某种策略的类。</p>
-<p><em>StrategyPatternDemo</em>，我们的演示类使用 <em>Context</em> 和策略对象来演示 Context 在它所配置或使用的策略改变时的行为变化</p>
-<p><img src="https://www.runoob.com/wp-content/uploads/2014/08/strategy_pattern_uml_diagram.jpg" alt="策略模式的 UML 图"></p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建一个接口</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Strategy</span> &#123;</span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 创建实现接口的实体类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationAdd</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 + num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationSubtract</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 - num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationMultiply</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 * num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 创建 Context 类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Context</span> &#123;</span><br><span class="line">   <span class="keyword">private</span> Strategy strategy;</span><br><span class="line"> </span><br><span class="line">   <span class="keyword">public</span> <span class="title function_">Context</span><span class="params">(Strategy strategy)</span>&#123;</span><br><span class="line">      <span class="built_in">this</span>.strategy = strategy;</span><br><span class="line">   &#125;</span><br><span class="line"> </span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">executeStrategy</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span>&#123;</span><br><span class="line">      <span class="keyword">return</span> strategy.doOperation(num1, num2);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 使用 Context 来查看当它改变策略 Strategy 时的行为变化</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">StrategyPatternDemo</span> &#123;</span><br><span class="line">   <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">      <span class="type">Context</span> <span class="variable">context</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationAdd</span>());    </span><br><span class="line">      System.out.println(<span class="string">&quot;10 + 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line"> </span><br><span class="line">      context = <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationSubtract</span>());      </span><br><span class="line">      System.out.println(<span class="string">&quot;10 - 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line"> </span><br><span class="line">      context = <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationMultiply</span>());    </span><br><span class="line">      System.out.println(<span class="string">&quot;10 * 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 执行程序，输出结果</span></span><br><span class="line"><span class="number">10</span> + <span class="number">5</span> = <span class="number">15</span></span><br><span class="line"><span class="number">10</span> - <span class="number">5</span> = <span class="number">5</span></span><br><span class="line"><span class="number">10</span> * <span class="number">5</span> = <span class="number">50</span></span><br></pre></td></tr></table></figure>
-
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-桥接模式"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/09/10/%E6%A1%A5%E6%8E%A5%E6%A8%A1%E5%BC%8F/"
-    >桥接模式</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/09/10/%E6%A1%A5%E6%8E%A5%E6%A8%A1%E5%BC%8F/" class="article-date">
-  <time datetime="2022-09-10T08:04:56.000Z" itemprop="datePublished">2022-09-10</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="桥接模式"><a href="#桥接模式" class="headerlink" title="桥接模式"></a>桥接模式</h4><p>定义： <strong>将抽象部分与它的实现部分分离</strong>，使它们都可以独立地变化</p>
-<p>主要解决：在有多种可能会变化的情况下，<strong>用继承会造成类爆炸问题</strong>，扩展起来不灵活</p>
-<p>何时使用：实现系统可能有多个角度分类，每一种角度都可能变化。</p>
-<p>如何解决：把这种多角度分类分离出来，让它们独立变化，减少它们之间耦合</p>
-<p>桥接模式通常适用于以下场景：</p>
-<p><strong>当一个类存在两个独立变化的维度</strong>，且这两个维度都需要进行扩展时</p>
-<p>当一个系统<strong>不希望使用继承或因为多层次继承导致系统类的个数急剧增加</strong>时</p>
-<p>Jdk中用到的桥接模式：<strong>JDBC</strong>，JDBC连接数据库时：<strong>利用驱动来桥接</strong>，JDBC连接数据库时，<strong>在各个数据库之间进行切换，基本不需要动太多的代码</strong>，甚至丝毫不动，原因就是JDBC提供了统一接口，<strong>每个数据库提供各自的实现</strong>，用一个叫做<strong>数据库驱动的程序来桥接</strong>就行了</p>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-享元模式"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/09/04/%E4%BA%AB%E5%85%83%E6%A8%A1%E5%BC%8F/"
-    >享元模式</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/09/04/%E4%BA%AB%E5%85%83%E6%A8%A1%E5%BC%8F/" class="article-date">
-  <time datetime="2022-09-04T08:02:38.000Z" itemprop="datePublished">2022-09-04</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="享元模式"><a href="#享元模式" class="headerlink" title="享元模式"></a>享元模式</h4><p>享元模式（Flyweight Pattern）主要用于<strong>减少创建对象的数量，以减少内存占用和提高性能</strong></p>
-<p><strong>String常量池、数据库连接池、缓冲池</strong>等等都是享元模式的应用，所以说享元模式是池技术的重要实现方式</p>
-<p>比如我们每次创建字符串对象时，都需要创建一个新的字符串对象的话，内存开销会很大，所以如果第一次创建了字符串对象“adam“，下次再创建相同的字符串”adam“时，只是把它的引用指向”adam“，这样就实现了”adam“字符串再内存中的共享</p>
-<p><strong>用HashMap/HashTable存储</strong> </p>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
   </article>
   
 
   
   <nav class="page-nav">
     
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/">下一页</a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/5/">5</a><a class="extend next" rel="next" href="/page/2/">下一页</a>
   </nav>
   
 </section>
