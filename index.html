@@ -385,7 +385,7 @@
 
     
     <article
-  id="post-MySQL日志的作用"
+  id="post-执行一条select语句，期间发生了什么"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -396,8 +396,8 @@
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/2023/09/08/MySQL%E6%97%A5%E5%BF%97%E7%9A%84%E4%BD%9C%E7%94%A8/"
-    >MySQL日志的作用</a> 
+  <a class="article-title" href="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/"
+    >执行一条select语句，期间发生了什么</a> 
 </h2>
  
 
@@ -405,35 +405,221 @@
     </header>
      
     <div class="article-meta">
-      <a href="/2023/09/08/MySQL%E6%97%A5%E5%BF%97%E7%9A%84%E4%BD%9C%E7%94%A8/" class="article-date">
-  <time datetime="2023-09-08T13:34:25.000Z" itemprop="datePublished">2023-09-08</time>
+      <a href="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/" class="article-date">
+  <time datetime="2023-09-22T12:17:30.000Z" itemprop="datePublished">2023-09-22</time>
 </a> 
   <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/%E6%97%A5%E5%BF%97/">日志</a>
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
   </div>
    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <h1 id="MySQL-日志：undo-log、redo-log、binlog-有什么用？"><a href="#MySQL-日志：undo-log、redo-log、binlog-有什么用？" class="headerlink" title="MySQL 日志：undo log、redo log、binlog 有什么用？"></a>MySQL 日志：undo log、redo log、binlog 有什么用？</h1><p><strong>执行一条 update 语句，期间发生了什么？</strong>，比如这一条 update 语句：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> t_user <span class="keyword">SET</span> name <span class="operator">=</span> <span class="string">&#x27;xiaolin&#x27;</span> <span class="keyword">WHERE</span> id <span class="operator">=</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+  <h1 id="执行一条-select-语句，期间发生了什么？"><a href="#执行一条-select-语句，期间发生了什么？" class="headerlink" title="执行一条 select 语句，期间发生了什么？"></a>执行一条 select 语句，期间发生了什么？</h1><p>学习 SQL 的时候，大家肯定第一个先学到的就是 select 查询语句了，比如下面这句查询语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span> 在 product 表中，查询 id <span class="operator">=</span> <span class="number">1</span> 的记录</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> product <span class="keyword">where</span> id <span class="operator">=</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
 
-<p>查询语句的那一套流程，更新语句也是同样会走一遍：</p>
+<p>但是有没有想过，<strong>MySQL 执行一条 select 查询语句，在 MySQL 中期间发生了什么？</strong></p>
+<p>带着这个问题，我们可以很好的了解 MySQL 内部的架构，所以这次就带大家拆解一下 MySQL 内部的结构，看看内部里的每一个“零件”具体是负责做什么的。</p>
+<h2 id="MySQL-执行流程是怎样的？"><a href="#MySQL-执行流程是怎样的？" class="headerlink" title="MySQL 执行流程是怎样的？"></a>MySQL 执行流程是怎样的？</h2><p>先来一个上帝视角图，下面就是 MySQL 执行一条 SQL 查询语句的流程，也从图中可以看到 MySQL 内部架构里的各个功能模块。</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/mysql%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B.png" alt="查询语句执行流程"></p>
+<p>可以看到， MySQL 的架构共分为两层：<strong>Server 层和存储引擎层</strong>，</p>
 <ul>
-<li>客户端先通过连接器建立连接，连接器自会判断用户身份；</li>
-<li>因为这是一条 update 语句，所以不需要经过查询缓存，但是表上有更新语句，是会把整个表的查询缓存清空的，所以说查询缓存很鸡肋，在 MySQL 8.0 就被移除这个功能了；</li>
-<li>解析器会通过词法分析识别出关键字 update，表名等等，构建出语法树，接着还会做语法分析，判断输入的语句是否符合 MySQL 语法；</li>
-<li>预处理器会判断表和字段是否存在；</li>
-<li>优化器确定执行计划，因为 where 条件中的 id 是主键索引，所以决定要使用 id 这个索引；</li>
-<li>执行器负责具体执行，找到这一行，然后更新。</li>
+<li><strong>Server 层负责建立连接、分析和执行 SQL</strong>。MySQL 大多数的核心功能模块都在这实现，主要包括连接器，查询缓存、解析器、预处理器、优化器、执行器等。另外，所有的内置函数（如日期、时间、数学和加密函数等）和所有跨存储引擎的功能（如存储过程、触发器、视图等。）都在 Server 层实现。</li>
+<li><strong>存储引擎层负责数据的存储和提取</strong>。支持 InnoDB、MyISAM、Memory 等多个存储引擎，不同的存储引擎共用一个 Server 层。现在最常用的存储引擎是 InnoDB，从 MySQL 5.5 版本开始， InnoDB 成为了 MySQL 的默认存储引擎。我们常说的索引数据结构，就是由存储引擎层实现的，不同的存储引擎支持的索引类型也不相同，比如 InnoDB 支持索引类型是 B+树 ，且是默认使用，也就是说在数据表中创建的主键索引和二级索引默认使用的是 B+ 树索引。</li>
 </ul>
-<p>不过，更新语句的流程会涉及到 undo log（回滚日志）、redo log（重做日志） 、binlog （归档日志）这三种日志：</p>
+<p>好了，现在我们对 Server 层和存储引擎层有了一个简单认识，接下来，就详细说一条 SQL 查询语句的执行流程，依次看看每一个功能模块的作用。</p>
+<h2 id="第一步：连接器"><a href="#第一步：连接器" class="headerlink" title="第一步：连接器"></a>第一步：连接器</h2><p>如果你在 Linux 操作系统里要使用 MySQL，那你第一步肯定是要先连接 MySQL 服务，然后才能执行 SQL 语句，普遍我们都是使用下面这条命令进行连接：</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">-h 指定 MySQL 服务得 IP 地址，如果是连接本地的 MySQL服务，可以不用这个参数；</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">-u 指定用户名，管理员角色名为 root；</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">-p 指定密码，如果命令行中不填写密码（为了密码安全，建议不要在命令行写密码），就需要在交互对话里面输入密码</span></span><br><span class="line">mysql -h$ip -u$user -p</span><br></pre></td></tr></table></figure>
+
+<p>连接的过程需要先经过 TCP 三次握手，因为 MySQL 是基于 TCP 协议进行传输的，如果 MySQL 服务并没有启动，则会收到如下的报错：</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/mysql%E8%BF%9E%E6%8E%A5%E9%94%99%E8%AF%AF.png" alt="img"></p>
+<p>如果 MySQL 服务正常运行，完成 TCP 连接的建立后，连接器就要开始验证你的用户名和密码，如果用户名或密码不对，就收到一个”Access denied for user”的错误，然后客户端程序结束执行。</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E5%AF%86%E7%A0%81%E9%94%99%E8%AF%AF.png" alt="img"></p>
+<p>如果用户密码都没有问题，连接器就会获取该用户的权限，然后保存起来，后续该用户在此连接里的任何操作，都会基于连接开始时读到的权限进行权限逻辑的判断。</p>
+<p>所以，如果一个用户已经建立了连接，即使管理员中途修改了该用户的权限，也不会影响已经存在连接的权限。修改完成后，只有再新建的连接才会使用新的权限设置。</p>
+<blockquote>
+<p>如何查看 MySQL 服务被多少个客户端连接了？</p>
+</blockquote>
+<p>如果你想知道当前 MySQL 服务被多少个客户端连接了，你可以执行 <code>show processlist</code> 命令进行查看。</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E6%9F%A5%E7%9C%8B%E8%BF%9E%E6%8E%A5.png" alt="img"></p>
+<p>比如上图的显示结果，共有两个用户名为 root 的用户连接了 MySQL 服务，其中 id 为 6 的用户的 Command 列的状态为 <code>Sleep</code> ，这意味着该用户连接完 MySQL 服务就没有再执行过任何命令，也就是说这是一个空闲的连接，并且空闲的时长是 736 秒（ Time 列）。</p>
+<blockquote>
+<p>空闲连接会一直占用着吗？</p>
+</blockquote>
+<p>当然不是了，MySQL 定义了空闲连接的最大空闲时长，由 <code>wait_timeout</code> 参数控制的，默认值是 8 小时（28880秒），如果空闲连接超过了这个时间，连接器就会自动将它断开。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">show</span> variables <span class="keyword">like</span> <span class="string">&#x27;wait_timeout&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name <span class="operator">|</span> <span class="keyword">Value</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-------+</span></span><br><span class="line"><span class="operator">|</span> wait_timeout  <span class="operator">|</span> <span class="number">28800</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-------+</span></span><br><span class="line"><span class="number">1</span> <span class="type">row</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>当然，我们自己也可以手动断开空闲的连接，使用的是 kill connection + id 的命令。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> kill connection <span class="operator">+</span><span class="number">6</span>;</span><br><span class="line">Query OK, <span class="number">0</span> <span class="keyword">rows</span> affected (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>一个处于空闲状态的连接被服务端主动断开后，这个客户端并不会马上知道，等到客户端在发起下一个请求的时候，才会收到这样的报错“ERROR 2013 (HY000): Lost connection to MySQL server during query”</p>
+<blockquote>
+<p>MySQL 的连接数有限制吗？</p>
+</blockquote>
+<p>MySQL 服务支持的最大连接数由 max_connections 参数控制，比如我的 MySQL 服务默认是 151 个,超过这个值，系统就会拒绝接下来的连接请求，并报错提示“Too many connections”。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">show</span> variables <span class="keyword">like</span> <span class="string">&#x27;max_connections&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+-------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name   <span class="operator">|</span> <span class="keyword">Value</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+-------+</span></span><br><span class="line"><span class="operator">|</span> max_connections <span class="operator">|</span> <span class="number">151</span>   <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+-------+</span></span><br><span class="line"><span class="number">1</span> <span class="type">row</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
+
+<p>MySQL 的连接也跟 HTTP 一样，有短连接和长连接的概念，它们的区别如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 短连接</span></span><br><span class="line">连接 mysql 服务（TCP 三次握手）</span><br><span class="line">执行sql</span><br><span class="line">断开 mysql 服务（TCP 四次挥手）</span><br><span class="line"></span><br><span class="line"><span class="comment">// 长连接</span></span><br><span class="line">连接 mysql 服务（TCP 三次握手）</span><br><span class="line">执行sql</span><br><span class="line">执行sql</span><br><span class="line">执行sql</span><br><span class="line">....</span><br><span class="line">断开 mysql 服务（TCP 四次挥手）</span><br></pre></td></tr></table></figure>
+
+<p>可以看到，使用长连接的好处就是可以减少建立连接和断开连接的过程，所以一般是推荐使用长连接。</p>
+<p>但是，使用长连接后可能会占用内存增多，因为 MySQL 在执行查询过程中临时使用内存管理连接对象，这些连接对象资源只有在连接断开时才会释放。如果长连接累计很多，将导致 MySQL 服务占用内存太大，有可能会被系统强制杀掉，这样会发生 MySQL 服务异常重启的现象。</p>
+<blockquote>
+<p>怎么解决长连接占用内存的问题？</p>
+</blockquote>
+<p>有两种解决方式。</p>
+<p>第一种，<strong>定期断开长连接</strong>。既然断开连接后就会释放连接占用的内存资源，那么我们可以定期断开长连接。</p>
+<p>第二种，<strong>客户端主动重置连接</strong>。MySQL 5.7 版本实现了 <code>mysql_reset_connection()</code> 函数的接口，注意这是接口函数不是命令，那么当客户端执行了一个很大的操作后，在代码里调用 mysql_reset_connection 函数来重置连接，达到释放内存的效果。这个过程不需要重连和重新做权限验证，但是会将连接恢复到刚刚创建完时的状态。</p>
+<p>至此，连接器的工作做完了，简单总结一下：</p>
 <ul>
-<li><strong>undo log（回滚日志）</strong>：是 Innodb 存储引擎层生成的日志，实现了事务中的<strong>原子性</strong>，主要<strong>用于事务回滚和 MVCC</strong>。</li>
-<li><strong>redo log（重做日志）</strong>：是 Innodb 存储引擎层生成的日志，实现了事务中的<strong>持久性</strong>，主要<strong>用于掉电等故障恢复</strong>；</li>
-<li><strong>binlog （归档日志）</strong>：是 Server 层生成的日志，主要<strong>用于数据备份和主从复制</strong>；</li>
+<li>与客户端进行 TCP 三次握手建立连接；</li>
+<li>校验客户端的用户名和密码，如果用户名或密码不对，则会报错；</li>
+<li>如果用户名和密码都对了，会读取该用户的权限，然后后面的权限逻辑判断都基于此时读取到的权限；</li>
 </ul>
+<h2 id="第二步：查询缓存"><a href="#第二步：查询缓存" class="headerlink" title="第二步：查询缓存"></a>第二步：查询缓存</h2><p>连接器得工作完成后，客户端就可以向 MySQL 服务发送 SQL 语句了，MySQL 服务收到 SQL 语句后，就会解析出 SQL 语句的第一个字段，看看是什么类型的语句。</p>
+<p>如果 SQL 是查询语句（select 语句），MySQL 就会先去查询缓存（ Query Cache ）里查找缓存数据，看看之前有没有执行过这一条命令，这个查询缓存是以 key-value 形式保存在内存中的，key 为 SQL 查询语句，value 为 SQL 语句查询的结果。</p>
+<p>如果查询的语句命中查询缓存，那么就会直接返回 value 给客户端。如果查询的语句没有命中查询缓存中，那么就要往下继续执行，等执行完后，查询的结果就会被存入查询缓存中。</p>
+<p>这么看，查询缓存还挺有用，但是其实<strong>查询缓存挺鸡肋</strong>的。</p>
+<p>对于更新比较频繁的表，查询缓存的命中率很低的，因为只要一个表有更新操作，那么这个表的查询缓存就会被清空。如果刚缓存了一个查询结果很大的数据，还没被使用的时候，刚好这个表有更新操作，查询缓冲就被清空了，相当于缓存了个寂寞。</p>
+<p>所以，MySQL 8.0 版本直接将查询缓存删掉了，也就是说 MySQL 8.0 开始，执行一条 SQL 查询语句，不会再走到查询缓存这个阶段了。</p>
+<p>对于 MySQL 8.0 之前的版本，如果想关闭查询缓存，我们可以通过将参数 query_cache_type 设置成 DEMAND。</p>
+<p>TIP</p>
+<p>这里说的查询缓存是 server 层的，也就是 MySQL 8.0 版本移除的是 server 层的查询缓存，并不是 Innodb 存储引擎中的 buffer pool。</p>
+<h2 id="第三步：解析-SQL"><a href="#第三步：解析-SQL" class="headerlink" title="第三步：解析 SQL"></a>第三步：解析 SQL</h2><p>在正式执行 SQL 查询语句之前， MySQL 会先对 SQL 语句做解析，这个工作交由「解析器」来完成。</p>
+<h3 id="解析器"><a href="#解析器" class="headerlink" title="#解析器"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/mysql/base/how_select.html#%E8%A7%A3%E6%9E%90%E5%99%A8">#</a>解析器</h3><p>解析器会做如下两件事情。</p>
+<p>第一件事情，<strong>词法分析</strong>。MySQL 会根据你输入的字符串识别出关键字出来，例如，SQL语句 select username from userinfo，在分析之后，会得到4个Token，其中有2个Keyword，分别为select和from：</p>
+<table>
+<thead>
+<tr>
+<th>关键字</th>
+<th>非关键字</th>
+<th>关键字</th>
+<th>非关键字</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>select</td>
+<td>username</td>
+<td>from</td>
+<td>userinfo</td>
+</tr>
+</tbody></table>
+<p>第二件事情，<strong>语法分析</strong>。根据词法分析的结果，语法解析器会根据语法规则，判断你输入的这个 SQL 语句是否满足 MySQL 语法，如果没问题就会构建出 SQL 语法树，这样方便后面模块获取 SQL 类型、表名、字段名、 where 条件等等。</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/db-mysql-sql-parser-2.png" alt="img"></p>
+<p>如果我们输入的 SQL 语句语法不对，就会在解析器这个阶段报错。比如，我下面这条查询语句，把 from 写成了 form，这时 MySQL 解析器就会给报错。</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E8%AF%AD%E6%B3%95%E9%94%99%E8%AF%AF.png" alt="img"></p>
+<p>但是注意，表不存在或者字段不存在，并不是在解析器里做的，《MySQL 45 讲》说是在解析器做的，但是经过我和朋友看 MySQL 源码（5.7和8.0）得出结论是解析器只负责检查语法和构建语法树，但是不会去查表或者字段存不存在。</p>
+<p>那到底谁来做检测表和字段是否存在的工作呢？别急，接下来就是了</p>
+<h2 id="第四步：执行-SQL"><a href="#第四步：执行-SQL" class="headerlink" title="第四步：执行 SQL"></a>第四步：执行 SQL</h2><p>经过解析器后，接着就要进入执行 SQL 查询语句的流程了，每条<code>SELECT</code> 查询语句流程主要可以分为下面这三个阶段：</p>
+<ul>
+<li>prepare 阶段，也就是预处理阶段；</li>
+<li>optimize 阶段，也就是优化阶段；</li>
+<li>execute 阶段，也就是执行阶段；</li>
+</ul>
+<h3 id="预处理器"><a href="#预处理器" class="headerlink" title="预处理器"></a>预处理器</h3><p>我们先来说说预处理阶段做了什么事情。</p>
+<ul>
+<li>检查 SQL 查询语句中的表或者字段是否存在；</li>
+<li>将 <code>select *</code> 中的 <code>*</code> 符号，扩展为表上的所有列；</li>
+</ul>
+<p>我下面这条查询语句，test 这张表是不存在的，这时 MySQL 就会在执行 SQL 查询语句的 prepare 阶段中报错。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test;</span><br><span class="line">ERROR <span class="number">1146</span> (<span class="number">42</span>S02): <span class="keyword">Table</span> <span class="string">&#x27;mysql.test&#x27;</span> doesn<span class="string">&#x27;t exist</span></span><br></pre></td></tr></table></figure>
+
+<p>这里贴个 MySQL 8.0 源码来证明表或字段是否存在的判断，不是在解析器里做的，而是在 prepare 阶段。（<em>PS：下图是公众号「一树一溪」老哥帮我分析的，这位老哥专门写 MySQL 源码文章，感兴趣的朋友，可以微信搜索关注</em>）</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E8%A1%A8%E4%B8%8D%E5%AD%98%E5%9C%A8.jpeg" alt="img"></p>
+<p>上面的中间部分是 MySQL 报错表不存在时的函数调用栈，可以看到表不存在的错误是在get_table_share() 函数里报错的，而这个函数是在 prepare 阶段调用的。</p>
+<p>不过，对于 MySQL 5.7 判断表或字段是否存在的工作，是在词法分析&amp;语法分析之后，prepare 阶段之前做的。结论都一样，不是在解析器里做的。代码我就不放了，正因为 MySQL 5.7 代码结构不好，所以 MySQL 8.0 代码结构变化很大，后来判断表或字段是否存在的工作就被放入到 prepare 阶段做了。</p>
+<h3 id="优化器"><a href="#优化器" class="headerlink" title="优化器"></a>优化器</h3><p>经过预处理阶段后，还需要为 SQL 查询语句先制定一个执行计划，这个工作交由「优化器」来完成的。</p>
+<p><strong>优化器主要负责将 SQL 查询语句的执行方案确定下来</strong>，比如在表里面有多个索引的时候，优化器会基于查询成本的考虑，来决定选择使用哪个索引。</p>
+<p>当然，我们本次的查询语句（select * from product where id = 1）很简单，就是选择使用主键索引。</p>
+<p>要想知道优化器选择了哪个索引，我们可以在查询语句最前面加个 <code>explain</code> 命令，这样就会输出这条 SQL 语句的执行计划，然后执行计划中的 key 就表示执行过程中使用了哪个索引，比如下图的 key 为 <code>PRIMARY</code> 就是使用了主键索引。</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92.png" alt="img"></p>
+<p>如果查询语句的执行计划里的 key 为 null 说明没有使用索引，那就会全表扫描（type = ALL），这种查询扫描的方式是效率最低档次的，如下图：</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E5%85%A8%E8%A1%A8%E6%89%AB%E6%8F%8F.png" alt="img"></p>
+<p>这张 product 表只有一个索引就是主键，现在我在表中将 name 设置为普通索引（二级索引）。</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E4%BA%A7%E5%93%81%E8%A1%A8.png" alt="img"></p>
+<p>这时 product 表就有主键索引（id）和普通索引（name）。假设执行了这条查询语句：</p>
+<p><code>select id from product where id &gt; 1  and name like &#39;i%&#39;;</code></p>
+<p>这条查询语句的结果既可以使用主键索引，也可以使用普通索引，但是执行的效率会不同。这时，就需要优化器来决定使用哪个索引了。</p>
+<p>很显然这条查询语句是<strong>覆盖索引</strong>，直接在二级索引就能查找到结果（因为二级索引的 B+ 树的叶子节点的数据存储的是主键值），就没必要在主键索引查找了，因为查询主键索引的 B+ 树的成本会比查询二级索引的 B+ 的成本大，优化器基于查询成本的考虑，会选择查询代价小的普通索引。</p>
+<p>在下图中执行计划，我们可以看到，执行过程中使用了普通索引（name），Exta 为 Using index，这就是表明使用了覆盖索引优化。</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E9%80%89%E6%8B%A9%E7%B4%A2%E5%BC%95.png" alt="img"></p>
+<h3 id="执行器"><a href="#执行器" class="headerlink" title="执行器"></a>执行器</h3><p>经历完优化器后，就确定了执行方案，接下来 MySQL 就真正开始执行语句了，这个工作是由「执行器」完成的。在执行的过程中，执行器就会和存储引擎交互了，交互是以记录为单位的。</p>
+<p>接下来，用三种方式执行过程，跟大家说一下执行器和存储引擎的交互过程（PS ：为了写好这一部分，特地去看 MySQL 源码，也是第一次看哈哈）。</p>
+<ul>
+<li>主键索引查询</li>
+<li>全表扫描</li>
+<li>索引下推</li>
+</ul>
+<h4 id="主键索引查询"><a href="#主键索引查询" class="headerlink" title="#主键索引查询"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/mysql/base/how_select.html#%E4%B8%BB%E9%94%AE%E7%B4%A2%E5%BC%95%E6%9F%A5%E8%AF%A2">#</a>主键索引查询</h4><p>以本文开头查询语句为例，看看执行器是怎么工作的。</p>
+<p><code>select * from product where id = 1;</code></p>
+<p>这条查询语句的查询条件用到了主键索引，而且是等值查询，同时主键 id 是唯一，不会有 id 相同的记录，所以优化器决定选用访问类型为 const 进行查询，也就是使用主键索引查询一条记录，那么执行器与存储引擎的执行流程是这样的：</p>
+<ul>
+<li>执行器第一次查询，会调用 read_first_record 函数指针指向的函数，因为优化器选择的访问类型为 const，这个函数指针被指向为 InnoDB 引擎索引查询的接口，把条件 <code>id = 1</code> 交给存储引擎，<strong>让存储引擎定位符合条件的第一条记录</strong>。</li>
+<li>存储引擎通过主键索引的 B+ 树结构定位到 id = 1的第一条记录，如果记录是不存在的，就会向执行器上报记录找不到的错误，然后查询结束。如果记录是存在的，就会将记录返回给执行器；</li>
+<li>执行器从存储引擎读到记录后，接着判断记录是否符合查询条件，如果符合则发送给客户端，如果不符合则跳过该记录。</li>
+<li>执行器查询的过程是一个 while 循环，所以还会再查一次，但是这次因为不是第一次查询了，所以会调用 read_record 函数指针指向的函数，因为优化器选择的访问类型为 const，这个函数指针被指向为一个永远返回 - 1 的函数，所以当调用该函数的时候，执行器就退出循环，也就是结束查询了。</li>
+</ul>
+<p>至此，这个语句就执行完成了。</p>
+<h4 id="全表扫描"><a href="#全表扫描" class="headerlink" title="全表扫描"></a>全表扫描</h4><p>举个全表扫描的例子：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> product <span class="keyword">where</span> name <span class="operator">=</span> <span class="string">&#x27;iphone&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>这条查询语句的查询条件没有用到索引，所以优化器决定选用访问类型为 ALL 进行查询，也就是全表扫描的方式查询，那么这时执行器与存储引擎的执行流程是这样的：</p>
+<ul>
+<li>执行器第一次查询，会调用 read_first_record 函数指针指向的函数，因为优化器选择的访问类型为 all，这个函数指针被指向为 InnoDB 引擎全扫描的接口，<strong>让存储引擎读取表中的第一条记录</strong>；</li>
+<li>执行器会判断读到的这条记录的 name 是不是 iphone，如果不是则跳过；如果是则将记录发给客户的（是的没错，Server 层每从存储引擎读到一条记录就会发送给客户端，之所以客户端显示的时候是直接显示所有记录的，是因为客户端是等查询语句查询完成后，才会显示出所有的记录）。</li>
+<li>执行器查询的过程是一个 while 循环，所以还会再查一次，会调用 read_record 函数指针指向的函数，因为优化器选择的访问类型为 all，read_record 函数指针指向的还是 InnoDB 引擎全扫描的接口，所以接着向存储引擎层要求继续读刚才那条记录的下一条记录，存储引擎把下一条记录取出后就将其返回给执行器（Server层），执行器继续判断条件，不符合查询条件即跳过该记录，否则发送到客户端；</li>
+<li>一直重复上述过程，直到存储引擎把表中的所有记录读完，然后向执行器（Server层） 返回了读取完毕的信息；</li>
+<li>执行器收到存储引擎报告的查询完毕的信息，退出循环，停止查询。</li>
+</ul>
+<p>至此，这个语句就执行完成了。</p>
+<h4 id="索引下推"><a href="#索引下推" class="headerlink" title="索引下推"></a>索引下推</h4><p>在这部分非常适合讲索引下推（MySQL 5.6 推出的查询优化策略），这样大家能清楚的知道，「下推」这个动作，下推到了哪里。</p>
+<p>索引下推能够减少<strong>二级索引</strong>在查询时的回表操作，提高查询的效率，因为它将 Server 层部分负责的事情，交给存储引擎层去处理了。</p>
+<p>举一个具体的例子，方便大家理解，这里一张用户表如下，我对 age 和 reward 字段建立了联合索引（age，reward）：</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E8%B7%AF%E9%A3%9E%E8%A1%A8.png" alt="img"></p>
+<p>现在有下面这条查询语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> t_user  <span class="keyword">where</span> age <span class="operator">&gt;</span> <span class="number">20</span> <span class="keyword">and</span> reward <span class="operator">=</span> <span class="number">100000</span>;</span><br></pre></td></tr></table></figure>
+
+<p>联合索引当遇到范围查询 (&gt;、&lt;) 就会停止匹配，也就是 <strong>age 字段能用到联合索引，但是 reward 字段则无法利用到索引</strong>。具体原因这里可以看这篇：<a target="_blank" rel="noopener" href="https://xiaolincoding.com/mysql/index/index_interview.html#%E6%8C%89%E5%AD%97%E6%AE%B5%E4%B8%AA%E6%95%B0%E5%88%86%E7%B1%BB">索引常见面试题(opens new window)</a></p>
+<p>那么，不使用索引下推（MySQL 5.6 之前的版本）时，执行器与存储引擎的执行流程是这样的：</p>
+<ul>
+<li><p>Server 层首先调用存储引擎的接口定位到满足查询条件的第一条二级索引记录，也就是定位到 age &gt; 20 的第一条记录；</p>
+</li>
+<li><p>存储引擎根据二级索引的 B+ 树快速定位到这条记录后，获取主键值，然后<strong>进行回表操作</strong>，将完整的记录返回给 Server 层；</p>
+</li>
+<li><p>Server 层在判断该记录的 reward 是否等于 100000，如果成立则将其发送给客户端；否则跳过该记录；</p>
+</li>
+<li><p>接着，继续向存储引擎索要下一条记录，存储引擎在二级索引定位到记录后，获取主键值，然后回表操作，将完整的记录返回给 Server 层；</p>
+</li>
+<li><p>如此往复，直到存储引擎把表中的所有记录读完。</p>
+<p>可以看到，没有索引下推的时候，每查询到一条二级索引记录，都要进行回表操作，然后将记录返回给 Server，接着 Server 再判断该记录的 reward 是否等于 100000。</p>
+<p>而使用索引下推后，判断记录的 reward 是否等于 100000 的工作交给了存储引擎层，过程如下 ：</p>
+<ul>
+<li>Server 层首先调用存储引擎的接口定位到满足查询条件的第一条二级索引记录，也就是定位到 age &gt; 20 的第一条记录；</li>
+<li>存储引擎定位到二级索引后，<strong>先不执行回表</strong>操作，而是先判断一下该索引中包含的列（reward列）的条件（reward 是否等于 100000）是否成立。如果<strong>条件不成立</strong>，则直接<strong>跳过该二级索引</strong>。如果<strong>成立</strong>，则<strong>执行回表</strong>操作，将完成记录返回给 Server 层。</li>
+<li>Server 层在判断其他的查询条件（本次查询没有其他条件）是否成立，如果成立则将其发送给客户端；否则跳过该记录，然后向存储引擎索要下一条记录。</li>
+<li>如此往复，直到存储引擎把表中的所有记录读完。</li>
+</ul>
+<p>可以看到，使用了索引下推后，虽然 reward 列无法使用到联合索引，但是因为它包含在联合索引（age，reward）里，所以直接在存储引擎过滤出满足 reward = 100000 的记录后，才去执行回表操作获取整个记录。相比于没有使用索引下推，节省了很多回表操作。</p>
+<p>当你发现执行计划里的 Extr 部分显示了 “Using index condition”，说明使用了索引下推。</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E7%B4%A2%E5%BC%95%E4%B8%8B%E6%8E%A8%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92.png" alt="img"></p>
+</li>
+</ul>
+<p>总结</p>
+<p>执行一条 SQL 查询语句，期间发生了什么？</p>
+<ul>
+<li>连接器：建立连接，管理连接、校验用户身份；</li>
+<li>查询缓存：查询语句如果命中查询缓存则直接返回，否则继续往下执行。MySQL 8.0 已删除该模块；</li>
+<li>解析 SQL，通过解析器对 SQL 查询语句进行词法分析、语法分析，然后构建语法树，方便后续模块读取表名、字段、语句类型；</li>
+<li>执行 SQL：执行 SQL 共有三个阶段：<ul>
+<li>预处理阶段：检查表或字段是否存在；将 <code>select *</code> 中的 <code>*</code> 符号扩展为表上的所有列。</li>
+<li>优化阶段：基于查询成本的考虑， 选择查询成本最小的执行计划；</li>
+<li>执行阶段：根据执行计划执行 SQL 查询语句，从存储引擎读取记录，返回给客户端；</li>
+</ul>
+</li>
+</ul>
+<p>怎么样？现在再看这张图，是不是很清晰了。</p>
+<p><img src="/2023/09/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/mysql%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B2" alt="查询语句执行流程"></p>
  
       <!-- reward -->
       
@@ -456,7 +642,7 @@
 
     
     <article
-  id="post-更新一条记录的流程"
+  id="post-什么是缓存雪崩、击穿、穿透？"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -467,8 +653,8 @@
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/2023/07/21/%E6%9B%B4%E6%96%B0%E4%B8%80%E6%9D%A1%E8%AE%B0%E5%BD%95%E7%9A%84%E6%B5%81%E7%A8%8B/"
-    >更新一条记录的流程</a> 
+  <a class="article-title" href="/2023/09/03/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/"
+    >什么是缓存雪崩、击穿、穿透？</a> 
 </h2>
  
 
@@ -476,45 +662,87 @@
     </header>
      
     <div class="article-meta">
-      <a href="/2023/07/21/%E6%9B%B4%E6%96%B0%E4%B8%80%E6%9D%A1%E8%AE%B0%E5%BD%95%E7%9A%84%E6%B5%81%E7%A8%8B/" class="article-date">
-  <time datetime="2023-07-21T14:21:54.000Z" itemprop="datePublished">2023-07-21</time>
+      <a href="/2023/09/03/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/" class="article-date">
+  <time datetime="2023-09-03T07:49:23.000Z" itemprop="datePublished">2023-09-03</time>
 </a> 
   <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a>
   </div>
    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <h2 id="更新一条记录的流程"><a href="#更新一条记录的流程" class="headerlink" title="更新一条记录的流程"></a>更新一条记录的流程</h2><p>具体更新一条记录 <code>UPDATE t_user SET name = &#39;xiaolin&#39; WHERE id = 1;</code> 的流程如下:</p>
-<ol>
-<li>执行器负责具体执行，会调用存储引擎的接口，通过主键索引树搜索获取 id = 1 这一行记录：<ul>
-<li>如果 id=1 这一行所在的数据页本来就在 buffer pool 中，就直接返回给执行器更新；</li>
-<li>如果记录不在 buffer pool，将数据页从磁盘读入到 buffer pool，返回记录给执行器。</li>
+  <h1 id="什么是缓存雪崩、击穿、穿透"><a href="#什么是缓存雪崩、击穿、穿透" class="headerlink" title="什么是缓存雪崩、击穿、穿透"></a>什么是缓存雪崩、击穿、穿透</h1><p>用户的数据一般都是存储于数据库，数据库的数据是落在磁盘上的，磁盘的读写速度可以说是计算机里最慢的硬件了。</p>
+<p>当用户的请求，都访问数据库的话，请求数量一上来，数据库很容易就奔溃的了，所以为了避免用户直接访问数据库，会用 Redis 作为缓存层。</p>
+<p>因为 Redis 是内存数据库，我们可以将数据库的数据缓存在 Redis 里，相当于数据缓存在内存，内存的读写速度比硬盘快好几个数量级，这样大大提高了系统性能</p>
+<p><img src="/2023/09/03/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/37e4378d2edcb5e217b00e5f12973efd-20230309232858764.png" alt="图片"></p>
+<p>引入了缓存层，就会有缓存异常的三个问题，分别是<strong>缓存雪崩、缓存击穿、缓存穿透</strong>。</p>
+<p><img src="/2023/09/03/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/61781cd6d82e4a0cc5f7521333049f0d.png" alt="图片"></p>
+<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>通常我们为了保证缓存中的数据与数据库中的数据一致性，会给 Redis 里的数据设置过期时间，当缓存数据过期后，用户访问的数据如果不在缓存里，业务系统需要重新生成缓存，因此就会访问数据库，并将数据更新到 Redis 里，这样后续请求都可以直接命中缓存。</p>
+<p><img src="/2023/09/03/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/e2b8d2eb5536aa71664772457792ec40-20230309232851699.png" alt="图片"></p>
+<p>那么，当<strong>大量缓存数据在同一时间过期（失效）或者 Redis 故障宕机</strong>时，如果此时有大量的用户请求，都无法在 Redis 中处理，于是全部请求都直接访问数据库，从而导致数据库的压力骤增，严重的会造成数据库宕机，从而形成一系列连锁反应，造成整个系统崩溃，这就是<strong>缓存雪崩</strong>的问题。</p>
+<p><img src="/2023/09/03/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/717343a0da7a1b05edab1d1cdf8f28e5.png" alt="图片"></p>
+<p>可以看到，发生缓存雪崩有两个原因：</p>
+<ul>
+<li>大量数据同时过期；</li>
+<li>Redis 故障宕机；</li>
 </ul>
-</li>
-<li>执行器得到聚簇索引记录后，会看一下更新前的记录和更新后的记录是否一样：<ul>
-<li>如果一样的话就不进行后续更新流程；</li>
-<li>如果不一样的话就把更新前的记录和更新后的记录都当作参数传给 InnoDB 层，让 InnoDB 真正的执行更新记录的操作；</li>
+<p>不同的诱因，应对的策略也会不同</p>
+<h3 id="大量数据同时过期"><a href="#大量数据同时过期" class="headerlink" title="大量数据同时过期"></a>大量数据同时过期</h3><p><em>1. 均匀设置过期时间</em></p>
+<p>如果要给缓存数据设置过期时间，应该避免将大量的数据设置成同一个过期时间。我们可以在对缓存数据设置过期时间时，<strong>给这些数据的过期时间加上一个随机数</strong>，这样就保证数据不会在同一时间过期。</p>
+<p><em>2. 互斥锁</em></p>
+<p>当业务线程在处理用户请求时，<strong>如果发现访问的数据不在 Redis 里，就加个互斥锁，保证同一时间内只有一个请求来构建缓存</strong>（从数据库读取数据，再将数据更新到 Redis 里），当缓存构建完成后，再释放锁。未能获取互斥锁的请求，要么等待锁释放后重新读取缓存，要么就返回空值或者默认值。</p>
+<p>实现互斥锁的时候，最好设置<strong>超时时间</strong>，不然第一个请求拿到了锁，然后这个请求发生了某种意外而一直阻塞，一直不释放锁，这时其他请求也一直拿不到锁，整个系统就会出现无响应的现象。</p>
+<p><em>3. 数据预热</em></p>
+<p>在业务刚上线的时候，我们最好提前把数据缓起来，而不是等待用户访问才来触发缓存构建</p>
+<h3 id="Redis-故障宕机"><a href="#Redis-故障宕机" class="headerlink" title="Redis 故障宕机"></a>Redis 故障宕机</h3><p>针对 Redis 故障宕机而引发的缓存雪崩问题，常见的应对方法有下面这几种：</p>
+<ul>
+<li>服务熔断或请求限流机制；</li>
+<li>构建 Redis 缓存高可靠集群；</li>
 </ul>
-</li>
-<li>开启事务， InnoDB 层更新记录前，首先要记录相应的 undo log，因为这是更新操作，需要把被更新的列的旧值记下来，也就是要生成一条 undo log，undo log 会写入 Buffer Pool 中的 Undo 页面，不过在内存修改该 Undo 页面后，需要记录对应的 redo log。</li>
-<li>InnoDB 层开始更新记录，会先更新内存（同时标记为脏页），然后将记录写到 redo log 里面，这个时候更新就算完成了。为了减少磁盘I/O，不会立即将脏页写入磁盘，后续由后台线程选择一个合适的时机将脏页写入到磁盘。这就是 <strong>WAL 技术</strong>（Write-Ahead Logging）技术，<strong>WAL 技术指的是， MySQL 的写操作并不是立刻写到磁盘上，而是先写日志，然后在合适的时间再写到磁盘上</strong>，MySQL 的写操作并不是立刻写到磁盘上，而是先写 redo 日志，然后在合适的时间再将修改的行数据写到磁盘上。</li>
-<li>至此，一条记录更新完了。</li>
-<li>在一条更新语句执行完成后，然后开始记录该语句对应的 binlog，此时记录的 binlog 会被保存到 binlog cache，并没有刷新到硬盘上的 binlog 文件，在事务提交时才会统一将该事务运行过程中的所有 binlog 刷新到硬盘。</li>
-<li>事务提交（为了方便说明，这里不说组提交的过程，只说两阶段提交）：<ul>
-<li><strong>prepare 阶段</strong>：将 redo log 对应的事务状态设置为 prepare，然后将 redo log 刷新到硬盘；</li>
-<li><strong>commit 阶段</strong>：将 binlog 刷新到磁盘，接着调用引擎的提交事务接口，将 redo log 状态设置为 commit（将事务设置为 commit 状态后，刷入到磁盘 redo log 文件）；</li>
+<p><em>1. 服务熔断或请求限流机制</em></p>
+<p>因为 Redis 故障宕机而导致缓存雪崩问题时，我们可以启动<strong>服务熔断</strong>机制，<strong>暂停业务应用对缓存服务的访问，直接返回错误</strong>，不用再继续访问数据库，从而降低对数据库的访问压力，保证数据库系统的正常运行，然后等到 Redis 恢复正常后，再允许业务应用访问缓存服务。</p>
+<p>服务熔断机制是保护数据库的正常允许，但是暂停了业务应用访问缓存服系统，全部业务都无法正常工作</p>
+<p>为了减少对业务的影响，我们可以启用<strong>请求限流</strong>机制，<strong>只将少部分请求发送到数据库进行处理，再多的请求就在入口直接拒绝服务</strong>，等到 Redis 恢复正常并把缓存预热完后，再解除请求限流的机制。</p>
+<p><em>2. 构建 Redis 缓存高可靠集群</em></p>
+<p>服务熔断或请求限流机制是缓存雪崩发生后的应对方案，我们最好通过<strong>主从节点的方式构建 Redis 缓存高可靠集群</strong>。</p>
+<p>如果 Redis 缓存的主节点故障宕机，从节点可以切换成为主节点，继续提供缓存服务，避免了由于 Redis 故障宕机而导致的缓存雪崩问题</p>
+<h2 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h2><p>我们的业务通常会有几个数据会被频繁地访问，比如秒杀活动，这类被频地访问的数据被称为热点数据。</p>
+<p>如果缓存中的<strong>某个热点数据过期</strong>了，此时大量的请求访问了该热点数据，就无法从缓存中读取，直接访问数据库，数据库很容易就被高并发的请求冲垮，这就是<strong>缓存击穿</strong>的问题。</p>
+<p><img src="/2023/09/03/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/acb5f4e7ef24a524a53c39eb016f63d4-20230309232840753.png" alt="图片"></p>
+<p>可以发现缓存击穿跟缓存雪崩很相似，你可以认为缓存击穿是缓存雪崩的一个子集。</p>
+<p>应对缓存击穿可以采取前面说到两种方案：</p>
+<ul>
+<li>互斥锁方案，保证同一时间只有一个业务线程更新缓存，未能获取互斥锁的请求，要么等待锁释放后重新读取缓存，要么就返回空值或者默认值。</li>
+<li>不给热点数据设置过期时间，由后台异步更新缓存，或者在热点数据准备要过期前，提前通知后台线程更新缓存以及重新设置过期时间；</li>
 </ul>
-</li>
-<li>至此，一条更新语句执行完成。</li>
-</ol>
-<p>redo log 要写到磁盘，数据也要写磁盘，为什么要多此一举？</p>
-<p>写入 redo log 的方式使用了追加操作， 所以磁盘操作是<strong>顺序写</strong>，而写入数据需要先找到写入位置，然后才写到磁盘，所以磁盘操作是<strong>随机写</strong>。</p>
-<p>磁盘的「顺序写 」比「随机写」 高效的多，因此 redo log 写入磁盘的开销更小。</p>
-<p>针对「顺序写」为什么比「随机写」更快这个问题，可以比喻为你有一个本子，按照顺序一页一页写肯定比写一个字都要找到对应页写快得多。</p>
-<p>可以说这是 WAL 技术的另外一个优点：-<strong>MySQL 的写操作从磁盘的「随机写」变成了「顺序写」</strong>，提升语句的执行性能。这是因为 MySQL 的写操作并不是立刻更新到磁盘上，而是先记录在日志上，然后在合适的时间再更新到磁盘上 。</p>
+<h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>当发生缓存雪崩或击穿时，数据库中还是保存了应用要访问的数据，一旦缓存恢复相对应的数据，就可以减轻数据库的压力，而缓存穿透就不一样了。</p>
+<p>当用户访问的数据，<strong>既不在缓存中，也不在数据库中</strong>，导致请求在访问缓存时，发现缓存缺失，再去访问数据库时，发现数据库中也没有要访问的数据，没办法构建缓存数据，来服务后续的请求。那么当有大量这样的请求到来时，数据库的压力骤增，这就是<strong>缓存穿透</strong>的问题。</p>
+<p><img src="/2023/09/03/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/b7031182f770a7a5b3c82eaf749f53b0-20230309232834574.png" alt="图片"></p>
+<p>缓存穿透的发生一般有这两种情况：</p>
+<ul>
+<li>业务误操作，缓存中的数据和数据库中的数据都被误删除了，所以导致缓存和数据库中都没有数据；</li>
+<li>黑客恶意攻击，故意大量访问某些读取不存在数据的业务；</li>
+</ul>
+<p>应对缓存穿透的方案，常见的方案有三种。</p>
+<ul>
+<li>第一种方案，非法请求的限制；</li>
+<li>第二种方案，缓存空值或者默认值；</li>
+<li>第三种方案，使用布隆过滤器快速判断数据是否存在，避免通过查询数据库来判断数据是否存在；</li>
+</ul>
+<p>第一种方案，非法请求的限制</p>
+<p>当有大量恶意请求访问不存在的数据的时候，也会发生缓存穿透，因此在 API 入口处我们要判断求请求参数是否合理，请求参数是否含有非法值、请求字段是否存在，如果判断出是恶意请求就直接返回错误，避免进一步访问缓存和数据库。</p>
+<p>第二种方案，缓存空值或者默认值</p>
+<p>当我们线上业务发现缓存穿透的现象时，可以针对查询的数据，在缓存中设置一个空值或者默认值，这样后续请求就可以从缓存中读取到空值或者默认值，返回给应用，而不会继续查询数据库。</p>
+<p><em>第三种方案，使用布隆过滤器快速判断数据是否存在，避免通过查询数据库来判断数据是否存在。</em></p>
+<p>我们可以在写入数据库数据时，使用布隆过滤器做个标记，然后在用户请求到来时，业务线程确认缓存失效后，可以通过查询布隆过滤器快速判断数据是否存在，如果不存在，就不用通过查询数据库来判断数据是否存在。</p>
+<p>即使发生了缓存穿透，大量请求只会查询 Redis 和布隆过滤器，而不会查询数据库，保证了数据库能正常运行，Redis 自身也是支持布隆过滤器的。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>缓存异常会面临的三个问题：缓存雪崩、击穿和穿透。</p>
+<p>其中，缓存雪崩和缓存击穿主要原因是数据不在缓存中，而导致大量请求访问了数据库，数据库压力骤增，容易引发一系列连锁反应，导致系统奔溃。不过，一旦数据被重新加载回缓存，应用又可以从缓存快速读取数据，不再继续访问数据库，数据库的压力也会瞬间降下来。因此，缓存雪崩和缓存击穿应对的方案比较类似。</p>
+<p>而缓存穿透主要原因是数据既不在缓存也不在数据库中。因此，缓存穿透与缓存雪崩、击穿应对的方案不太一样。</p>
+<p>我这里整理了表格，你可以从下面这张表格很好的知道缓存雪崩、击穿和穿透的区别以及应对方案。</p>
+<p><img src="/2023/09/03/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/061e2c04e0ebca3425dd75dd035b6b7b.png" alt="图片"></p>
  
       <!-- reward -->
       
@@ -525,7 +753,129 @@
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-Redis-线程模型"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/"
+    >Redis 线程模型</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" class="article-date">
+  <time datetime="2023-05-15T12:52:06.000Z" itemprop="datePublished">2023-05-15</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="Redis-线程模型"><a href="#Redis-线程模型" class="headerlink" title="Redis 线程模型"></a>Redis 线程模型</h2><h3 id="Redis-是单线程吗？"><a href="#Redis-是单线程吗？" class="headerlink" title="#Redis 是单线程吗？"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/redis/base/redis_interview.html#redis-%E6%98%AF%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%90%97">#</a>Redis 是单线程吗？</h3><p><strong>Redis 单线程指的是「接收客户端请求-&gt;解析请求 -&gt;进行数据读写等操作-&gt;发送数据给客户端」这个过程是由一个线程（主线程）来完成的</strong>，这也是我们常说 Redis 是单线程的原因。</p>
+<p>但是，<strong>Redis 程序并不是单线程的</strong>，Redis 在启动的时候，是会<strong>启动后台线程</strong>（BIO）的：</p>
+<ul>
+<li><strong>Redis 在 2.6 版本</strong>，会启动 2 个后台线程，分别处理关闭文件、AOF 刷盘这两个任务；</li>
+<li><strong>Redis 在 4.0 版本之后</strong>，新增了一个新的后台线程，用来异步释放 Redis 内存，也就是 lazyfree 线程。例如执行 unlink key / flushdb async / flushall async 等命令，会把这些删除操作交给后台线程来执行，好处是不会导致 Redis 主线程卡顿。因此，当我们要删除一个大 key 的时候，不要使用 del 命令删除，因为 del 是在主线程处理的，这样会导致 Redis 主线程卡顿，因此我们应该使用 unlink 命令来异步删除大key。</li>
+</ul>
+<p>之所以 Redis 为「关闭文件、AOF 刷盘、释放内存」这些任务创建单独的线程来处理，是因为这些任务的操作都是很耗时的，如果把这些任务都放在主线程来处理，那么 Redis 主线程就很容易发生阻塞，这样就无法处理后续的请求了。</p>
+<p>后台线程相当于一个消费者，生产者把耗时任务丢到任务队列中，消费者（BIO）不停轮询这个队列，拿出任务就去执行对应的方法即可。</p>
+<p><img src="/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/%E5%90%8E%E5%8F%B0%E7%BA%BF%E7%A8%8B.jpg" alt="img"></p>
+<p>关闭文件、AOF 刷盘、释放内存这三个任务都有各自的任务队列：</p>
+<ul>
+<li>BIO_CLOSE_FILE，关闭文件任务队列：当队列有任务后，后台线程会调用 close(fd) ，将文件关闭；</li>
+<li>BIO_AOF_FSYNC，AOF刷盘任务队列：当 AOF 日志配置成 everysec 选项后，主线程会把 AOF 写日志操作封装成一个任务，也放到队列中。当发现队列有任务后，后台线程会调用 fsync(fd)，将 AOF 文件刷盘，</li>
+<li>BIO_LAZY_FREE，lazy free 任务队列：当队列有任务后，后台线程会 free(obj) 释放对象 / free(dict) 删除数据库所有对象 / free(skiplist) 释放跳表对象；</li>
+</ul>
+<h3 id="Redis-单线程模式是怎样的？"><a href="#Redis-单线程模式是怎样的？" class="headerlink" title="Redis 单线程模式是怎样的？"></a>Redis 单线程模式是怎样的？</h3><p>Redis 6.0 版本之前的单线模式如下图：</p>
+<p><img src="/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/redis%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B.drawio.png" alt="img"></p>
+<p>图中的蓝色部分是一个事件循环，是由主线程负责的，可以看到网络 I/O 和命令处理都是单线程。 Redis 初始化的时候，会做下面这几件事情：</p>
+<ul>
+<li>首先，调用 epoll_create() 创建一个 epoll 对象和调用 socket() 创建一个服务端 socket</li>
+<li>然后，调用 bind() 绑定端口和调用 listen() 监听该 socket；</li>
+<li>然后，将调用 epoll_ctl() 将 listen socket 加入到 epoll，同时注册「连接事件」处理函数。</li>
+</ul>
+<p>初始化完后，主线程就进入到一个<strong>事件循环函数</strong>，主要会做以下事情：</p>
+<ul>
+<li><p>首先，先调用<strong>处理发送队列函数</strong>，看是发送队列里是否有任务，如果有发送任务，则通过 write 函数将客户端发送缓存区里的数据发送出去，如果这一轮数据没有发送完，就会注册写事件处理函数，等待 epoll_wait 发现可写后再处理 。</p>
+</li>
+<li><p>接着，调用 epoll_wait 函数等待事件的到来：</p>
+<ul>
+<li><p>如果是<strong>连接事件</strong>到来，则会调用<strong>连接事件处理函数</strong>，该函数会做这些事情：调用 accpet 获取已连接的 socket -&gt; 调用 epoll_ctl 将已连接的 socket 加入到 epoll -&gt; 注册「读事件」处理函数；</p>
+</li>
+<li><p>如果是<strong>读事件</strong>到来，则会调用<strong>读事件处理函数</strong>，该函数会做这些事情：调用 read 获取客户端发送的数据 -&gt; 解析命令 -&gt; 处理命令 -&gt; 将客户端对象添加到发送队列 -&gt; 将执行结果写到发送缓存区等待发送；</p>
+</li>
+<li><p>如果是<strong>写事件</strong>到来，则会调用<strong>写事件处理函数</strong>，该函数会做这些事情：通过 write 函数将客户端发送缓存区里的数据发送出去，如果这一轮数据没有发送完，就会继续注册写事件处理函数，等待 epoll_wait 发现可写后再处理 。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>（另外版本：</p>
+<p>redis 内部使⽤<strong>⽂件事件处理器</strong> file event handler ，这个<strong>⽂件事件处理器是单线程的</strong>，所 以 redis 才叫做单线程的模型。它<strong>采⽤ IO 多路复⽤机制同时监听多个 socket</strong>，<strong>将产⽣事件的 socket 压⼊内存队列中，事件分派器根据 socket 上的事件类型来选择对应的事件处理器进⾏处 理</strong>。</p>
+<p><img src="/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/image-20240512180058421.png" alt="image-20240512180058421">)</p>
+<h3 id="Redis-采用单线程为什么还这么快？"><a href="#Redis-采用单线程为什么还这么快？" class="headerlink" title="Redis 采用单线程为什么还这么快？"></a>Redis 采用单线程为什么还这么快？</h3><p>官方使用基准测试的结果是，<strong>单线程的 Redis 吞吐量可以达到 10W/每秒</strong></p>
+<p>之所以 Redis 采用单线程（网络 I/O 和执行命令）那么快，有如下几个原因：</p>
+<ul>
+<li>Redis 的大部分操作<strong>都在内存中完成</strong>，并且采用了高效的数据结构，因此 Redis 瓶颈可能是机器的内存或者网络带宽，而并非 CPU，既然 CPU 不是瓶颈，那么自然就采用单线程的解决方案了；</li>
+<li>Redis 采用单线程模型可以<strong>避免了多线程之间的竞争</strong>，省去了多线程切换带来的时间和性能上的开销，而且也不会导致死锁问题。</li>
+<li>Redis 采用了 <strong>I/O 多路复用机制</strong>处理大量的客户端 Socket 请求，IO 多路复用机制是指一个线程处理多个 IO 流，就是我们经常听到的 select/epoll 机制。简单来说，在 Redis 只运行单线程的情况下，该机制允许内核中，同时存在多个监听 Socket 和已连接 Socket。内核会一直监听这些 Socket 上的连接请求或数据请求。一旦有请求到达，就会交给 Redis 线程处理，这就实现了一个 Redis 线程处理多个 IO 流的效果。</li>
+</ul>
+<h3 id="Redis-6-0-之前为什么使用单线程？"><a href="#Redis-6-0-之前为什么使用单线程？" class="headerlink" title="Redis 6.0 之前为什么使用单线程？"></a>Redis 6.0 之前为什么使用单线程？</h3><p>我们都知道单线程的程序是无法利用服务器的多核 CPU 的，那么早期 Redis 版本的主要工作（网络 I/O 和执行命令）为什么还要使用单线程呢？我们不妨先看一下Redis官方给出的<a href="https://link.juejin.cn/?target=https://redis.io/topics/faq">FAQ</a></p>
+<p><img src="/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/redis%E5%AE%98%E6%96%B9%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%9B%9E%E7%AD%94.png" alt="img"></p>
+<p>核心意思是：<strong>CPU 并不是制约 Redis 性能表现的瓶颈所在</strong>，更多情况下是受到内存大小和网络I/O的限制，所以 Redis 核心网络模型使用单线程并没有什么问题，如果你想要使用服务的多核CPU，可以在一台服务器上启动多个节点或者采用分片集群的方式。</p>
+<p>除了上面的官方回答，选择单线程的原因也有下面的考虑。</p>
+<p>使用了单线程后，可维护性高，多线程模型虽然在某些方面表现优异，但是它却引入了程序执行顺序的不确定性，带来了并发读写的一系列问题，<strong>增加了系统复杂度、同时可能存在线程切换、甚至加锁解锁、死锁造成的性能损耗</strong>。</p>
+<h3 id="Redis-6-0-之后为什么引入了多线程？"><a href="#Redis-6-0-之后为什么引入了多线程？" class="headerlink" title="#Redis 6.0 之后为什么引入了多线程？"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/redis/base/redis_interview.html#redis-6-0-%E4%B9%8B%E5%90%8E%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BC%95%E5%85%A5%E4%BA%86%E5%A4%9A%E7%BA%BF%E7%A8%8B">#</a>Redis 6.0 之后为什么引入了多线程？</h3><p>虽然 Redis 的主要工作（网络 I/O 和执行命令）一直是单线程模型，但是<strong>在 Redis 6.0 版本之后，也采用了多个 I/O 线程来处理网络请求</strong>，<strong>这是因为随着网络硬件的性能提升，Redis 的性能瓶颈有时会出现在网络 I/O 的处理上</strong>。</p>
+<p>所以为了提高网络 I/O 的并行度，Redis 6.0 对于网络 I/O 采用多线程来处理。**但是对于命令的执行，Redis 仍然使用单线程来处理，*<em>所以大家*<em>不要误解</em></em> Redis 有多线程同时执行命令。</p>
+<p>Redis 官方表示，<strong>Redis 6.0 版本引入的多线程 I/O 特性对性能提升至少是一倍以上</strong>。</p>
+<p>Redis 6.0 版本支持的 I/O 多线程特性，默认情况下 I/O 多线程只针对发送响应数据（write client socket），并不会以多线程的方式处理读请求（read client socket）。要想开启多线程处理客户端读请求，就需要把 Redis.conf 配置文件中的 io-threads-do-reads 配置项设为 yes。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//读请求也使用io多线程</span></span><br><span class="line">io-threads-<span class="keyword">do</span>-reads yes </span><br></pre></td></tr></table></figure>
+
+<p>同时， Redis.conf 配置文件中提供了 IO 多线程个数的配置项。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// io-threads N，表示启用 N-1 个 I/O 多线程（主线程也算一个 I/O 线程）</span></span><br><span class="line">io-threads <span class="number">4</span></span><br></pre></td></tr></table></figure>
+
+<p>关于线程数的设置，官方的建议是如果为 4 核的 CPU，建议线程数设置为 2 或 3，如果为 8 核 CPU 建议线程数设置为 6，线程数一定要小于机器核数，线程数并不是越大越好。</p>
+<p>因此， Redis 6.0 版本之后，Redis 在启动的时候，默认情况下会<strong>额外创建 6 个线程</strong>（<em>这里的线程数不包括主线程</em>）：</p>
+<ul>
+<li>Redis-server ： Redis的主线程，主要负责执行命令；</li>
+<li>bio_close_file、bio_aof_fsync、bio_lazy_free：三个后台线程，分别异步处理关闭文件任务、AOF刷盘任务、释放内存任务；</li>
+<li>io_thd_1、io_thd_2、io_thd_3：三个 I/O 线程，io-threads 默认是 4 ，所以会启动 3（4-1）个 I/O 多线程，用来分担 Redis 网络 I/O 的压力。</li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
 
     </footer>
   </div>
@@ -623,6 +973,87 @@
 
     
     <article
+  id="post-更新一条记录的流程"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/05/11/%E6%9B%B4%E6%96%B0%E4%B8%80%E6%9D%A1%E8%AE%B0%E5%BD%95%E7%9A%84%E6%B5%81%E7%A8%8B/"
+    >更新一条记录的流程</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/05/11/%E6%9B%B4%E6%96%B0%E4%B8%80%E6%9D%A1%E8%AE%B0%E5%BD%95%E7%9A%84%E6%B5%81%E7%A8%8B/" class="article-date">
+  <time datetime="2023-05-11T14:21:54.000Z" itemprop="datePublished">2023-05-11</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="更新一条记录的流程"><a href="#更新一条记录的流程" class="headerlink" title="更新一条记录的流程"></a>更新一条记录的流程</h2><p>具体更新一条记录 <code>UPDATE t_user SET name = &#39;xiaolin&#39; WHERE id = 1;</code> 的流程如下:</p>
+<ol>
+<li>执行器负责具体执行，会调用存储引擎的接口，通过主键索引树搜索获取 id = 1 这一行记录：<ul>
+<li>如果 id=1 这一行所在的数据页本来就在 buffer pool 中，就直接返回给执行器更新；</li>
+<li>如果记录不在 buffer pool，将数据页从磁盘读入到 buffer pool，返回记录给执行器。</li>
+</ul>
+</li>
+<li>执行器得到聚簇索引记录后，会看一下更新前的记录和更新后的记录是否一样：<ul>
+<li>如果一样的话就不进行后续更新流程；</li>
+<li>如果不一样的话就把更新前的记录和更新后的记录都当作参数传给 InnoDB 层，让 InnoDB 真正的执行更新记录的操作；</li>
+</ul>
+</li>
+<li>开启事务， InnoDB 层更新记录前，首先要记录相应的 undo log，因为这是更新操作，需要把被更新的列的旧值记下来，也就是要生成一条 undo log，undo log 会写入 Buffer Pool 中的 Undo 页面，不过在内存修改该 Undo 页面后，需要记录对应的 redo log。</li>
+<li>InnoDB 层开始更新记录，会先更新内存（同时标记为脏页），然后将记录写到 redo log 里面，这个时候更新就算完成了。为了减少磁盘I/O，不会立即将脏页写入磁盘，后续由后台线程选择一个合适的时机将脏页写入到磁盘。这就是 <strong>WAL 技术</strong>（Write-Ahead Logging）技术，<strong>WAL 技术指的是， MySQL 的写操作并不是立刻写到磁盘上，而是先写日志，然后在合适的时间再写到磁盘上</strong>，MySQL 的写操作并不是立刻写到磁盘上，而是先写 redo 日志，然后在合适的时间再将修改的行数据写到磁盘上。</li>
+<li>至此，一条记录更新完了。</li>
+<li>在一条更新语句执行完成后，然后开始记录该语句对应的 binlog，此时记录的 binlog 会被保存到 binlog cache，并没有刷新到硬盘上的 binlog 文件，在事务提交时才会统一将该事务运行过程中的所有 binlog 刷新到硬盘。</li>
+<li>事务提交（为了方便说明，这里不说组提交的过程，只说两阶段提交）：<ul>
+<li><strong>prepare 阶段</strong>：将 redo log 对应的事务状态设置为 prepare，然后将 redo log 刷新到硬盘；</li>
+<li><strong>commit 阶段</strong>：将 binlog 刷新到磁盘，接着调用引擎的提交事务接口，将 redo log 状态设置为 commit（将事务设置为 commit 状态后，刷入到磁盘 redo log 文件）；</li>
+</ul>
+</li>
+<li>至此，一条更新语句执行完成。</li>
+</ol>
+<p>redo log 要写到磁盘，数据也要写磁盘，为什么要多此一举？</p>
+<p>写入 redo log 的方式使用了追加操作， 所以磁盘操作是<strong>顺序写</strong>，而写入数据需要先找到写入位置，然后才写到磁盘，所以磁盘操作是<strong>随机写</strong>。</p>
+<p>磁盘的「顺序写 」比「随机写」 高效的多，因此 redo log 写入磁盘的开销更小。</p>
+<p>针对「顺序写」为什么比「随机写」更快这个问题，可以比喻为你有一个本子，按照顺序一页一页写肯定比写一个字都要找到对应页写快得多。</p>
+<p>可以说这是 WAL 技术的另外一个优点：-<strong>MySQL 的写操作从磁盘的「随机写」变成了「顺序写」</strong>，提升语句的执行性能。这是因为 MySQL 的写操作并不是立刻更新到磁盘上，而是先记录在日志上，然后在合适的时间再更新到磁盘上 。</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-为什么MySQL采用B-树作为索引"
   class="article article-type-post"
   itemscope
@@ -689,7 +1120,7 @@
 
     
     <article
-  id="post-执行一条select语句，期间发生了什么"
+  id="post-MySQL日志的作用"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -700,8 +1131,8 @@
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/"
-    >执行一条select语句，期间发生了什么</a> 
+  <a class="article-title" href="/2022/11/08/MySQL%E6%97%A5%E5%BF%97%E7%9A%84%E4%BD%9C%E7%94%A8/"
+    >MySQL日志的作用</a> 
 </h2>
  
 
@@ -709,221 +1140,35 @@
     </header>
      
     <div class="article-meta">
-      <a href="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/" class="article-date">
-  <time datetime="2023-02-22T12:17:30.000Z" itemprop="datePublished">2023-02-22</time>
+      <a href="/2022/11/08/MySQL%E6%97%A5%E5%BF%97%E7%9A%84%E4%BD%9C%E7%94%A8/" class="article-date">
+  <time datetime="2022-11-08T13:34:25.000Z" itemprop="datePublished">2022-11-08</time>
 </a> 
   <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/%E6%97%A5%E5%BF%97/">日志</a>
   </div>
    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <h1 id="执行一条-select-语句，期间发生了什么？"><a href="#执行一条-select-语句，期间发生了什么？" class="headerlink" title="执行一条 select 语句，期间发生了什么？"></a>执行一条 select 语句，期间发生了什么？</h1><p>学习 SQL 的时候，大家肯定第一个先学到的就是 select 查询语句了，比如下面这句查询语句：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span> 在 product 表中，查询 id <span class="operator">=</span> <span class="number">1</span> 的记录</span><br><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> product <span class="keyword">where</span> id <span class="operator">=</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
+  <h1 id="MySQL-日志：undo-log、redo-log、binlog-有什么用？"><a href="#MySQL-日志：undo-log、redo-log、binlog-有什么用？" class="headerlink" title="MySQL 日志：undo log、redo log、binlog 有什么用？"></a>MySQL 日志：undo log、redo log、binlog 有什么用？</h1><p><strong>执行一条 update 语句，期间发生了什么？</strong>，比如这一条 update 语句：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> t_user <span class="keyword">SET</span> name <span class="operator">=</span> <span class="string">&#x27;xiaolin&#x27;</span> <span class="keyword">WHERE</span> id <span class="operator">=</span> <span class="number">1</span>;</span><br></pre></td></tr></table></figure>
 
-<p>但是有没有想过，<strong>MySQL 执行一条 select 查询语句，在 MySQL 中期间发生了什么？</strong></p>
-<p>带着这个问题，我们可以很好的了解 MySQL 内部的架构，所以这次就带大家拆解一下 MySQL 内部的结构，看看内部里的每一个“零件”具体是负责做什么的。</p>
-<h2 id="MySQL-执行流程是怎样的？"><a href="#MySQL-执行流程是怎样的？" class="headerlink" title="MySQL 执行流程是怎样的？"></a>MySQL 执行流程是怎样的？</h2><p>先来一个上帝视角图，下面就是 MySQL 执行一条 SQL 查询语句的流程，也从图中可以看到 MySQL 内部架构里的各个功能模块。</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/mysql%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B.png" alt="查询语句执行流程"></p>
-<p>可以看到， MySQL 的架构共分为两层：<strong>Server 层和存储引擎层</strong>，</p>
+<p>查询语句的那一套流程，更新语句也是同样会走一遍：</p>
 <ul>
-<li><strong>Server 层负责建立连接、分析和执行 SQL</strong>。MySQL 大多数的核心功能模块都在这实现，主要包括连接器，查询缓存、解析器、预处理器、优化器、执行器等。另外，所有的内置函数（如日期、时间、数学和加密函数等）和所有跨存储引擎的功能（如存储过程、触发器、视图等。）都在 Server 层实现。</li>
-<li><strong>存储引擎层负责数据的存储和提取</strong>。支持 InnoDB、MyISAM、Memory 等多个存储引擎，不同的存储引擎共用一个 Server 层。现在最常用的存储引擎是 InnoDB，从 MySQL 5.5 版本开始， InnoDB 成为了 MySQL 的默认存储引擎。我们常说的索引数据结构，就是由存储引擎层实现的，不同的存储引擎支持的索引类型也不相同，比如 InnoDB 支持索引类型是 B+树 ，且是默认使用，也就是说在数据表中创建的主键索引和二级索引默认使用的是 B+ 树索引。</li>
+<li>客户端先通过连接器建立连接，连接器自会判断用户身份；</li>
+<li>因为这是一条 update 语句，所以不需要经过查询缓存，但是表上有更新语句，是会把整个表的查询缓存清空的，所以说查询缓存很鸡肋，在 MySQL 8.0 就被移除这个功能了；</li>
+<li>解析器会通过词法分析识别出关键字 update，表名等等，构建出语法树，接着还会做语法分析，判断输入的语句是否符合 MySQL 语法；</li>
+<li>预处理器会判断表和字段是否存在；</li>
+<li>优化器确定执行计划，因为 where 条件中的 id 是主键索引，所以决定要使用 id 这个索引；</li>
+<li>执行器负责具体执行，找到这一行，然后更新。</li>
 </ul>
-<p>好了，现在我们对 Server 层和存储引擎层有了一个简单认识，接下来，就详细说一条 SQL 查询语句的执行流程，依次看看每一个功能模块的作用。</p>
-<h2 id="第一步：连接器"><a href="#第一步：连接器" class="headerlink" title="第一步：连接器"></a>第一步：连接器</h2><p>如果你在 Linux 操作系统里要使用 MySQL，那你第一步肯定是要先连接 MySQL 服务，然后才能执行 SQL 语句，普遍我们都是使用下面这条命令进行连接：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">-h 指定 MySQL 服务得 IP 地址，如果是连接本地的 MySQL服务，可以不用这个参数；</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">-u 指定用户名，管理员角色名为 root；</span></span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">-p 指定密码，如果命令行中不填写密码（为了密码安全，建议不要在命令行写密码），就需要在交互对话里面输入密码</span></span><br><span class="line">mysql -h$ip -u$user -p</span><br></pre></td></tr></table></figure>
-
-<p>连接的过程需要先经过 TCP 三次握手，因为 MySQL 是基于 TCP 协议进行传输的，如果 MySQL 服务并没有启动，则会收到如下的报错：</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/mysql%E8%BF%9E%E6%8E%A5%E9%94%99%E8%AF%AF.png" alt="img"></p>
-<p>如果 MySQL 服务正常运行，完成 TCP 连接的建立后，连接器就要开始验证你的用户名和密码，如果用户名或密码不对，就收到一个”Access denied for user”的错误，然后客户端程序结束执行。</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E5%AF%86%E7%A0%81%E9%94%99%E8%AF%AF.png" alt="img"></p>
-<p>如果用户密码都没有问题，连接器就会获取该用户的权限，然后保存起来，后续该用户在此连接里的任何操作，都会基于连接开始时读到的权限进行权限逻辑的判断。</p>
-<p>所以，如果一个用户已经建立了连接，即使管理员中途修改了该用户的权限，也不会影响已经存在连接的权限。修改完成后，只有再新建的连接才会使用新的权限设置。</p>
-<blockquote>
-<p>如何查看 MySQL 服务被多少个客户端连接了？</p>
-</blockquote>
-<p>如果你想知道当前 MySQL 服务被多少个客户端连接了，你可以执行 <code>show processlist</code> 命令进行查看。</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E6%9F%A5%E7%9C%8B%E8%BF%9E%E6%8E%A5.png" alt="img"></p>
-<p>比如上图的显示结果，共有两个用户名为 root 的用户连接了 MySQL 服务，其中 id 为 6 的用户的 Command 列的状态为 <code>Sleep</code> ，这意味着该用户连接完 MySQL 服务就没有再执行过任何命令，也就是说这是一个空闲的连接，并且空闲的时长是 736 秒（ Time 列）。</p>
-<blockquote>
-<p>空闲连接会一直占用着吗？</p>
-</blockquote>
-<p>当然不是了，MySQL 定义了空闲连接的最大空闲时长，由 <code>wait_timeout</code> 参数控制的，默认值是 8 小时（28880秒），如果空闲连接超过了这个时间，连接器就会自动将它断开。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">show</span> variables <span class="keyword">like</span> <span class="string">&#x27;wait_timeout&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name <span class="operator">|</span> <span class="keyword">Value</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-------+</span></span><br><span class="line"><span class="operator">|</span> wait_timeout  <span class="operator">|</span> <span class="number">28800</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">---------------+-------+</span></span><br><span class="line"><span class="number">1</span> <span class="type">row</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
-
-<p>当然，我们自己也可以手动断开空闲的连接，使用的是 kill connection + id 的命令。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> kill connection <span class="operator">+</span><span class="number">6</span>;</span><br><span class="line">Query OK, <span class="number">0</span> <span class="keyword">rows</span> affected (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
-
-<p>一个处于空闲状态的连接被服务端主动断开后，这个客户端并不会马上知道，等到客户端在发起下一个请求的时候，才会收到这样的报错“ERROR 2013 (HY000): Lost connection to MySQL server during query”</p>
-<blockquote>
-<p>MySQL 的连接数有限制吗？</p>
-</blockquote>
-<p>MySQL 服务支持的最大连接数由 max_connections 参数控制，比如我的 MySQL 服务默认是 151 个,超过这个值，系统就会拒绝接下来的连接请求，并报错提示“Too many connections”。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">show</span> variables <span class="keyword">like</span> <span class="string">&#x27;max_connections&#x27;</span>;</span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+-------+</span></span><br><span class="line"><span class="operator">|</span> Variable_name   <span class="operator">|</span> <span class="keyword">Value</span> <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+-------+</span></span><br><span class="line"><span class="operator">|</span> max_connections <span class="operator">|</span> <span class="number">151</span>   <span class="operator">|</span></span><br><span class="line"><span class="operator">+</span><span class="comment">-----------------+-------+</span></span><br><span class="line"><span class="number">1</span> <span class="type">row</span> <span class="keyword">in</span> <span class="keyword">set</span> (<span class="number">0.00</span> sec)</span><br></pre></td></tr></table></figure>
-
-<p>MySQL 的连接也跟 HTTP 一样，有短连接和长连接的概念，它们的区别如下：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 短连接</span></span><br><span class="line">连接 mysql 服务（TCP 三次握手）</span><br><span class="line">执行sql</span><br><span class="line">断开 mysql 服务（TCP 四次挥手）</span><br><span class="line"></span><br><span class="line"><span class="comment">// 长连接</span></span><br><span class="line">连接 mysql 服务（TCP 三次握手）</span><br><span class="line">执行sql</span><br><span class="line">执行sql</span><br><span class="line">执行sql</span><br><span class="line">....</span><br><span class="line">断开 mysql 服务（TCP 四次挥手）</span><br></pre></td></tr></table></figure>
-
-<p>可以看到，使用长连接的好处就是可以减少建立连接和断开连接的过程，所以一般是推荐使用长连接。</p>
-<p>但是，使用长连接后可能会占用内存增多，因为 MySQL 在执行查询过程中临时使用内存管理连接对象，这些连接对象资源只有在连接断开时才会释放。如果长连接累计很多，将导致 MySQL 服务占用内存太大，有可能会被系统强制杀掉，这样会发生 MySQL 服务异常重启的现象。</p>
-<blockquote>
-<p>怎么解决长连接占用内存的问题？</p>
-</blockquote>
-<p>有两种解决方式。</p>
-<p>第一种，<strong>定期断开长连接</strong>。既然断开连接后就会释放连接占用的内存资源，那么我们可以定期断开长连接。</p>
-<p>第二种，<strong>客户端主动重置连接</strong>。MySQL 5.7 版本实现了 <code>mysql_reset_connection()</code> 函数的接口，注意这是接口函数不是命令，那么当客户端执行了一个很大的操作后，在代码里调用 mysql_reset_connection 函数来重置连接，达到释放内存的效果。这个过程不需要重连和重新做权限验证，但是会将连接恢复到刚刚创建完时的状态。</p>
-<p>至此，连接器的工作做完了，简单总结一下：</p>
+<p>不过，更新语句的流程会涉及到 undo log（回滚日志）、redo log（重做日志） 、binlog （归档日志）这三种日志：</p>
 <ul>
-<li>与客户端进行 TCP 三次握手建立连接；</li>
-<li>校验客户端的用户名和密码，如果用户名或密码不对，则会报错；</li>
-<li>如果用户名和密码都对了，会读取该用户的权限，然后后面的权限逻辑判断都基于此时读取到的权限；</li>
+<li><strong>undo log（回滚日志）</strong>：是 Innodb 存储引擎层生成的日志，实现了事务中的<strong>原子性</strong>，主要<strong>用于事务回滚和 MVCC</strong>。</li>
+<li><strong>redo log（重做日志）</strong>：是 Innodb 存储引擎层生成的日志，实现了事务中的<strong>持久性</strong>，主要<strong>用于掉电等故障恢复</strong>；</li>
+<li><strong>binlog （归档日志）</strong>：是 Server 层生成的日志，主要<strong>用于数据备份和主从复制</strong>；</li>
 </ul>
-<h2 id="第二步：查询缓存"><a href="#第二步：查询缓存" class="headerlink" title="第二步：查询缓存"></a>第二步：查询缓存</h2><p>连接器得工作完成后，客户端就可以向 MySQL 服务发送 SQL 语句了，MySQL 服务收到 SQL 语句后，就会解析出 SQL 语句的第一个字段，看看是什么类型的语句。</p>
-<p>如果 SQL 是查询语句（select 语句），MySQL 就会先去查询缓存（ Query Cache ）里查找缓存数据，看看之前有没有执行过这一条命令，这个查询缓存是以 key-value 形式保存在内存中的，key 为 SQL 查询语句，value 为 SQL 语句查询的结果。</p>
-<p>如果查询的语句命中查询缓存，那么就会直接返回 value 给客户端。如果查询的语句没有命中查询缓存中，那么就要往下继续执行，等执行完后，查询的结果就会被存入查询缓存中。</p>
-<p>这么看，查询缓存还挺有用，但是其实<strong>查询缓存挺鸡肋</strong>的。</p>
-<p>对于更新比较频繁的表，查询缓存的命中率很低的，因为只要一个表有更新操作，那么这个表的查询缓存就会被清空。如果刚缓存了一个查询结果很大的数据，还没被使用的时候，刚好这个表有更新操作，查询缓冲就被清空了，相当于缓存了个寂寞。</p>
-<p>所以，MySQL 8.0 版本直接将查询缓存删掉了，也就是说 MySQL 8.0 开始，执行一条 SQL 查询语句，不会再走到查询缓存这个阶段了。</p>
-<p>对于 MySQL 8.0 之前的版本，如果想关闭查询缓存，我们可以通过将参数 query_cache_type 设置成 DEMAND。</p>
-<p>TIP</p>
-<p>这里说的查询缓存是 server 层的，也就是 MySQL 8.0 版本移除的是 server 层的查询缓存，并不是 Innodb 存储引擎中的 buffer pool。</p>
-<h2 id="第三步：解析-SQL"><a href="#第三步：解析-SQL" class="headerlink" title="第三步：解析 SQL"></a>第三步：解析 SQL</h2><p>在正式执行 SQL 查询语句之前， MySQL 会先对 SQL 语句做解析，这个工作交由「解析器」来完成。</p>
-<h3 id="解析器"><a href="#解析器" class="headerlink" title="#解析器"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/mysql/base/how_select.html#%E8%A7%A3%E6%9E%90%E5%99%A8">#</a>解析器</h3><p>解析器会做如下两件事情。</p>
-<p>第一件事情，<strong>词法分析</strong>。MySQL 会根据你输入的字符串识别出关键字出来，例如，SQL语句 select username from userinfo，在分析之后，会得到4个Token，其中有2个Keyword，分别为select和from：</p>
-<table>
-<thead>
-<tr>
-<th>关键字</th>
-<th>非关键字</th>
-<th>关键字</th>
-<th>非关键字</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>select</td>
-<td>username</td>
-<td>from</td>
-<td>userinfo</td>
-</tr>
-</tbody></table>
-<p>第二件事情，<strong>语法分析</strong>。根据词法分析的结果，语法解析器会根据语法规则，判断你输入的这个 SQL 语句是否满足 MySQL 语法，如果没问题就会构建出 SQL 语法树，这样方便后面模块获取 SQL 类型、表名、字段名、 where 条件等等。</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/db-mysql-sql-parser-2.png" alt="img"></p>
-<p>如果我们输入的 SQL 语句语法不对，就会在解析器这个阶段报错。比如，我下面这条查询语句，把 from 写成了 form，这时 MySQL 解析器就会给报错。</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E8%AF%AD%E6%B3%95%E9%94%99%E8%AF%AF.png" alt="img"></p>
-<p>但是注意，表不存在或者字段不存在，并不是在解析器里做的，《MySQL 45 讲》说是在解析器做的，但是经过我和朋友看 MySQL 源码（5.7和8.0）得出结论是解析器只负责检查语法和构建语法树，但是不会去查表或者字段存不存在。</p>
-<p>那到底谁来做检测表和字段是否存在的工作呢？别急，接下来就是了</p>
-<h2 id="第四步：执行-SQL"><a href="#第四步：执行-SQL" class="headerlink" title="第四步：执行 SQL"></a>第四步：执行 SQL</h2><p>经过解析器后，接着就要进入执行 SQL 查询语句的流程了，每条<code>SELECT</code> 查询语句流程主要可以分为下面这三个阶段：</p>
-<ul>
-<li>prepare 阶段，也就是预处理阶段；</li>
-<li>optimize 阶段，也就是优化阶段；</li>
-<li>execute 阶段，也就是执行阶段；</li>
-</ul>
-<h3 id="预处理器"><a href="#预处理器" class="headerlink" title="预处理器"></a>预处理器</h3><p>我们先来说说预处理阶段做了什么事情。</p>
-<ul>
-<li>检查 SQL 查询语句中的表或者字段是否存在；</li>
-<li>将 <code>select *</code> 中的 <code>*</code> 符号，扩展为表上的所有列；</li>
-</ul>
-<p>我下面这条查询语句，test 这张表是不存在的，这时 MySQL 就会在执行 SQL 查询语句的 prepare 阶段中报错。</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql<span class="operator">&gt;</span> <span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> test;</span><br><span class="line">ERROR <span class="number">1146</span> (<span class="number">42</span>S02): <span class="keyword">Table</span> <span class="string">&#x27;mysql.test&#x27;</span> doesn<span class="string">&#x27;t exist</span></span><br></pre></td></tr></table></figure>
-
-<p>这里贴个 MySQL 8.0 源码来证明表或字段是否存在的判断，不是在解析器里做的，而是在 prepare 阶段。（<em>PS：下图是公众号「一树一溪」老哥帮我分析的，这位老哥专门写 MySQL 源码文章，感兴趣的朋友，可以微信搜索关注</em>）</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E8%A1%A8%E4%B8%8D%E5%AD%98%E5%9C%A8.jpeg" alt="img"></p>
-<p>上面的中间部分是 MySQL 报错表不存在时的函数调用栈，可以看到表不存在的错误是在get_table_share() 函数里报错的，而这个函数是在 prepare 阶段调用的。</p>
-<p>不过，对于 MySQL 5.7 判断表或字段是否存在的工作，是在词法分析&amp;语法分析之后，prepare 阶段之前做的。结论都一样，不是在解析器里做的。代码我就不放了，正因为 MySQL 5.7 代码结构不好，所以 MySQL 8.0 代码结构变化很大，后来判断表或字段是否存在的工作就被放入到 prepare 阶段做了。</p>
-<h3 id="优化器"><a href="#优化器" class="headerlink" title="优化器"></a>优化器</h3><p>经过预处理阶段后，还需要为 SQL 查询语句先制定一个执行计划，这个工作交由「优化器」来完成的。</p>
-<p><strong>优化器主要负责将 SQL 查询语句的执行方案确定下来</strong>，比如在表里面有多个索引的时候，优化器会基于查询成本的考虑，来决定选择使用哪个索引。</p>
-<p>当然，我们本次的查询语句（select * from product where id = 1）很简单，就是选择使用主键索引。</p>
-<p>要想知道优化器选择了哪个索引，我们可以在查询语句最前面加个 <code>explain</code> 命令，这样就会输出这条 SQL 语句的执行计划，然后执行计划中的 key 就表示执行过程中使用了哪个索引，比如下图的 key 为 <code>PRIMARY</code> 就是使用了主键索引。</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92.png" alt="img"></p>
-<p>如果查询语句的执行计划里的 key 为 null 说明没有使用索引，那就会全表扫描（type = ALL），这种查询扫描的方式是效率最低档次的，如下图：</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E5%85%A8%E8%A1%A8%E6%89%AB%E6%8F%8F.png" alt="img"></p>
-<p>这张 product 表只有一个索引就是主键，现在我在表中将 name 设置为普通索引（二级索引）。</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E4%BA%A7%E5%93%81%E8%A1%A8.png" alt="img"></p>
-<p>这时 product 表就有主键索引（id）和普通索引（name）。假设执行了这条查询语句：</p>
-<p><code>select id from product where id &gt; 1  and name like &#39;i%&#39;;</code></p>
-<p>这条查询语句的结果既可以使用主键索引，也可以使用普通索引，但是执行的效率会不同。这时，就需要优化器来决定使用哪个索引了。</p>
-<p>很显然这条查询语句是<strong>覆盖索引</strong>，直接在二级索引就能查找到结果（因为二级索引的 B+ 树的叶子节点的数据存储的是主键值），就没必要在主键索引查找了，因为查询主键索引的 B+ 树的成本会比查询二级索引的 B+ 的成本大，优化器基于查询成本的考虑，会选择查询代价小的普通索引。</p>
-<p>在下图中执行计划，我们可以看到，执行过程中使用了普通索引（name），Exta 为 Using index，这就是表明使用了覆盖索引优化。</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E9%80%89%E6%8B%A9%E7%B4%A2%E5%BC%95.png" alt="img"></p>
-<h3 id="执行器"><a href="#执行器" class="headerlink" title="执行器"></a>执行器</h3><p>经历完优化器后，就确定了执行方案，接下来 MySQL 就真正开始执行语句了，这个工作是由「执行器」完成的。在执行的过程中，执行器就会和存储引擎交互了，交互是以记录为单位的。</p>
-<p>接下来，用三种方式执行过程，跟大家说一下执行器和存储引擎的交互过程（PS ：为了写好这一部分，特地去看 MySQL 源码，也是第一次看哈哈）。</p>
-<ul>
-<li>主键索引查询</li>
-<li>全表扫描</li>
-<li>索引下推</li>
-</ul>
-<h4 id="主键索引查询"><a href="#主键索引查询" class="headerlink" title="#主键索引查询"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/mysql/base/how_select.html#%E4%B8%BB%E9%94%AE%E7%B4%A2%E5%BC%95%E6%9F%A5%E8%AF%A2">#</a>主键索引查询</h4><p>以本文开头查询语句为例，看看执行器是怎么工作的。</p>
-<p><code>select * from product where id = 1;</code></p>
-<p>这条查询语句的查询条件用到了主键索引，而且是等值查询，同时主键 id 是唯一，不会有 id 相同的记录，所以优化器决定选用访问类型为 const 进行查询，也就是使用主键索引查询一条记录，那么执行器与存储引擎的执行流程是这样的：</p>
-<ul>
-<li>执行器第一次查询，会调用 read_first_record 函数指针指向的函数，因为优化器选择的访问类型为 const，这个函数指针被指向为 InnoDB 引擎索引查询的接口，把条件 <code>id = 1</code> 交给存储引擎，<strong>让存储引擎定位符合条件的第一条记录</strong>。</li>
-<li>存储引擎通过主键索引的 B+ 树结构定位到 id = 1的第一条记录，如果记录是不存在的，就会向执行器上报记录找不到的错误，然后查询结束。如果记录是存在的，就会将记录返回给执行器；</li>
-<li>执行器从存储引擎读到记录后，接着判断记录是否符合查询条件，如果符合则发送给客户端，如果不符合则跳过该记录。</li>
-<li>执行器查询的过程是一个 while 循环，所以还会再查一次，但是这次因为不是第一次查询了，所以会调用 read_record 函数指针指向的函数，因为优化器选择的访问类型为 const，这个函数指针被指向为一个永远返回 - 1 的函数，所以当调用该函数的时候，执行器就退出循环，也就是结束查询了。</li>
-</ul>
-<p>至此，这个语句就执行完成了。</p>
-<h4 id="全表扫描"><a href="#全表扫描" class="headerlink" title="全表扫描"></a>全表扫描</h4><p>举个全表扫描的例子：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> product <span class="keyword">where</span> name <span class="operator">=</span> <span class="string">&#x27;iphone&#x27;</span>;</span><br></pre></td></tr></table></figure>
-
-<p>这条查询语句的查询条件没有用到索引，所以优化器决定选用访问类型为 ALL 进行查询，也就是全表扫描的方式查询，那么这时执行器与存储引擎的执行流程是这样的：</p>
-<ul>
-<li>执行器第一次查询，会调用 read_first_record 函数指针指向的函数，因为优化器选择的访问类型为 all，这个函数指针被指向为 InnoDB 引擎全扫描的接口，<strong>让存储引擎读取表中的第一条记录</strong>；</li>
-<li>执行器会判断读到的这条记录的 name 是不是 iphone，如果不是则跳过；如果是则将记录发给客户的（是的没错，Server 层每从存储引擎读到一条记录就会发送给客户端，之所以客户端显示的时候是直接显示所有记录的，是因为客户端是等查询语句查询完成后，才会显示出所有的记录）。</li>
-<li>执行器查询的过程是一个 while 循环，所以还会再查一次，会调用 read_record 函数指针指向的函数，因为优化器选择的访问类型为 all，read_record 函数指针指向的还是 InnoDB 引擎全扫描的接口，所以接着向存储引擎层要求继续读刚才那条记录的下一条记录，存储引擎把下一条记录取出后就将其返回给执行器（Server层），执行器继续判断条件，不符合查询条件即跳过该记录，否则发送到客户端；</li>
-<li>一直重复上述过程，直到存储引擎把表中的所有记录读完，然后向执行器（Server层） 返回了读取完毕的信息；</li>
-<li>执行器收到存储引擎报告的查询完毕的信息，退出循环，停止查询。</li>
-</ul>
-<p>至此，这个语句就执行完成了。</p>
-<h4 id="索引下推"><a href="#索引下推" class="headerlink" title="索引下推"></a>索引下推</h4><p>在这部分非常适合讲索引下推（MySQL 5.6 推出的查询优化策略），这样大家能清楚的知道，「下推」这个动作，下推到了哪里。</p>
-<p>索引下推能够减少<strong>二级索引</strong>在查询时的回表操作，提高查询的效率，因为它将 Server 层部分负责的事情，交给存储引擎层去处理了。</p>
-<p>举一个具体的例子，方便大家理解，这里一张用户表如下，我对 age 和 reward 字段建立了联合索引（age，reward）：</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E8%B7%AF%E9%A3%9E%E8%A1%A8.png" alt="img"></p>
-<p>现在有下面这条查询语句：</p>
-<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> t_user  <span class="keyword">where</span> age <span class="operator">&gt;</span> <span class="number">20</span> <span class="keyword">and</span> reward <span class="operator">=</span> <span class="number">100000</span>;</span><br></pre></td></tr></table></figure>
-
-<p>联合索引当遇到范围查询 (&gt;、&lt;) 就会停止匹配，也就是 <strong>age 字段能用到联合索引，但是 reward 字段则无法利用到索引</strong>。具体原因这里可以看这篇：<a target="_blank" rel="noopener" href="https://xiaolincoding.com/mysql/index/index_interview.html#%E6%8C%89%E5%AD%97%E6%AE%B5%E4%B8%AA%E6%95%B0%E5%88%86%E7%B1%BB">索引常见面试题(opens new window)</a></p>
-<p>那么，不使用索引下推（MySQL 5.6 之前的版本）时，执行器与存储引擎的执行流程是这样的：</p>
-<ul>
-<li><p>Server 层首先调用存储引擎的接口定位到满足查询条件的第一条二级索引记录，也就是定位到 age &gt; 20 的第一条记录；</p>
-</li>
-<li><p>存储引擎根据二级索引的 B+ 树快速定位到这条记录后，获取主键值，然后<strong>进行回表操作</strong>，将完整的记录返回给 Server 层；</p>
-</li>
-<li><p>Server 层在判断该记录的 reward 是否等于 100000，如果成立则将其发送给客户端；否则跳过该记录；</p>
-</li>
-<li><p>接着，继续向存储引擎索要下一条记录，存储引擎在二级索引定位到记录后，获取主键值，然后回表操作，将完整的记录返回给 Server 层；</p>
-</li>
-<li><p>如此往复，直到存储引擎把表中的所有记录读完。</p>
-<p>可以看到，没有索引下推的时候，每查询到一条二级索引记录，都要进行回表操作，然后将记录返回给 Server，接着 Server 再判断该记录的 reward 是否等于 100000。</p>
-<p>而使用索引下推后，判断记录的 reward 是否等于 100000 的工作交给了存储引擎层，过程如下 ：</p>
-<ul>
-<li>Server 层首先调用存储引擎的接口定位到满足查询条件的第一条二级索引记录，也就是定位到 age &gt; 20 的第一条记录；</li>
-<li>存储引擎定位到二级索引后，<strong>先不执行回表</strong>操作，而是先判断一下该索引中包含的列（reward列）的条件（reward 是否等于 100000）是否成立。如果<strong>条件不成立</strong>，则直接<strong>跳过该二级索引</strong>。如果<strong>成立</strong>，则<strong>执行回表</strong>操作，将完成记录返回给 Server 层。</li>
-<li>Server 层在判断其他的查询条件（本次查询没有其他条件）是否成立，如果成立则将其发送给客户端；否则跳过该记录，然后向存储引擎索要下一条记录。</li>
-<li>如此往复，直到存储引擎把表中的所有记录读完。</li>
-</ul>
-<p>可以看到，使用了索引下推后，虽然 reward 列无法使用到联合索引，但是因为它包含在联合索引（age，reward）里，所以直接在存储引擎过滤出满足 reward = 100000 的记录后，才去执行回表操作获取整个记录。相比于没有使用索引下推，节省了很多回表操作。</p>
-<p>当你发现执行计划里的 Extr 部分显示了 “Using index condition”，说明使用了索引下推。</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/%E7%B4%A2%E5%BC%95%E4%B8%8B%E6%8E%A8%E6%89%A7%E8%A1%8C%E8%AE%A1%E5%88%92.png" alt="img"></p>
-</li>
-</ul>
-<p>总结</p>
-<p>执行一条 SQL 查询语句，期间发生了什么？</p>
-<ul>
-<li>连接器：建立连接，管理连接、校验用户身份；</li>
-<li>查询缓存：查询语句如果命中查询缓存则直接返回，否则继续往下执行。MySQL 8.0 已删除该模块；</li>
-<li>解析 SQL，通过解析器对 SQL 查询语句进行词法分析、语法分析，然后构建语法树，方便后续模块读取表名、字段、语句类型；</li>
-<li>执行 SQL：执行 SQL 共有三个阶段：<ul>
-<li>预处理阶段：检查表或字段是否存在；将 <code>select *</code> 中的 <code>*</code> 符号扩展为表上的所有列。</li>
-<li>优化阶段：基于查询成本的考虑， 选择查询成本最小的执行计划；</li>
-<li>执行阶段：根据执行计划执行 SQL 查询语句，从存储引擎读取记录，返回给客户端；</li>
-</ul>
-</li>
-</ul>
-<p>怎么样？现在再看这张图，是不是很清晰了。</p>
-<p><img src="/2023/02/22/%E6%89%A7%E8%A1%8C%E4%B8%80%E6%9D%A1select%E8%AF%AD%E5%8F%A5%EF%BC%8C%E6%9C%9F%E9%97%B4%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/mysql%E6%9F%A5%E8%AF%A2%E6%B5%81%E7%A8%8B2" alt="查询语句执行流程"></p>
  
       <!-- reward -->
       
@@ -946,7 +1191,7 @@
 
     
     <article
-  id="post-Redis-线程模型"
+  id="post-JAVA线上故障排查全套解决方案"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -957,8 +1202,8 @@
     <header class="article-header">
        
 <h2 itemprop="name">
-  <a class="article-title" href="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/"
-    >Redis 线程模型</a> 
+  <a class="article-title" href="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"
+    >JAVA线上故障排查全套解决方案</a> 
 </h2>
  
 
@@ -966,86 +1211,89 @@
     </header>
      
     <div class="article-meta">
-      <a href="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" class="article-date">
-  <time datetime="2023-01-15T12:52:06.000Z" itemprop="datePublished">2023-01-15</time>
+      <a href="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="article-date">
+  <time datetime="2022-10-10T10:04:15.000Z" itemprop="datePublished">2022-10-10</time>
 </a> 
   <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a>
+    <a class="article-category-link" href="/categories/%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C/">线上故障</a>
   </div>
    
     </div>
       
     <div class="article-entry" itemprop="articleBody">
        
-  <h2 id="Redis-线程模型"><a href="#Redis-线程模型" class="headerlink" title="Redis 线程模型"></a>Redis 线程模型</h2><h3 id="Redis-是单线程吗？"><a href="#Redis-是单线程吗？" class="headerlink" title="#Redis 是单线程吗？"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/redis/base/redis_interview.html#redis-%E6%98%AF%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%90%97">#</a>Redis 是单线程吗？</h3><p><strong>Redis 单线程指的是「接收客户端请求-&gt;解析请求 -&gt;进行数据读写等操作-&gt;发送数据给客户端」这个过程是由一个线程（主线程）来完成的</strong>，这也是我们常说 Redis 是单线程的原因。</p>
-<p>但是，<strong>Redis 程序并不是单线程的</strong>，Redis 在启动的时候，是会<strong>启动后台线程</strong>（BIO）的：</p>
-<ul>
-<li><strong>Redis 在 2.6 版本</strong>，会启动 2 个后台线程，分别处理关闭文件、AOF 刷盘这两个任务；</li>
-<li><strong>Redis 在 4.0 版本之后</strong>，新增了一个新的后台线程，用来异步释放 Redis 内存，也就是 lazyfree 线程。例如执行 unlink key / flushdb async / flushall async 等命令，会把这些删除操作交给后台线程来执行，好处是不会导致 Redis 主线程卡顿。因此，当我们要删除一个大 key 的时候，不要使用 del 命令删除，因为 del 是在主线程处理的，这样会导致 Redis 主线程卡顿，因此我们应该使用 unlink 命令来异步删除大key。</li>
-</ul>
-<p>之所以 Redis 为「关闭文件、AOF 刷盘、释放内存」这些任务创建单独的线程来处理，是因为这些任务的操作都是很耗时的，如果把这些任务都放在主线程来处理，那么 Redis 主线程就很容易发生阻塞，这样就无法处理后续的请求了。</p>
-<p>后台线程相当于一个消费者，生产者把耗时任务丢到任务队列中，消费者（BIO）不停轮询这个队列，拿出任务就去执行对应的方法即可。</p>
-<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/%E5%90%8E%E5%8F%B0%E7%BA%BF%E7%A8%8B.jpg" alt="img"></p>
-<p>关闭文件、AOF 刷盘、释放内存这三个任务都有各自的任务队列：</p>
-<ul>
-<li>BIO_CLOSE_FILE，关闭文件任务队列：当队列有任务后，后台线程会调用 close(fd) ，将文件关闭；</li>
-<li>BIO_AOF_FSYNC，AOF刷盘任务队列：当 AOF 日志配置成 everysec 选项后，主线程会把 AOF 写日志操作封装成一个任务，也放到队列中。当发现队列有任务后，后台线程会调用 fsync(fd)，将 AOF 文件刷盘，</li>
-<li>BIO_LAZY_FREE，lazy free 任务队列：当队列有任务后，后台线程会 free(obj) 释放对象 / free(dict) 删除数据库所有对象 / free(skiplist) 释放跳表对象；</li>
-</ul>
-<h3 id="Redis-单线程模式是怎样的？"><a href="#Redis-单线程模式是怎样的？" class="headerlink" title="Redis 单线程模式是怎样的？"></a>Redis 单线程模式是怎样的？</h3><p>Redis 6.0 版本之前的单线模式如下图：</p>
-<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/redis%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B.drawio.png" alt="img"></p>
-<p>图中的蓝色部分是一个事件循环，是由主线程负责的，可以看到网络 I/O 和命令处理都是单线程。 Redis 初始化的时候，会做下面这几件事情：</p>
-<ul>
-<li>首先，调用 epoll_create() 创建一个 epoll 对象和调用 socket() 创建一个服务端 socket</li>
-<li>然后，调用 bind() 绑定端口和调用 listen() 监听该 socket；</li>
-<li>然后，将调用 epoll_ctl() 将 listen socket 加入到 epoll，同时注册「连接事件」处理函数。</li>
-</ul>
-<p>初始化完后，主线程就进入到一个<strong>事件循环函数</strong>，主要会做以下事情：</p>
-<ul>
-<li><p>首先，先调用<strong>处理发送队列函数</strong>，看是发送队列里是否有任务，如果有发送任务，则通过 write 函数将客户端发送缓存区里的数据发送出去，如果这一轮数据没有发送完，就会注册写事件处理函数，等待 epoll_wait 发现可写后再处理 。</p>
-</li>
-<li><p>接着，调用 epoll_wait 函数等待事件的到来：</p>
-<ul>
-<li><p>如果是<strong>连接事件</strong>到来，则会调用<strong>连接事件处理函数</strong>，该函数会做这些事情：调用 accpet 获取已连接的 socket -&gt; 调用 epoll_ctl 将已连接的 socket 加入到 epoll -&gt; 注册「读事件」处理函数；</p>
-</li>
-<li><p>如果是<strong>读事件</strong>到来，则会调用<strong>读事件处理函数</strong>，该函数会做这些事情：调用 read 获取客户端发送的数据 -&gt; 解析命令 -&gt; 处理命令 -&gt; 将客户端对象添加到发送队列 -&gt; 将执行结果写到发送缓存区等待发送；</p>
-</li>
-<li><p>如果是<strong>写事件</strong>到来，则会调用<strong>写事件处理函数</strong>，该函数会做这些事情：通过 write 函数将客户端发送缓存区里的数据发送出去，如果这一轮数据没有发送完，就会继续注册写事件处理函数，等待 epoll_wait 发现可写后再处理 。</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>（另外版本：</p>
-<p>redis 内部使⽤<strong>⽂件事件处理器</strong> file event handler ，这个<strong>⽂件事件处理器是单线程的</strong>，所 以 redis 才叫做单线程的模型。它<strong>采⽤ IO 多路复⽤机制同时监听多个 socket</strong>，<strong>将产⽣事件的 socket 压⼊内存队列中，事件分派器根据 socket 上的事件类型来选择对应的事件处理器进⾏处 理</strong>。</p>
-<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/image-20240512180058421.png" alt="image-20240512180058421">)</p>
-<h3 id="Redis-采用单线程为什么还这么快？"><a href="#Redis-采用单线程为什么还这么快？" class="headerlink" title="Redis 采用单线程为什么还这么快？"></a>Redis 采用单线程为什么还这么快？</h3><p>官方使用基准测试的结果是，<strong>单线程的 Redis 吞吐量可以达到 10W/每秒</strong></p>
-<p>之所以 Redis 采用单线程（网络 I/O 和执行命令）那么快，有如下几个原因：</p>
-<ul>
-<li>Redis 的大部分操作<strong>都在内存中完成</strong>，并且采用了高效的数据结构，因此 Redis 瓶颈可能是机器的内存或者网络带宽，而并非 CPU，既然 CPU 不是瓶颈，那么自然就采用单线程的解决方案了；</li>
-<li>Redis 采用单线程模型可以<strong>避免了多线程之间的竞争</strong>，省去了多线程切换带来的时间和性能上的开销，而且也不会导致死锁问题。</li>
-<li>Redis 采用了 <strong>I/O 多路复用机制</strong>处理大量的客户端 Socket 请求，IO 多路复用机制是指一个线程处理多个 IO 流，就是我们经常听到的 select/epoll 机制。简单来说，在 Redis 只运行单线程的情况下，该机制允许内核中，同时存在多个监听 Socket 和已连接 Socket。内核会一直监听这些 Socket 上的连接请求或数据请求。一旦有请求到达，就会交给 Redis 线程处理，这就实现了一个 Redis 线程处理多个 IO 流的效果。</li>
-</ul>
-<h3 id="Redis-6-0-之前为什么使用单线程？"><a href="#Redis-6-0-之前为什么使用单线程？" class="headerlink" title="Redis 6.0 之前为什么使用单线程？"></a>Redis 6.0 之前为什么使用单线程？</h3><p>我们都知道单线程的程序是无法利用服务器的多核 CPU 的，那么早期 Redis 版本的主要工作（网络 I/O 和执行命令）为什么还要使用单线程呢？我们不妨先看一下Redis官方给出的<a href="https://link.juejin.cn/?target=https://redis.io/topics/faq">FAQ</a></p>
-<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/redis%E5%AE%98%E6%96%B9%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%9B%9E%E7%AD%94.png" alt="img"></p>
-<p>核心意思是：<strong>CPU 并不是制约 Redis 性能表现的瓶颈所在</strong>，更多情况下是受到内存大小和网络I/O的限制，所以 Redis 核心网络模型使用单线程并没有什么问题，如果你想要使用服务的多核CPU，可以在一台服务器上启动多个节点或者采用分片集群的方式。</p>
-<p>除了上面的官方回答，选择单线程的原因也有下面的考虑。</p>
-<p>使用了单线程后，可维护性高，多线程模型虽然在某些方面表现优异，但是它却引入了程序执行顺序的不确定性，带来了并发读写的一系列问题，<strong>增加了系统复杂度、同时可能存在线程切换、甚至加锁解锁、死锁造成的性能损耗</strong>。</p>
-<h3 id="Redis-6-0-之后为什么引入了多线程？"><a href="#Redis-6-0-之后为什么引入了多线程？" class="headerlink" title="#Redis 6.0 之后为什么引入了多线程？"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/redis/base/redis_interview.html#redis-6-0-%E4%B9%8B%E5%90%8E%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BC%95%E5%85%A5%E4%BA%86%E5%A4%9A%E7%BA%BF%E7%A8%8B">#</a>Redis 6.0 之后为什么引入了多线程？</h3><p>虽然 Redis 的主要工作（网络 I/O 和执行命令）一直是单线程模型，但是<strong>在 Redis 6.0 版本之后，也采用了多个 I/O 线程来处理网络请求</strong>，<strong>这是因为随着网络硬件的性能提升，Redis 的性能瓶颈有时会出现在网络 I/O 的处理上</strong>。</p>
-<p>所以为了提高网络 I/O 的并行度，Redis 6.0 对于网络 I/O 采用多线程来处理。**但是对于命令的执行，Redis 仍然使用单线程来处理，*<em>所以大家*<em>不要误解</em></em> Redis 有多线程同时执行命令。</p>
-<p>Redis 官方表示，<strong>Redis 6.0 版本引入的多线程 I/O 特性对性能提升至少是一倍以上</strong>。</p>
-<p>Redis 6.0 版本支持的 I/O 多线程特性，默认情况下 I/O 多线程只针对发送响应数据（write client socket），并不会以多线程的方式处理读请求（read client socket）。要想开启多线程处理客户端读请求，就需要把 Redis.conf 配置文件中的 io-threads-do-reads 配置项设为 yes。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//读请求也使用io多线程</span></span><br><span class="line">io-threads-<span class="keyword">do</span>-reads yes </span><br></pre></td></tr></table></figure>
+  <h4 id="JAVA线上故障排查全套解决方案"><a href="#JAVA线上故障排查全套解决方案" class="headerlink" title="JAVA线上故障排查全套解决方案"></a>JAVA线上故障排查全套解决方案</h4><p>线上故障主要会包括<strong>cpu、磁盘、内存以及网络</strong>问题，而大多数故障可能会包含不止一个层面的问题，所以进行排查时候尽量四个方面依次排查一遍。同时例如<strong>jstack、jmap</strong>等工具也是不囿于一个方面的问题的，基本上出问题就是<strong>df、free、top</strong> 三连，然后依次jstack、jmap伺候，具体问题具体分析即可</p>
+<h4 id="CPU"><a href="#CPU" class="headerlink" title="CPU"></a><strong>CPU</strong></h4><p>一般来讲我们首先会排查cpu方面的问题。cpu异常往往还是比较好定位的。原因包括<strong>业务逻辑问题(死循环)、频繁gc以及上下文切换过多</strong>。而最常见的往往是业务逻辑(或者框架逻辑)导致的，可以使用jstack来分析对应的堆栈情况</p>
+<p><strong>使用jstack分析cpu问题</strong></p>
+<p>ps命令找到对应进程的pid(如果你有好几个目标进程，可以先用top看一下哪个占用比较高)</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">1、对应进程的pid</span><br><span class="line">ps -ef | grep 进程关键字</span><br><span class="line">2、找到cpu使用率比较高的一些线程</span><br><span class="line">top -H -p pid</span><br><span class="line">3、将占用最高的pid转换为16进制printf &#x27;%x\n&#x27; pid得到nid</span><br><span class="line">printf &#x27;%x\n&#x27; pid</span><br><span class="line">4、直接在jstack中找到相应的堆栈信息</span><br><span class="line">jstack pid |grep &#x27;nid&#x27; -C5 –color</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
-<p>同时， Redis.conf 配置文件中提供了 IO 多线程个数的配置项。</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// io-threads N，表示启用 N-1 个 I/O 多线程（主线程也算一个 I/O 线程）</span></span><br><span class="line">io-threads <span class="number">4</span></span><br></pre></td></tr></table></figure>
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185335954.png" alt="image-20230319185335954"></p>
+<p>可以看到我们已经找到了nid为0x42的堆栈信息，接着只要仔细分析一番即可。</p>
+<p>当然更常见的是我们对整个jstack文件进行分析，通常我们会比较关注WAITING和TIMED_WAITING的部分，BLOCKED就不用说了。我们可以使用命令cat jstack.log | grep “java.lang.Thread.State” | sort -nr | uniq -c来对jstack的状态有一个整体的把握，如果WAITING之类的特别多，那么多半是有问题啦。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat jstack.log | grep &quot;java.lang.Thread.State&quot; | sort -nr | uniq -c</span><br></pre></td></tr></table></figure>
 
-<p>关于线程数的设置，官方的建议是如果为 4 核的 CPU，建议线程数设置为 2 或 3，如果为 8 核 CPU 建议线程数设置为 6，线程数一定要小于机器核数，线程数并不是越大越好。</p>
-<p>因此， Redis 6.0 版本之后，Redis 在启动的时候，默认情况下会<strong>额外创建 6 个线程</strong>（<em>这里的线程数不包括主线程</em>）：</p>
-<ul>
-<li>Redis-server ： Redis的主线程，主要负责执行命令；</li>
-<li>bio_close_file、bio_aof_fsync、bio_lazy_free：三个后台线程，分别异步处理关闭文件任务、AOF刷盘任务、释放内存任务；</li>
-<li>io_thd_1、io_thd_2、io_thd_3：三个 I/O 线程，io-threads 默认是 4 ，所以会启动 3（4-1）个 I/O 多线程，用来分担 Redis 网络 I/O 的压力。</li>
-</ul>
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185422418.png" alt="image-20230319185422418"></p>
+<h4 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a><strong>磁盘</strong></h4><p>1.利用 df 查询磁盘状态</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df -h</span><br></pre></td></tr></table></figure>
+
+<p>2.获取目录下文件夹大小</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">du -sh *</span><br></pre></td></tr></table></figure>
+
+<p>3.磁盘问题还是性能上的问题。我们可以通过iostat -d -k -x来进行分析</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1、iostat属于sysstat软件包</span><br><span class="line">yum install sysstat</span><br><span class="line">2、iostat -d -k -x 1</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185649578.png" alt="image-20230319185649578"></p>
+<p>%util可以看到每块磁盘写入的程度</p>
+<p>rrqpm/s以及wrqm/s分别表示读写速度，一般就能帮助定位到具体哪块磁盘出现问题</p>
+<p>4.需要知道是哪个进程在进行读写，用iotop命令来进行定位文件读写的来源</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iotop</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185746056.png" alt="image-20230319185746056"></p>
+<p>5.不过这边拿到的是tid，我们要转换成pid，可以通过readlink来找到</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">readlink -f /proc/*/task/tid/../..</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185902218.png" alt="image-20230319185902218"></p>
+<p>6.找到pid之后就可以看这个进程具体的读写情况cat /proc/pid/io</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/pid/io</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185953457.png" alt="image-20230319185953457"></p>
+<p>7.lsof命令来确定具体的文件读写情况lsof -p pid</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsof -p pid</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190034159.png" alt="image-20230319190034159"></p>
+<h4 id="内存"><a href="#内存" class="headerlink" title="内存"></a><strong>内存</strong></h4><p>主要包括OOM、GC问题和堆外内存。一般来讲，我们会先用free命令先来检查一发内存的各种情况</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">free</span><br><span class="line">free -g</span><br><span class="line">free -m</span><br></pre></td></tr></table></figure>
+
+<h4 id="堆内内存"><a href="#堆内内存" class="headerlink" title="堆内内存"></a>堆内内存</h4><p>内存问题大多还都是堆内内存问题。表象上主要分为OOM和StackOverflow</p>
+<p>OOM</p>
+<p>JMV中的内存不足，OOM大致可以分为以下几种：</p>
+<p><strong>Exception in thread “main” java.lang.OutOfMemoryError: unable to create new native thread</strong></p>
+<p>这个意思是<strong>没有足够的内存空间给线程分配java栈，基本上还是线程池代码写的有问题</strong>，比如说忘记shutdown，所以说应该首先从代码层面来寻找问题，<strong>使用jstack或者jmap</strong>。如果一切都正常，JVM方面可以通过指定<strong>Xss来减少单个thread stack的大小</strong>。另外也可以在系统层面，可以通过修改/etc/security/limits.conf  nofile和nproc来增大os对线程的限制</p>
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190209877.png" alt="image-20230319190209877"></p>
+<p><strong>Exception in thread “main” java.lang.OutOfMemoryError: Java heap space</strong></p>
+<p>这个意思是堆的内存占用已经达到-Xmx设置的最大值，应该是最常见的OOM错误了。解决思路仍然是先应该在代码中找，<strong>怀疑存在内存泄漏</strong>，<strong>通过jstack和jmap去定位问题</strong>。如果说一切都正常，才需要通过<strong>调整Xmx的值来扩大内存</strong>。</p>
+<p><strong>Caused by: java.lang.OutOfMemoryError: Meta space</strong></p>
+<p>这个意思是<strong>元数据区的内存占用已经达到XX:MaxMetaspaceSize设置的最大值</strong>，排查思路和上面的一致，参数方面可以通过<strong>XX:MaxPermSize来进行调整</strong>(这里就不说1.8以前的永久代了)</p>
+<p><strong>Stack Overflow</strong></p>
+<p><strong>栈内存溢出</strong>，这个大家见到也比较多。</p>
+<p><strong>Exception in thread “main” java.lang.StackOverflowError</strong></p>
+<p>表示线程栈需要的内存大于<strong>Xss值</strong>，同样也是先进行排查，参数方面通过Xss来调整，但调整的太大可能又会引起OOM</p>
+<h4 id="使用JMAP定位代码内存泄漏"><a href="#使用JMAP定位代码内存泄漏" class="headerlink" title="使用JMAP定位代码内存泄漏"></a>使用<strong>JMAP</strong>定位代码内存泄漏</h4><p>上述关于OOM和StackOverflow的代码排查方面，我们一般使用JMAP</p>
+<p> jmap -dump:format=b,file=filename pid来导出dump文件</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -dump:format=b,file=filename pid</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190407933.png" alt="image-20230319190407933"></p>
+<p><strong>mat(Eclipse Memory Analysis Tools)导入dump文件进行分析</strong>，内存泄漏问题一般我们直接选Leak Suspects即可，mat给出了内存泄漏的建议。另外也可以选择Top Consumers来查看最大对象报告。和线程相关的问题可以选择thread overview进行分析。除此之外就是选择Histogram类概览来自己慢慢分析，大家可以搜搜mat的相关教程。（idea插件篇之java内存分析工具(<strong>JProfiler</strong>)）</p>
+<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190439697.png" alt="image-20230319190439697"></p>
+<p>日常开发中，代码产生内存泄漏是比较常见的事，并且比较隐蔽，需要开发者更加关注细节。比如说每次请求都new对象，导致大量重复创建对象；进行文件流操作但未正确关闭；手动不当触发gc；ByteBuffer缓存分配不合理等都会造成代码OOM。</p>
+<p>另一方面，我们可以在<strong>启动参数中指定-XX:+HeapDumpOnOutOfMemoryError来保存OOM时的dump文件</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">内存OOM时，自动生成dump文件</span> </span><br><span class="line">-XX:+HeapDumpOnOutOfMemoryError</span><br><span class="line">-XX:HeapDumpPath=/data/logs/</span><br></pre></td></tr></table></figure>
+
+<p>GC问题</p>
+<p>通过GC日志来排查问题的，在启动参数中加上**-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps**来开启GC日志。</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-verbose:gc -XX:+PrintGCDetails </span><br><span class="line">-XX:+PrintGCDateStamps </span><br><span class="line">-XX:+PrintGCTimeStamps</span><br></pre></td></tr></table></figure>
+
  
       <!-- reward -->
       
@@ -1056,291 +1304,7 @@
     
     <footer class="article-footer">
        
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-数据库和缓存如何保持一致性"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/"
-    >数据库和缓存如何保持一致性</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/" class="article-date">
-  <time datetime="2022-12-12T11:24:45.000Z" itemprop="datePublished">2022-12-12</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h2 id="数据库和缓存如何保证一致性？"><a href="#数据库和缓存如何保证一致性？" class="headerlink" title="数据库和缓存如何保证一致性？"></a>数据库和缓存如何保证一致性？</h2><h3 id="先更新数据库，还是先更新缓存？"><a href="#先更新数据库，还是先更新缓存？" class="headerlink" title="先更新数据库，还是先更新缓存？"></a>先更新数据库，还是先更新缓存？</h3><p><strong>由于引入了缓存，那么在数据更新时，不仅要更新数据库，而且要更新缓存，这两个更新操作存在前后的问题</strong>：</p>
-<ul>
-<li><p>先更新数据库，再更新缓存；</p>
-</li>
-<li><p>先更新缓存，再更新数据库；</p>
-</li>
-</ul>
-<h4 id="先更新数据库，再更新缓存"><a href="#先更新数据库，再更新缓存" class="headerlink" title="先更新数据库，再更新缓存"></a>先更新数据库，再更新缓存</h4><p>举个例子，比如「请求 A 」和「请求 B 」两个请求，同时更新「同一条」数据，则可能出现这样的顺序：</p>
-<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/8febac10b14bed16cb96d1d944cd08da.png" alt="图片"></p>
-<p>A 请求先将数据库的数据更新为 1，然后在更新缓存前，请求 B 将数据库的数据更新为 2，紧接着也把缓存更新为 2，然后 A 请求更新缓存为 1。</p>
-<p>此时，数据库中的数据是 2，而缓存中的数据却是 1，<strong>出现了缓存和数据库中的数据不一致的现象</strong>。</p>
-<h4 id="先更新缓存，再更新数据库"><a href="#先更新缓存，再更新数据库" class="headerlink" title="先更新缓存，再更新数据库"></a>先更新缓存，再更新数据库</h4><p>那换成「<strong>先更新缓存，再更新数据库</strong>」这个方案，还会有问题吗？</p>
-<p>依然还是存在并发的问题，分析思路也是一样。</p>
-<p>假设「请求 A 」和「请求 B 」两个请求，同时更新「同一条」数据，则可能出现这样的顺序：</p>
-<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/454a8228a6549176ad7e0484fba3c92b.png" alt="图片"></p>
-<p>A 请求先将缓存的数据更新为 1，然后在更新数据库前，B 请求来了， 将缓存的数据更新为 2，紧接着把数据库更新为 2，然后 A 请求将数据库的数据更新为 1。</p>
-<p>此时，数据库中的数据是 1，而缓存中的数据却是 2，<strong>出现了缓存和数据库中的数据不一致的现象</strong>。</p>
-<p>所以，<strong>无论是「先更新数据库，再更新缓存」，还是「先更新缓存，再更新数据库」，这两个方案都存在并发问题，当两个请求并发更新同一条数据的时候，可能会出现缓存和数据库中的数据不一致的现象</strong>。</p>
-<h3 id="先更新数据库，还是先删除缓存？"><a href="#先更新数据库，还是先删除缓存？" class="headerlink" title="先更新数据库，还是先删除缓存？"></a>先更新数据库，还是先删除缓存？</h3><p>思考了一番后，决定在更新数据时，<strong>不更新缓存，而是删除缓存中的数据。然后，到读取数据时，发现缓存中没了数据之后，再从数据库中读取数据，更新到缓存中。</strong></p>
-<p>个策略是有名字的，是叫 <strong>Cache Aside 策略</strong>，中文是叫旁路缓存策略。</p>
-<p>该策略又可以细分为「读策略」和「写策略」。</p>
-<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/6e3db3ba2f829ddc14237f5c7c00e7ce.png" alt="图片"></p>
-<p><strong>写策略的步骤：</strong></p>
-<ul>
-<li>更新数据库中的数据；</li>
-<li>删除缓存中的数据。</li>
-</ul>
-<p><strong>读策略的步骤：</strong></p>
-<ul>
-<li>如果读取的数据命中了缓存，则直接返回数据；</li>
-<li>如果读取的数据没有命中缓存，则从数据库中读取数据，然后将数据写入到缓存，并且返回给用户。</li>
-</ul>
-<p>「写策略」的时候，又陷入更深层次的思考，到底该选择哪种顺序呢？</p>
-<ul>
-<li>先删除缓存，再更新数据库；</li>
-<li>先更新数据库，再删除缓存。</li>
-</ul>
-<p>用并发的角度来分析，看看这两种方案哪个可以保证数据库与缓存的数据一致性。</p>
-<h4 id="先删除缓存，再更新数据库"><a href="#先删除缓存，再更新数据库" class="headerlink" title="先删除缓存，再更新数据库"></a>先删除缓存，再更新数据库</h4><p>以用户表的场景来分析。</p>
-<p>假设某个用户的年龄是 20，请求 A 要更新用户年龄为 21，所以它会删除缓存中的内容。这时，另一个请求 B 要读取这个用户的年龄，它查询缓存发现未命中后，会从数据库中读取到年龄为 20，并且写入到缓存中，然后请求 A 继续更改数据库，将用户的年龄更新为 21。</p>
-<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/cc208c2931b4e889d1a58cb655537767.png" alt="图片"></p>
-<p>最终，该用户年龄在缓存中是 20（旧值），在数据库中是 21（新值），缓存和数据库的数据不一致。</p>
-<p>可以看到，<strong>先删除缓存，再更新数据库，在「读 + 写」并发的时候，还是会出现缓存和数据库的数据不一致的问题</strong></p>
-<h4 id="先更新数据库，再删除缓存"><a href="#先更新数据库，再删除缓存" class="headerlink" title="先更新数据库，再删除缓存"></a>先更新数据库，再删除缓存</h4><p>继续用「读 + 写」请求的并发的场景来分析。</p>
-<p>假如某个用户数据在缓存中不存在，请求 A 读取数据时从数据库中查询到年龄为 20，在未写入缓存中时另一个请求 B 更新数据。它更新数据库中的年龄为 21，并且清空缓存。这时请求 A 把从数据库中读到的年龄为 20 的数据写入到缓存中。</p>
-<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/1cc7401143e79383ead96582ac11b615.png" alt="图片"></p>
-<p>最终，该用户年龄在缓存中是 20（旧值），在数据库中是 21（新值），缓存和数据库数据不一致。</p>
-<p>从上面的理论上分析，先更新数据库，再删除缓存也是会出现数据不一致性的问题，<strong>但是在实际中，这个问题出现的概率并不高</strong>。</p>
-<p><strong>因为缓存的写入通常要远远快于数据库的写入</strong>，所以在实际中很难出现请求 B 已经更新了数据库并且删除了缓存，请求 A 才更新完缓存的情况。</p>
-<p>而一旦请求 A 早于请求 B 删除缓存之前更新了缓存，那么接下来的请求就会因为缓存不命中而从数据库中重新读取数据，所以不会出现这种不一致的情况。</p>
-<p>所以，<strong>「先更新数据库 + 再删除缓存」的方案，是可以保证数据一致性的</strong>。</p>
-<p>而且为了确保万无一失，还给缓存数据加上了「<strong>过期时间</strong>」，就算在这期间存在缓存数据不一致，有过期时间来兜底，这样也能达到最终一致。</p>
-<p>但是「先更新数据库， 再删除缓存」其实是两个操作，前面的所有分析都是建立在这两个操作都能同时执行成功，存在问题，<strong>在删除缓存（第二个操作）的时候失败了，会导致缓存中的数据是旧值</strong>。</p>
-<p>好在之前给缓存加上了过期时间，所以过一段时间才更新生效的现象，假设如果没有这个过期时间的兜底，那后续的请求读到的就会一直是缓存中的旧数据，这样问题就更大了。</p>
-<p>所以新的问题来了，<strong>如何保证「先更新数据库 ，再删除缓存」这两个操作能执行成功？</strong></p>
-<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>我们继续说点其他。</p>
-<p>「先更新数据库，再删除缓存」的方案虽然保证了数据库与缓存的数据一致性，但是每次更新数据的时候，缓存的数据都会被删除，这样会对缓存的命中率带来影响。</p>
-<p>所以，<strong>如果我们的业务对缓存命中率有很高的要求，我们可以采用「更新数据库 + 更新缓存」的方案，因为更新缓存并不会出现缓存未命中的情况</strong>。</p>
-<p>但是这个方案前面我们也分析过，在两个更新请求并发执行的时候，会出现数据不一致的问题，因为更新数据库和更新缓存这两个操作是独立的，而我们又没有对操作做任何并发控制，那么当两个线程并发更新它们的话，就会因为写入顺序的不同造成数据的不一致。</p>
-<p>所以我们得增加一些手段来解决这个问题，这里提供两种做法：</p>
-<ul>
-<li>在更新缓存前先加个<strong>分布式锁</strong>，保证同一时间只运行一个请求更新缓存，就会不会产生并发问题了，当然引入了锁后，对于写入的性能就会带来影响。</li>
-<li>在更新完缓存时，给缓存加上较短的<strong>过期时间</strong>，这样即时出现缓存不一致的情况，缓存的数据也会很快过期，对业务还是能接受的。</li>
-</ul>
-<p>对了，针对「先删除缓存，再更新数据库」方案在「读 + 写」并发请求而造成缓存不一致的解决办法是「<strong>延迟双删</strong>」。</p>
-<p>延迟双删实现的伪代码如下：</p>
-<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">#删除缓存</span><br><span class="line">redis.delKey(X)</span><br><span class="line">#更新数据库</span><br><span class="line">db.update(X)</span><br><span class="line">#睡眠</span><br><span class="line">Thread.sleep(N)</span><br><span class="line">#再删除缓存</span><br><span class="line">redis.delKey(X)</span><br></pre></td></tr></table></figure>
-
-<p>加了个睡眠时间，主要是为了确保请求 A 在睡眠的时候，请求 B 能够在这这一段时间完成「从数据库读取数据，再把缺失的缓存写入缓存」的操作，然后请求 A 睡眠完，再删除缓存。</p>
-<p>所以，请求 A 的睡眠时间就需要大于请求 B 「从数据库读取数据 + 写入缓存」的时间。</p>
-<p>但是具体睡眠多久其实是个<strong>玄学</strong>，很难评估出来，所以这个方案也只是<strong>尽可能</strong>保证一致性而已，极端情况下，依然也会出现缓存不一致的现象。</p>
-<p>因此，还是比较建议用「先更新数据库，再删除缓存」的方案。</p>
-<h3 id="前情回顾"><a href="#前情回顾" class="headerlink" title="前情回顾"></a>前情回顾</h3><p>为了提升数据访问的性能，引入 Redis 作为 MySQL 缓存层，但是这件事情并不是那么简单，因为还要考虑 Redis 和 MySQL 双写一致性的问题。</p>
-<p>经过一番周折，最终选用了「<strong>先更新数据库，再删缓存</strong>」的策略，原因是这个策略即使在并发读写时，也能最大程度保证数据一致性。</p>
-<p>还搞了个兜底的方案，就是给缓存加上了过期时间。</p>
-<p>本以为就这样不会在出现数据一致性的问题，结果将功能上线后，还是收到用户的投诉「说自己明明更新了数据，但是数据要过一段时间才生效」，客户接受不了。</p>
-<p>立马就登录服务器去排查问题，查看日志后得知了原因。</p>
-<p>「先更新数据库， 再删除缓存」其实是两个操作，这次客户投诉的问题就在于，<strong>在删除缓存（第二个操作）的时候失败了，导致缓存中的数据是旧值，而数据库是最新值</strong>。</p>
-<p>好在之前给缓存加上了过期时间，所以才会出现客户说的过一段时间才更新生效的现象，假设如果没有这个过期时间的兜底，那后续的请求读到的就会一直是缓存中的旧数据，这样问题就更大了。</p>
-<p>所以新的问题来了，<strong>如何保证「先更新数据库 ，再删除缓存」这两个操作能执行成功？</strong></p>
-<h3 id="如何保证两个操作都能执行成功？"><a href="#如何保证两个操作都能执行成功？" class="headerlink" title="如何保证两个操作都能执行成功？"></a>如何保证两个操作都能执行成功？</h3><p>这次用户的投诉是因为在删除缓存（第二个操作）的时候失败了，导致缓存还是旧值，而数据库是最新值，造成数据库和缓存数据不一致的问题，会对敏感业务造成影响。</p>
-<p>举个例子，来说明下。</p>
-<p>应用要把数据 X 的值从 1 更新为 2，先成功更新了数据库，然后在 Redis 缓存中删除 X 的缓存，但是这个操作却失败了，这个时候数据库中 X 的新值为 2，Redis 中的 X 的缓存值为 1，出现了数据库和缓存数据不一致的问题。</p>
-<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/2a2ea2854bbc3ae8ae86d7da45fa32ee.png" alt="图片"></p>
-<p>那么，后续有访问数据 X 的请求，会先在 Redis 中查询，因为缓存并没有 诶删除，所以会缓存命中，但是读到的却是旧值 1。</p>
-<p>其实不管是先操作数据库，还是先操作缓存，只要第二个操作失败都会出现数据部一致的问题。</p>
-<p>问题原因知道了，该怎么解决呢？有两种方法：</p>
-<ul>
-<li>重试机制。</li>
-<li>订阅 MySQL binlog，再操作缓存。</li>
-</ul>
-<p>先来说第一种。</p>
-<h5 id="重试机制"><a href="#重试机制" class="headerlink" title="#重试机制"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/redis/architecture/mysql_redis_consistency.html#%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6">#</a>重试机制</h5><p>我们可以引入<strong>消息队列</strong>，将第二个操作（删除缓存）要操作的数据加入到消息队列，由消费者来操作数据。</p>
-<ul>
-<li>如果应用<strong>删除缓存失败</strong>，可以从消息队列中重新读取数据，然后再次删除缓存，这个就是<strong>重试机制</strong>。当然，如果重试超过的一定次数，还是没有成功，我们就需要向业务层发送报错信息了。</li>
-<li>如果<strong>删除缓存成功</strong>，就要把数据从消息队列中移除，避免重复操作，否则就继续重试。</li>
-</ul>
-<p>举个例子，来说明重试机制的过程。</p>
-<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/a4440f0d572612e0832b903e4a62bd2b.png" alt="图片"></p>
-<h5 id="订阅-MySQL-binlog，再操作缓存"><a href="#订阅-MySQL-binlog，再操作缓存" class="headerlink" title="订阅 MySQL binlog，再操作缓存"></a>订阅 MySQL binlog，再操作缓存</h5><p>「<strong>先更新数据库，再删缓存</strong>」的策略的第一步是更新数据库，那么更新数据库成功，就会产生一条变更日志，记录在 binlog 里。</p>
-<p>于是我们就可以通过订阅 binlog 日志，拿到具体要操作的数据，然后再执行缓存删除，阿里巴巴开源的 Canal 中间件就是基于这个实现的。</p>
-<p>Canal 模拟 MySQL 主从复制的交互协议，把自己伪装成一个 MySQL 的从节点，向 MySQL 主节点发送 dump 请求，MySQL 收到请求后，就会开始推送 Binlog 给 Canal，Canal 解析 Binlog 字节流之后，转换为便于读取的结构化数据，供下游程序订阅使用。</p>
-<p>下图是 Canal 的工作原理：</p>
-<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/2ee2280e9f59b6b4879ebdec6eb0cf52.png" alt="图片"></p>
-<p>所以，<strong>如果要想保证「先更新数据库，再删缓存」策略第二个操作能执行成功，我们可以使用「消息队列来重试缓存的删除」，或者「订阅 MySQL binlog 再操作缓存」，这两种方法有一个共同的特点，都是采用异步操作缓存。</strong></p>
-<h2 id="为什么是删除缓存，而不是更新缓存呢？"><a href="#为什么是删除缓存，而不是更新缓存呢？" class="headerlink" title="为什么是删除缓存，而不是更新缓存呢？"></a>为什么是删除缓存，而不是更新缓存呢？</h2><p>删除一个数据，相比更新一个数据更加轻量级，出问题的概率更小。在实际业务中，缓存的数据可能不是直接来自数据库表，也许来自多张底层数据表的聚合。</p>
-<p>比如商品详情信息，在底层可能会关联商品表、价格表、库存表等，如果更新了一个价格字段，那么就要更新整个数据库，还要关联的去查询和汇总各个周边业务系统的数据，这个操作会非常耗时。 从另外一个角度，不是所有的缓存数据都是频繁访问的，更新后的缓存可能会长时间不被访问，所以说，从计算资源和整体性能的考虑，更新的时候删除缓存，等到下次查询命中再填充缓存，是一个更好的方案。</p>
-<p>系统设计中有一个思想叫 Lazy Loading，适用于那些加载代价大的操作，删除缓存而不是更新缓存，就是懒加载思想的一个应用。</p>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-什么是缓存雪崩、击穿、穿透？"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/"
-    >什么是缓存雪崩、击穿、穿透？</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/" class="article-date">
-  <time datetime="2022-11-05T07:49:23.000Z" itemprop="datePublished">2022-11-05</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h1 id="什么是缓存雪崩、击穿、穿透"><a href="#什么是缓存雪崩、击穿、穿透" class="headerlink" title="什么是缓存雪崩、击穿、穿透"></a>什么是缓存雪崩、击穿、穿透</h1><p>用户的数据一般都是存储于数据库，数据库的数据是落在磁盘上的，磁盘的读写速度可以说是计算机里最慢的硬件了。</p>
-<p>当用户的请求，都访问数据库的话，请求数量一上来，数据库很容易就奔溃的了，所以为了避免用户直接访问数据库，会用 Redis 作为缓存层。</p>
-<p>因为 Redis 是内存数据库，我们可以将数据库的数据缓存在 Redis 里，相当于数据缓存在内存，内存的读写速度比硬盘快好几个数量级，这样大大提高了系统性能</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/37e4378d2edcb5e217b00e5f12973efd-20230309232858764.png" alt="图片"></p>
-<p>引入了缓存层，就会有缓存异常的三个问题，分别是<strong>缓存雪崩、缓存击穿、缓存穿透</strong>。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/61781cd6d82e4a0cc5f7521333049f0d.png" alt="图片"></p>
-<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>通常我们为了保证缓存中的数据与数据库中的数据一致性，会给 Redis 里的数据设置过期时间，当缓存数据过期后，用户访问的数据如果不在缓存里，业务系统需要重新生成缓存，因此就会访问数据库，并将数据更新到 Redis 里，这样后续请求都可以直接命中缓存。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/e2b8d2eb5536aa71664772457792ec40-20230309232851699.png" alt="图片"></p>
-<p>那么，当<strong>大量缓存数据在同一时间过期（失效）或者 Redis 故障宕机</strong>时，如果此时有大量的用户请求，都无法在 Redis 中处理，于是全部请求都直接访问数据库，从而导致数据库的压力骤增，严重的会造成数据库宕机，从而形成一系列连锁反应，造成整个系统崩溃，这就是<strong>缓存雪崩</strong>的问题。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/717343a0da7a1b05edab1d1cdf8f28e5.png" alt="图片"></p>
-<p>可以看到，发生缓存雪崩有两个原因：</p>
-<ul>
-<li>大量数据同时过期；</li>
-<li>Redis 故障宕机；</li>
-</ul>
-<p>不同的诱因，应对的策略也会不同</p>
-<h3 id="大量数据同时过期"><a href="#大量数据同时过期" class="headerlink" title="大量数据同时过期"></a>大量数据同时过期</h3><p><em>1. 均匀设置过期时间</em></p>
-<p>如果要给缓存数据设置过期时间，应该避免将大量的数据设置成同一个过期时间。我们可以在对缓存数据设置过期时间时，<strong>给这些数据的过期时间加上一个随机数</strong>，这样就保证数据不会在同一时间过期。</p>
-<p><em>2. 互斥锁</em></p>
-<p>当业务线程在处理用户请求时，<strong>如果发现访问的数据不在 Redis 里，就加个互斥锁，保证同一时间内只有一个请求来构建缓存</strong>（从数据库读取数据，再将数据更新到 Redis 里），当缓存构建完成后，再释放锁。未能获取互斥锁的请求，要么等待锁释放后重新读取缓存，要么就返回空值或者默认值。</p>
-<p>实现互斥锁的时候，最好设置<strong>超时时间</strong>，不然第一个请求拿到了锁，然后这个请求发生了某种意外而一直阻塞，一直不释放锁，这时其他请求也一直拿不到锁，整个系统就会出现无响应的现象。</p>
-<p><em>3. 数据预热</em></p>
-<p>在业务刚上线的时候，我们最好提前把数据缓起来，而不是等待用户访问才来触发缓存构建</p>
-<h3 id="Redis-故障宕机"><a href="#Redis-故障宕机" class="headerlink" title="Redis 故障宕机"></a>Redis 故障宕机</h3><p>针对 Redis 故障宕机而引发的缓存雪崩问题，常见的应对方法有下面这几种：</p>
-<ul>
-<li>服务熔断或请求限流机制；</li>
-<li>构建 Redis 缓存高可靠集群；</li>
-</ul>
-<p><em>1. 服务熔断或请求限流机制</em></p>
-<p>因为 Redis 故障宕机而导致缓存雪崩问题时，我们可以启动<strong>服务熔断</strong>机制，<strong>暂停业务应用对缓存服务的访问，直接返回错误</strong>，不用再继续访问数据库，从而降低对数据库的访问压力，保证数据库系统的正常运行，然后等到 Redis 恢复正常后，再允许业务应用访问缓存服务。</p>
-<p>服务熔断机制是保护数据库的正常允许，但是暂停了业务应用访问缓存服系统，全部业务都无法正常工作</p>
-<p>为了减少对业务的影响，我们可以启用<strong>请求限流</strong>机制，<strong>只将少部分请求发送到数据库进行处理，再多的请求就在入口直接拒绝服务</strong>，等到 Redis 恢复正常并把缓存预热完后，再解除请求限流的机制。</p>
-<p><em>2. 构建 Redis 缓存高可靠集群</em></p>
-<p>服务熔断或请求限流机制是缓存雪崩发生后的应对方案，我们最好通过<strong>主从节点的方式构建 Redis 缓存高可靠集群</strong>。</p>
-<p>如果 Redis 缓存的主节点故障宕机，从节点可以切换成为主节点，继续提供缓存服务，避免了由于 Redis 故障宕机而导致的缓存雪崩问题</p>
-<h2 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h2><p>我们的业务通常会有几个数据会被频繁地访问，比如秒杀活动，这类被频地访问的数据被称为热点数据。</p>
-<p>如果缓存中的<strong>某个热点数据过期</strong>了，此时大量的请求访问了该热点数据，就无法从缓存中读取，直接访问数据库，数据库很容易就被高并发的请求冲垮，这就是<strong>缓存击穿</strong>的问题。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/acb5f4e7ef24a524a53c39eb016f63d4-20230309232840753.png" alt="图片"></p>
-<p>可以发现缓存击穿跟缓存雪崩很相似，你可以认为缓存击穿是缓存雪崩的一个子集。</p>
-<p>应对缓存击穿可以采取前面说到两种方案：</p>
-<ul>
-<li>互斥锁方案，保证同一时间只有一个业务线程更新缓存，未能获取互斥锁的请求，要么等待锁释放后重新读取缓存，要么就返回空值或者默认值。</li>
-<li>不给热点数据设置过期时间，由后台异步更新缓存，或者在热点数据准备要过期前，提前通知后台线程更新缓存以及重新设置过期时间；</li>
-</ul>
-<h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>当发生缓存雪崩或击穿时，数据库中还是保存了应用要访问的数据，一旦缓存恢复相对应的数据，就可以减轻数据库的压力，而缓存穿透就不一样了。</p>
-<p>当用户访问的数据，<strong>既不在缓存中，也不在数据库中</strong>，导致请求在访问缓存时，发现缓存缺失，再去访问数据库时，发现数据库中也没有要访问的数据，没办法构建缓存数据，来服务后续的请求。那么当有大量这样的请求到来时，数据库的压力骤增，这就是<strong>缓存穿透</strong>的问题。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/b7031182f770a7a5b3c82eaf749f53b0-20230309232834574.png" alt="图片"></p>
-<p>缓存穿透的发生一般有这两种情况：</p>
-<ul>
-<li>业务误操作，缓存中的数据和数据库中的数据都被误删除了，所以导致缓存和数据库中都没有数据；</li>
-<li>黑客恶意攻击，故意大量访问某些读取不存在数据的业务；</li>
-</ul>
-<p>应对缓存穿透的方案，常见的方案有三种。</p>
-<ul>
-<li>第一种方案，非法请求的限制；</li>
-<li>第二种方案，缓存空值或者默认值；</li>
-<li>第三种方案，使用布隆过滤器快速判断数据是否存在，避免通过查询数据库来判断数据是否存在；</li>
-</ul>
-<p>第一种方案，非法请求的限制</p>
-<p>当有大量恶意请求访问不存在的数据的时候，也会发生缓存穿透，因此在 API 入口处我们要判断求请求参数是否合理，请求参数是否含有非法值、请求字段是否存在，如果判断出是恶意请求就直接返回错误，避免进一步访问缓存和数据库。</p>
-<p>第二种方案，缓存空值或者默认值</p>
-<p>当我们线上业务发现缓存穿透的现象时，可以针对查询的数据，在缓存中设置一个空值或者默认值，这样后续请求就可以从缓存中读取到空值或者默认值，返回给应用，而不会继续查询数据库。</p>
-<p><em>第三种方案，使用布隆过滤器快速判断数据是否存在，避免通过查询数据库来判断数据是否存在。</em></p>
-<p>我们可以在写入数据库数据时，使用布隆过滤器做个标记，然后在用户请求到来时，业务线程确认缓存失效后，可以通过查询布隆过滤器快速判断数据是否存在，如果不存在，就不用通过查询数据库来判断数据是否存在。</p>
-<p>即使发生了缓存穿透，大量请求只会查询 Redis 和布隆过滤器，而不会查询数据库，保证了数据库能正常运行，Redis 自身也是支持布隆过滤器的。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>缓存异常会面临的三个问题：缓存雪崩、击穿和穿透。</p>
-<p>其中，缓存雪崩和缓存击穿主要原因是数据不在缓存中，而导致大量请求访问了数据库，数据库压力骤增，容易引发一系列连锁反应，导致系统奔溃。不过，一旦数据被重新加载回缓存，应用又可以从缓存快速读取数据，不再继续访问数据库，数据库的压力也会瞬间降下来。因此，缓存雪崩和缓存击穿应对的方案比较类似。</p>
-<p>而缓存穿透主要原因是数据既不在缓存也不在数据库中。因此，缓存穿透与缓存雪崩、击穿应对的方案不太一样。</p>
-<p>我这里整理了表格，你可以从下面这张表格很好的知道缓存雪崩、击穿和穿透的区别以及应对方案。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/061e2c04e0ebca3425dd75dd035b6b7b.png" alt="图片"></p>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C/" rel="tag">线上故障</a></li></ul>
 
     </footer>
   </div>

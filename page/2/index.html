@@ -155,131 +155,6 @@
     
     
     <article
-  id="post-JAVA线上故障排查全套解决方案"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/"
-    >JAVA线上故障排查全套解决方案</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="article-date">
-  <time datetime="2022-10-10T10:04:15.000Z" itemprop="datePublished">2022-10-10</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C/">线上故障</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="JAVA线上故障排查全套解决方案"><a href="#JAVA线上故障排查全套解决方案" class="headerlink" title="JAVA线上故障排查全套解决方案"></a>JAVA线上故障排查全套解决方案</h4><p>线上故障主要会包括<strong>cpu、磁盘、内存以及网络</strong>问题，而大多数故障可能会包含不止一个层面的问题，所以进行排查时候尽量四个方面依次排查一遍。同时例如<strong>jstack、jmap</strong>等工具也是不囿于一个方面的问题的，基本上出问题就是<strong>df、free、top</strong> 三连，然后依次jstack、jmap伺候，具体问题具体分析即可</p>
-<h4 id="CPU"><a href="#CPU" class="headerlink" title="CPU"></a><strong>CPU</strong></h4><p>一般来讲我们首先会排查cpu方面的问题。cpu异常往往还是比较好定位的。原因包括<strong>业务逻辑问题(死循环)、频繁gc以及上下文切换过多</strong>。而最常见的往往是业务逻辑(或者框架逻辑)导致的，可以使用jstack来分析对应的堆栈情况</p>
-<p><strong>使用jstack分析cpu问题</strong></p>
-<p>ps命令找到对应进程的pid(如果你有好几个目标进程，可以先用top看一下哪个占用比较高)</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">1、对应进程的pid</span><br><span class="line">ps -ef | grep 进程关键字</span><br><span class="line">2、找到cpu使用率比较高的一些线程</span><br><span class="line">top -H -p pid</span><br><span class="line">3、将占用最高的pid转换为16进制printf &#x27;%x\n&#x27; pid得到nid</span><br><span class="line">printf &#x27;%x\n&#x27; pid</span><br><span class="line">4、直接在jstack中找到相应的堆栈信息</span><br><span class="line">jstack pid |grep &#x27;nid&#x27; -C5 –color</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185335954.png" alt="image-20230319185335954"></p>
-<p>可以看到我们已经找到了nid为0x42的堆栈信息，接着只要仔细分析一番即可。</p>
-<p>当然更常见的是我们对整个jstack文件进行分析，通常我们会比较关注WAITING和TIMED_WAITING的部分，BLOCKED就不用说了。我们可以使用命令cat jstack.log | grep “java.lang.Thread.State” | sort -nr | uniq -c来对jstack的状态有一个整体的把握，如果WAITING之类的特别多，那么多半是有问题啦。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat jstack.log | grep &quot;java.lang.Thread.State&quot; | sort -nr | uniq -c</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185422418.png" alt="image-20230319185422418"></p>
-<h4 id="磁盘"><a href="#磁盘" class="headerlink" title="磁盘"></a><strong>磁盘</strong></h4><p>1.利用 df 查询磁盘状态</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">df -h</span><br></pre></td></tr></table></figure>
-
-<p>2.获取目录下文件夹大小</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">du -sh *</span><br></pre></td></tr></table></figure>
-
-<p>3.磁盘问题还是性能上的问题。我们可以通过iostat -d -k -x来进行分析</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1、iostat属于sysstat软件包</span><br><span class="line">yum install sysstat</span><br><span class="line">2、iostat -d -k -x 1</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185649578.png" alt="image-20230319185649578"></p>
-<p>%util可以看到每块磁盘写入的程度</p>
-<p>rrqpm/s以及wrqm/s分别表示读写速度，一般就能帮助定位到具体哪块磁盘出现问题</p>
-<p>4.需要知道是哪个进程在进行读写，用iotop命令来进行定位文件读写的来源</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">iotop</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185746056.png" alt="image-20230319185746056"></p>
-<p>5.不过这边拿到的是tid，我们要转换成pid，可以通过readlink来找到</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">readlink -f /proc/*/task/tid/../..</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185902218.png" alt="image-20230319185902218"></p>
-<p>6.找到pid之后就可以看这个进程具体的读写情况cat /proc/pid/io</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cat /proc/pid/io</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319185953457.png" alt="image-20230319185953457"></p>
-<p>7.lsof命令来确定具体的文件读写情况lsof -p pid</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsof -p pid</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190034159.png" alt="image-20230319190034159"></p>
-<h4 id="内存"><a href="#内存" class="headerlink" title="内存"></a><strong>内存</strong></h4><p>主要包括OOM、GC问题和堆外内存。一般来讲，我们会先用free命令先来检查一发内存的各种情况</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">free</span><br><span class="line">free -g</span><br><span class="line">free -m</span><br></pre></td></tr></table></figure>
-
-<h4 id="堆内内存"><a href="#堆内内存" class="headerlink" title="堆内内存"></a>堆内内存</h4><p>内存问题大多还都是堆内内存问题。表象上主要分为OOM和StackOverflow</p>
-<p>OOM</p>
-<p>JMV中的内存不足，OOM大致可以分为以下几种：</p>
-<p><strong>Exception in thread “main” java.lang.OutOfMemoryError: unable to create new native thread</strong></p>
-<p>这个意思是<strong>没有足够的内存空间给线程分配java栈，基本上还是线程池代码写的有问题</strong>，比如说忘记shutdown，所以说应该首先从代码层面来寻找问题，<strong>使用jstack或者jmap</strong>。如果一切都正常，JVM方面可以通过指定<strong>Xss来减少单个thread stack的大小</strong>。另外也可以在系统层面，可以通过修改/etc/security/limits.conf  nofile和nproc来增大os对线程的限制</p>
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190209877.png" alt="image-20230319190209877"></p>
-<p><strong>Exception in thread “main” java.lang.OutOfMemoryError: Java heap space</strong></p>
-<p>这个意思是堆的内存占用已经达到-Xmx设置的最大值，应该是最常见的OOM错误了。解决思路仍然是先应该在代码中找，<strong>怀疑存在内存泄漏</strong>，<strong>通过jstack和jmap去定位问题</strong>。如果说一切都正常，才需要通过<strong>调整Xmx的值来扩大内存</strong>。</p>
-<p><strong>Caused by: java.lang.OutOfMemoryError: Meta space</strong></p>
-<p>这个意思是<strong>元数据区的内存占用已经达到XX:MaxMetaspaceSize设置的最大值</strong>，排查思路和上面的一致，参数方面可以通过<strong>XX:MaxPermSize来进行调整</strong>(这里就不说1.8以前的永久代了)</p>
-<p><strong>Stack Overflow</strong></p>
-<p><strong>栈内存溢出</strong>，这个大家见到也比较多。</p>
-<p><strong>Exception in thread “main” java.lang.StackOverflowError</strong></p>
-<p>表示线程栈需要的内存大于<strong>Xss值</strong>，同样也是先进行排查，参数方面通过Xss来调整，但调整的太大可能又会引起OOM</p>
-<h4 id="使用JMAP定位代码内存泄漏"><a href="#使用JMAP定位代码内存泄漏" class="headerlink" title="使用JMAP定位代码内存泄漏"></a>使用<strong>JMAP</strong>定位代码内存泄漏</h4><p>上述关于OOM和StackOverflow的代码排查方面，我们一般使用JMAP</p>
-<p> jmap -dump:format=b,file=filename pid来导出dump文件</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">jmap -dump:format=b,file=filename pid</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190407933.png" alt="image-20230319190407933"></p>
-<p><strong>mat(Eclipse Memory Analysis Tools)导入dump文件进行分析</strong>，内存泄漏问题一般我们直接选Leak Suspects即可，mat给出了内存泄漏的建议。另外也可以选择Top Consumers来查看最大对象报告。和线程相关的问题可以选择thread overview进行分析。除此之外就是选择Histogram类概览来自己慢慢分析，大家可以搜搜mat的相关教程。（idea插件篇之java内存分析工具(<strong>JProfiler</strong>)）</p>
-<p><img src="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/image-20230319190439697.png" alt="image-20230319190439697"></p>
-<p>日常开发中，代码产生内存泄漏是比较常见的事，并且比较隐蔽，需要开发者更加关注细节。比如说每次请求都new对象，导致大量重复创建对象；进行文件流操作但未正确关闭；手动不当触发gc；ByteBuffer缓存分配不合理等都会造成代码OOM。</p>
-<p>另一方面，我们可以在<strong>启动参数中指定-XX:+HeapDumpOnOutOfMemoryError来保存OOM时的dump文件</strong></p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"># </span><span class="language-bash">内存OOM时，自动生成dump文件</span> </span><br><span class="line">-XX:+HeapDumpOnOutOfMemoryError</span><br><span class="line">-XX:HeapDumpPath=/data/logs/</span><br></pre></td></tr></table></figure>
-
-<p>GC问题</p>
-<p>通过GC日志来排查问题的，在启动参数中加上**-verbose:gc -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps**来开启GC日志。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">-verbose:gc -XX:+PrintGCDetails </span><br><span class="line">-XX:+PrintGCDateStamps </span><br><span class="line">-XX:+PrintGCTimeStamps</span><br></pre></td></tr></table></figure>
-
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C/" rel="tag">线上故障</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
   id="post-线上遇到了OOM"
   class="article article-type-post"
   itemscope
@@ -967,6 +842,74 @@
 
 
 <h5 id="运行结果"><a href="#运行结果" class="headerlink" title="运行结果"></a>运行结果</h5><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *创建观察者实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">Teacher</span> <span class="variable">mathTeacher</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Teacher</span>();</span><br><span class="line">    Student studentA=<span class="keyword">new</span> <span class="title class_">Student</span>();</span><br><span class="line">    Student studentB=<span class="keyword">new</span> <span class="title class_">Student</span>();</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *被观察者实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    RingBell ringBell=<span class="keyword">new</span> <span class="title class_">RingBell</span>();</span><br><span class="line">    ringBell.add(mathTeacher);</span><br><span class="line">    ringBell.add(studentA);</span><br><span class="line">    ringBell.add(studentB);</span><br><span class="line"></span><br><span class="line">    ringBell.ring();</span><br><span class="line">&#125;</span><br><span class="line">铃声响了</span><br><span class="line">铃声响，老师开始讲课！！！</span><br><span class="line">铃声响，学生开始上课！！！</span><br><span class="line">铃声响，学生开始上课！！！ </span><br></pre></td></tr></table></figure>
+
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-适配器模式"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/08/04/%E9%80%82%E9%85%8D%E5%99%A8%E6%A8%A1%E5%BC%8F/"
+    >适配器模式</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/08/04/%E9%80%82%E9%85%8D%E5%99%A8%E6%A8%A1%E5%BC%8F/" class="article-date">
+  <time datetime="2022-08-04T07:05:09.000Z" itemprop="datePublished">2022-08-04</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="适配器模式"><a href="#适配器模式" class="headerlink" title="适配器模式"></a>适配器模式</h4><p>适配器模式（Adapter）的定义如下：将一个类的接口转换成客户希望的另外一个接口，使得<strong>原本由于接口不兼容而不能一起工作的那些类能一起工作</strong></p>
+<p>例如，</p>
+<p>1、<strong>讲中文的人同讲英文的人对话时需要一个翻译</strong></p>
+<p>2、系统需要使用现有的类，而此类的接口不符合系统的需要</p>
+<p>适配器模式（Adapter）包含以下主要角色。</p>
+<p><strong>目标（Target）接口</strong>：当前系统业务所期待的接口，它可以是抽象类或接口。</p>
+<p><strong>适配者（Adaptee）类</strong>：它是被访问和适配的现存组件库中的组件接口。</p>
+<p><strong>适配器（Adapter）类</strong>：它是一个转换器，通过继承或引用适配者的对象，把适配者接口转换成目标接口，让客户按目标接口的格式访问适配者。</p>
+<h4 id="类适配器"><a href="#类适配器" class="headerlink" title="类适配器"></a><strong>类适配器</strong></h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainRun</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        Target target=<span class="keyword">new</span> <span class="title class_">ClassAdapter</span>();</span><br><span class="line">        target.request();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *功能描述 目标接口</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span></span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Target</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">request</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 将被适配的类</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Adaptee</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">specificRequest</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;适配者中的业务代码被调用！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 类适配器类</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ClassAdapter</span> <span class="keyword">extends</span> <span class="title class_">Adaptee</span> <span class="keyword">implements</span> <span class="title class_">Target</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">request</span><span class="params">()</span> &#123;</span><br><span class="line">        specificRequest();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h4 id="对象适配器模式"><a href="#对象适配器模式" class="headerlink" title="对象适配器模式"></a><strong>对象适配器模式</strong></h4><p>对象适配器与类适配器不同之处在于，<strong>类适配器通过继承来完成适配</strong>，<strong>对象适配器则是通过关联</strong>来完成</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 对象适配器</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainRun</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        Adaptee adaptee=<span class="keyword">new</span> <span class="title class_">Adaptee</span>();</span><br><span class="line">        <span class="type">Target</span> <span class="variable">target</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">ObejectAdapter</span>(adaptee);</span><br><span class="line">        target.request();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 对象适配器</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ObejectAdapter</span> <span class="keyword">implements</span> <span class="title class_">Target</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> Adaptee adaptee;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">ObejectAdapter</span><span class="params">(Adaptee adaptee)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.adaptee = adaptee;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">request</span><span class="params">()</span> &#123;</span><br><span class="line">        adaptee.specificRequest();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
  
       <!-- reward -->

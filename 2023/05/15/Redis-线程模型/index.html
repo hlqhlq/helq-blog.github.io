@@ -11,7 +11,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>什么是缓存雪崩、击穿、穿透？ |  迷途小书童</title>
+      <title>Redis 线程模型 |  迷途小书童</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/favicon.ico" />
@@ -53,7 +53,7 @@
     <main class="content on">
       <section class="outer">
   <article
-  id="post-什么是缓存雪崩、击穿、穿透？"
+  id="post-Redis-线程模型"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -64,7 +64,7 @@
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  什么是缓存雪崩、击穿、穿透？
+  Redis 线程模型
 </h1>
  
 
@@ -72,8 +72,8 @@
     </header>
      
     <div class="article-meta">
-      <a href="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/" class="article-date">
-  <time datetime="2022-11-05T07:49:23.000Z" itemprop="datePublished">2022-11-05</time>
+      <a href="/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" class="article-date">
+  <time datetime="2023-05-15T12:52:06.000Z" itemprop="datePublished">2023-05-15</time>
 </a> 
   <div class="article-category">
     <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a>
@@ -84,7 +84,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> Word count:</span>
-            <span class="post-count">2.5k</span>
+            <span class="post-count">2.4k</span>
         </span>
     </span>
 
@@ -108,76 +108,75 @@
   
     <div class="article-entry" itemprop="articleBody">
        
-  <h1 id="什么是缓存雪崩、击穿、穿透"><a href="#什么是缓存雪崩、击穿、穿透" class="headerlink" title="什么是缓存雪崩、击穿、穿透"></a>什么是缓存雪崩、击穿、穿透</h1><p>用户的数据一般都是存储于数据库，数据库的数据是落在磁盘上的，磁盘的读写速度可以说是计算机里最慢的硬件了。</p>
-<p>当用户的请求，都访问数据库的话，请求数量一上来，数据库很容易就奔溃的了，所以为了避免用户直接访问数据库，会用 Redis 作为缓存层。</p>
-<p>因为 Redis 是内存数据库，我们可以将数据库的数据缓存在 Redis 里，相当于数据缓存在内存，内存的读写速度比硬盘快好几个数量级，这样大大提高了系统性能</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/37e4378d2edcb5e217b00e5f12973efd-20230309232858764.png" alt="图片"></p>
-<p>引入了缓存层，就会有缓存异常的三个问题，分别是<strong>缓存雪崩、缓存击穿、缓存穿透</strong>。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/61781cd6d82e4a0cc5f7521333049f0d.png" alt="图片"></p>
-<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>通常我们为了保证缓存中的数据与数据库中的数据一致性，会给 Redis 里的数据设置过期时间，当缓存数据过期后，用户访问的数据如果不在缓存里，业务系统需要重新生成缓存，因此就会访问数据库，并将数据更新到 Redis 里，这样后续请求都可以直接命中缓存。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/e2b8d2eb5536aa71664772457792ec40-20230309232851699.png" alt="图片"></p>
-<p>那么，当<strong>大量缓存数据在同一时间过期（失效）或者 Redis 故障宕机</strong>时，如果此时有大量的用户请求，都无法在 Redis 中处理，于是全部请求都直接访问数据库，从而导致数据库的压力骤增，严重的会造成数据库宕机，从而形成一系列连锁反应，造成整个系统崩溃，这就是<strong>缓存雪崩</strong>的问题。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/717343a0da7a1b05edab1d1cdf8f28e5.png" alt="图片"></p>
-<p>可以看到，发生缓存雪崩有两个原因：</p>
+  <h2 id="Redis-线程模型"><a href="#Redis-线程模型" class="headerlink" title="Redis 线程模型"></a>Redis 线程模型</h2><h3 id="Redis-是单线程吗？"><a href="#Redis-是单线程吗？" class="headerlink" title="#Redis 是单线程吗？"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/redis/base/redis_interview.html#redis-%E6%98%AF%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%90%97">#</a>Redis 是单线程吗？</h3><p><strong>Redis 单线程指的是「接收客户端请求-&gt;解析请求 -&gt;进行数据读写等操作-&gt;发送数据给客户端」这个过程是由一个线程（主线程）来完成的</strong>，这也是我们常说 Redis 是单线程的原因。</p>
+<p>但是，<strong>Redis 程序并不是单线程的</strong>，Redis 在启动的时候，是会<strong>启动后台线程</strong>（BIO）的：</p>
 <ul>
-<li>大量数据同时过期；</li>
-<li>Redis 故障宕机；</li>
+<li><strong>Redis 在 2.6 版本</strong>，会启动 2 个后台线程，分别处理关闭文件、AOF 刷盘这两个任务；</li>
+<li><strong>Redis 在 4.0 版本之后</strong>，新增了一个新的后台线程，用来异步释放 Redis 内存，也就是 lazyfree 线程。例如执行 unlink key / flushdb async / flushall async 等命令，会把这些删除操作交给后台线程来执行，好处是不会导致 Redis 主线程卡顿。因此，当我们要删除一个大 key 的时候，不要使用 del 命令删除，因为 del 是在主线程处理的，这样会导致 Redis 主线程卡顿，因此我们应该使用 unlink 命令来异步删除大key。</li>
 </ul>
-<p>不同的诱因，应对的策略也会不同</p>
-<h3 id="大量数据同时过期"><a href="#大量数据同时过期" class="headerlink" title="大量数据同时过期"></a>大量数据同时过期</h3><p><em>1. 均匀设置过期时间</em></p>
-<p>如果要给缓存数据设置过期时间，应该避免将大量的数据设置成同一个过期时间。我们可以在对缓存数据设置过期时间时，<strong>给这些数据的过期时间加上一个随机数</strong>，这样就保证数据不会在同一时间过期。</p>
-<p><em>2. 互斥锁</em></p>
-<p>当业务线程在处理用户请求时，<strong>如果发现访问的数据不在 Redis 里，就加个互斥锁，保证同一时间内只有一个请求来构建缓存</strong>（从数据库读取数据，再将数据更新到 Redis 里），当缓存构建完成后，再释放锁。未能获取互斥锁的请求，要么等待锁释放后重新读取缓存，要么就返回空值或者默认值。</p>
-<p>实现互斥锁的时候，最好设置<strong>超时时间</strong>，不然第一个请求拿到了锁，然后这个请求发生了某种意外而一直阻塞，一直不释放锁，这时其他请求也一直拿不到锁，整个系统就会出现无响应的现象。</p>
-<p><em>3. 数据预热</em></p>
-<p>在业务刚上线的时候，我们最好提前把数据缓起来，而不是等待用户访问才来触发缓存构建</p>
-<h3 id="Redis-故障宕机"><a href="#Redis-故障宕机" class="headerlink" title="Redis 故障宕机"></a>Redis 故障宕机</h3><p>针对 Redis 故障宕机而引发的缓存雪崩问题，常见的应对方法有下面这几种：</p>
+<p>之所以 Redis 为「关闭文件、AOF 刷盘、释放内存」这些任务创建单独的线程来处理，是因为这些任务的操作都是很耗时的，如果把这些任务都放在主线程来处理，那么 Redis 主线程就很容易发生阻塞，这样就无法处理后续的请求了。</p>
+<p>后台线程相当于一个消费者，生产者把耗时任务丢到任务队列中，消费者（BIO）不停轮询这个队列，拿出任务就去执行对应的方法即可。</p>
+<p><img src="/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/%E5%90%8E%E5%8F%B0%E7%BA%BF%E7%A8%8B.jpg" alt="img"></p>
+<p>关闭文件、AOF 刷盘、释放内存这三个任务都有各自的任务队列：</p>
 <ul>
-<li>服务熔断或请求限流机制；</li>
-<li>构建 Redis 缓存高可靠集群；</li>
+<li>BIO_CLOSE_FILE，关闭文件任务队列：当队列有任务后，后台线程会调用 close(fd) ，将文件关闭；</li>
+<li>BIO_AOF_FSYNC，AOF刷盘任务队列：当 AOF 日志配置成 everysec 选项后，主线程会把 AOF 写日志操作封装成一个任务，也放到队列中。当发现队列有任务后，后台线程会调用 fsync(fd)，将 AOF 文件刷盘，</li>
+<li>BIO_LAZY_FREE，lazy free 任务队列：当队列有任务后，后台线程会 free(obj) 释放对象 / free(dict) 删除数据库所有对象 / free(skiplist) 释放跳表对象；</li>
 </ul>
-<p><em>1. 服务熔断或请求限流机制</em></p>
-<p>因为 Redis 故障宕机而导致缓存雪崩问题时，我们可以启动<strong>服务熔断</strong>机制，<strong>暂停业务应用对缓存服务的访问，直接返回错误</strong>，不用再继续访问数据库，从而降低对数据库的访问压力，保证数据库系统的正常运行，然后等到 Redis 恢复正常后，再允许业务应用访问缓存服务。</p>
-<p>服务熔断机制是保护数据库的正常允许，但是暂停了业务应用访问缓存服系统，全部业务都无法正常工作</p>
-<p>为了减少对业务的影响，我们可以启用<strong>请求限流</strong>机制，<strong>只将少部分请求发送到数据库进行处理，再多的请求就在入口直接拒绝服务</strong>，等到 Redis 恢复正常并把缓存预热完后，再解除请求限流的机制。</p>
-<p><em>2. 构建 Redis 缓存高可靠集群</em></p>
-<p>服务熔断或请求限流机制是缓存雪崩发生后的应对方案，我们最好通过<strong>主从节点的方式构建 Redis 缓存高可靠集群</strong>。</p>
-<p>如果 Redis 缓存的主节点故障宕机，从节点可以切换成为主节点，继续提供缓存服务，避免了由于 Redis 故障宕机而导致的缓存雪崩问题</p>
-<h2 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h2><p>我们的业务通常会有几个数据会被频繁地访问，比如秒杀活动，这类被频地访问的数据被称为热点数据。</p>
-<p>如果缓存中的<strong>某个热点数据过期</strong>了，此时大量的请求访问了该热点数据，就无法从缓存中读取，直接访问数据库，数据库很容易就被高并发的请求冲垮，这就是<strong>缓存击穿</strong>的问题。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/acb5f4e7ef24a524a53c39eb016f63d4-20230309232840753.png" alt="图片"></p>
-<p>可以发现缓存击穿跟缓存雪崩很相似，你可以认为缓存击穿是缓存雪崩的一个子集。</p>
-<p>应对缓存击穿可以采取前面说到两种方案：</p>
+<h3 id="Redis-单线程模式是怎样的？"><a href="#Redis-单线程模式是怎样的？" class="headerlink" title="Redis 单线程模式是怎样的？"></a>Redis 单线程模式是怎样的？</h3><p>Redis 6.0 版本之前的单线模式如下图：</p>
+<p><img src="/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/redis%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B.drawio.png" alt="img"></p>
+<p>图中的蓝色部分是一个事件循环，是由主线程负责的，可以看到网络 I/O 和命令处理都是单线程。 Redis 初始化的时候，会做下面这几件事情：</p>
 <ul>
-<li>互斥锁方案，保证同一时间只有一个业务线程更新缓存，未能获取互斥锁的请求，要么等待锁释放后重新读取缓存，要么就返回空值或者默认值。</li>
-<li>不给热点数据设置过期时间，由后台异步更新缓存，或者在热点数据准备要过期前，提前通知后台线程更新缓存以及重新设置过期时间；</li>
+<li>首先，调用 epoll_create() 创建一个 epoll 对象和调用 socket() 创建一个服务端 socket</li>
+<li>然后，调用 bind() 绑定端口和调用 listen() 监听该 socket；</li>
+<li>然后，将调用 epoll_ctl() 将 listen socket 加入到 epoll，同时注册「连接事件」处理函数。</li>
 </ul>
-<h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>当发生缓存雪崩或击穿时，数据库中还是保存了应用要访问的数据，一旦缓存恢复相对应的数据，就可以减轻数据库的压力，而缓存穿透就不一样了。</p>
-<p>当用户访问的数据，<strong>既不在缓存中，也不在数据库中</strong>，导致请求在访问缓存时，发现缓存缺失，再去访问数据库时，发现数据库中也没有要访问的数据，没办法构建缓存数据，来服务后续的请求。那么当有大量这样的请求到来时，数据库的压力骤增，这就是<strong>缓存穿透</strong>的问题。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/b7031182f770a7a5b3c82eaf749f53b0-20230309232834574.png" alt="图片"></p>
-<p>缓存穿透的发生一般有这两种情况：</p>
+<p>初始化完后，主线程就进入到一个<strong>事件循环函数</strong>，主要会做以下事情：</p>
 <ul>
-<li>业务误操作，缓存中的数据和数据库中的数据都被误删除了，所以导致缓存和数据库中都没有数据；</li>
-<li>黑客恶意攻击，故意大量访问某些读取不存在数据的业务；</li>
-</ul>
-<p>应对缓存穿透的方案，常见的方案有三种。</p>
+<li><p>首先，先调用<strong>处理发送队列函数</strong>，看是发送队列里是否有任务，如果有发送任务，则通过 write 函数将客户端发送缓存区里的数据发送出去，如果这一轮数据没有发送完，就会注册写事件处理函数，等待 epoll_wait 发现可写后再处理 。</p>
+</li>
+<li><p>接着，调用 epoll_wait 函数等待事件的到来：</p>
 <ul>
-<li>第一种方案，非法请求的限制；</li>
-<li>第二种方案，缓存空值或者默认值；</li>
-<li>第三种方案，使用布隆过滤器快速判断数据是否存在，避免通过查询数据库来判断数据是否存在；</li>
+<li><p>如果是<strong>连接事件</strong>到来，则会调用<strong>连接事件处理函数</strong>，该函数会做这些事情：调用 accpet 获取已连接的 socket -&gt; 调用 epoll_ctl 将已连接的 socket 加入到 epoll -&gt; 注册「读事件」处理函数；</p>
+</li>
+<li><p>如果是<strong>读事件</strong>到来，则会调用<strong>读事件处理函数</strong>，该函数会做这些事情：调用 read 获取客户端发送的数据 -&gt; 解析命令 -&gt; 处理命令 -&gt; 将客户端对象添加到发送队列 -&gt; 将执行结果写到发送缓存区等待发送；</p>
+</li>
+<li><p>如果是<strong>写事件</strong>到来，则会调用<strong>写事件处理函数</strong>，该函数会做这些事情：通过 write 函数将客户端发送缓存区里的数据发送出去，如果这一轮数据没有发送完，就会继续注册写事件处理函数，等待 epoll_wait 发现可写后再处理 。</p>
+</li>
 </ul>
-<p>第一种方案，非法请求的限制</p>
-<p>当有大量恶意请求访问不存在的数据的时候，也会发生缓存穿透，因此在 API 入口处我们要判断求请求参数是否合理，请求参数是否含有非法值、请求字段是否存在，如果判断出是恶意请求就直接返回错误，避免进一步访问缓存和数据库。</p>
-<p>第二种方案，缓存空值或者默认值</p>
-<p>当我们线上业务发现缓存穿透的现象时，可以针对查询的数据，在缓存中设置一个空值或者默认值，这样后续请求就可以从缓存中读取到空值或者默认值，返回给应用，而不会继续查询数据库。</p>
-<p><em>第三种方案，使用布隆过滤器快速判断数据是否存在，避免通过查询数据库来判断数据是否存在。</em></p>
-<p>我们可以在写入数据库数据时，使用布隆过滤器做个标记，然后在用户请求到来时，业务线程确认缓存失效后，可以通过查询布隆过滤器快速判断数据是否存在，如果不存在，就不用通过查询数据库来判断数据是否存在。</p>
-<p>即使发生了缓存穿透，大量请求只会查询 Redis 和布隆过滤器，而不会查询数据库，保证了数据库能正常运行，Redis 自身也是支持布隆过滤器的。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>缓存异常会面临的三个问题：缓存雪崩、击穿和穿透。</p>
-<p>其中，缓存雪崩和缓存击穿主要原因是数据不在缓存中，而导致大量请求访问了数据库，数据库压力骤增，容易引发一系列连锁反应，导致系统奔溃。不过，一旦数据被重新加载回缓存，应用又可以从缓存快速读取数据，不再继续访问数据库，数据库的压力也会瞬间降下来。因此，缓存雪崩和缓存击穿应对的方案比较类似。</p>
-<p>而缓存穿透主要原因是数据既不在缓存也不在数据库中。因此，缓存穿透与缓存雪崩、击穿应对的方案不太一样。</p>
-<p>我这里整理了表格，你可以从下面这张表格很好的知道缓存雪崩、击穿和穿透的区别以及应对方案。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/061e2c04e0ebca3425dd75dd035b6b7b.png" alt="图片"></p>
+</li>
+</ul>
+<p>（另外版本：</p>
+<p>redis 内部使⽤<strong>⽂件事件处理器</strong> file event handler ，这个<strong>⽂件事件处理器是单线程的</strong>，所 以 redis 才叫做单线程的模型。它<strong>采⽤ IO 多路复⽤机制同时监听多个 socket</strong>，<strong>将产⽣事件的 socket 压⼊内存队列中，事件分派器根据 socket 上的事件类型来选择对应的事件处理器进⾏处 理</strong>。</p>
+<p><img src="/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/image-20240512180058421.png" alt="image-20240512180058421">)</p>
+<h3 id="Redis-采用单线程为什么还这么快？"><a href="#Redis-采用单线程为什么还这么快？" class="headerlink" title="Redis 采用单线程为什么还这么快？"></a>Redis 采用单线程为什么还这么快？</h3><p>官方使用基准测试的结果是，<strong>单线程的 Redis 吞吐量可以达到 10W/每秒</strong></p>
+<p>之所以 Redis 采用单线程（网络 I/O 和执行命令）那么快，有如下几个原因：</p>
+<ul>
+<li>Redis 的大部分操作<strong>都在内存中完成</strong>，并且采用了高效的数据结构，因此 Redis 瓶颈可能是机器的内存或者网络带宽，而并非 CPU，既然 CPU 不是瓶颈，那么自然就采用单线程的解决方案了；</li>
+<li>Redis 采用单线程模型可以<strong>避免了多线程之间的竞争</strong>，省去了多线程切换带来的时间和性能上的开销，而且也不会导致死锁问题。</li>
+<li>Redis 采用了 <strong>I/O 多路复用机制</strong>处理大量的客户端 Socket 请求，IO 多路复用机制是指一个线程处理多个 IO 流，就是我们经常听到的 select/epoll 机制。简单来说，在 Redis 只运行单线程的情况下，该机制允许内核中，同时存在多个监听 Socket 和已连接 Socket。内核会一直监听这些 Socket 上的连接请求或数据请求。一旦有请求到达，就会交给 Redis 线程处理，这就实现了一个 Redis 线程处理多个 IO 流的效果。</li>
+</ul>
+<h3 id="Redis-6-0-之前为什么使用单线程？"><a href="#Redis-6-0-之前为什么使用单线程？" class="headerlink" title="Redis 6.0 之前为什么使用单线程？"></a>Redis 6.0 之前为什么使用单线程？</h3><p>我们都知道单线程的程序是无法利用服务器的多核 CPU 的，那么早期 Redis 版本的主要工作（网络 I/O 和执行命令）为什么还要使用单线程呢？我们不妨先看一下Redis官方给出的<a href="https://link.juejin.cn/?target=https://redis.io/topics/faq">FAQ</a></p>
+<p><img src="/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/redis%E5%AE%98%E6%96%B9%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%9B%9E%E7%AD%94.png" alt="img"></p>
+<p>核心意思是：<strong>CPU 并不是制约 Redis 性能表现的瓶颈所在</strong>，更多情况下是受到内存大小和网络I/O的限制，所以 Redis 核心网络模型使用单线程并没有什么问题，如果你想要使用服务的多核CPU，可以在一台服务器上启动多个节点或者采用分片集群的方式。</p>
+<p>除了上面的官方回答，选择单线程的原因也有下面的考虑。</p>
+<p>使用了单线程后，可维护性高，多线程模型虽然在某些方面表现优异，但是它却引入了程序执行顺序的不确定性，带来了并发读写的一系列问题，<strong>增加了系统复杂度、同时可能存在线程切换、甚至加锁解锁、死锁造成的性能损耗</strong>。</p>
+<h3 id="Redis-6-0-之后为什么引入了多线程？"><a href="#Redis-6-0-之后为什么引入了多线程？" class="headerlink" title="#Redis 6.0 之后为什么引入了多线程？"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/redis/base/redis_interview.html#redis-6-0-%E4%B9%8B%E5%90%8E%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BC%95%E5%85%A5%E4%BA%86%E5%A4%9A%E7%BA%BF%E7%A8%8B">#</a>Redis 6.0 之后为什么引入了多线程？</h3><p>虽然 Redis 的主要工作（网络 I/O 和执行命令）一直是单线程模型，但是<strong>在 Redis 6.0 版本之后，也采用了多个 I/O 线程来处理网络请求</strong>，<strong>这是因为随着网络硬件的性能提升，Redis 的性能瓶颈有时会出现在网络 I/O 的处理上</strong>。</p>
+<p>所以为了提高网络 I/O 的并行度，Redis 6.0 对于网络 I/O 采用多线程来处理。**但是对于命令的执行，Redis 仍然使用单线程来处理，*<em>所以大家*<em>不要误解</em></em> Redis 有多线程同时执行命令。</p>
+<p>Redis 官方表示，<strong>Redis 6.0 版本引入的多线程 I/O 特性对性能提升至少是一倍以上</strong>。</p>
+<p>Redis 6.0 版本支持的 I/O 多线程特性，默认情况下 I/O 多线程只针对发送响应数据（write client socket），并不会以多线程的方式处理读请求（read client socket）。要想开启多线程处理客户端读请求，就需要把 Redis.conf 配置文件中的 io-threads-do-reads 配置项设为 yes。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//读请求也使用io多线程</span></span><br><span class="line">io-threads-<span class="keyword">do</span>-reads yes </span><br></pre></td></tr></table></figure>
+
+<p>同时， Redis.conf 配置文件中提供了 IO 多线程个数的配置项。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// io-threads N，表示启用 N-1 个 I/O 多线程（主线程也算一个 I/O 线程）</span></span><br><span class="line">io-threads <span class="number">4</span></span><br></pre></td></tr></table></figure>
+
+<p>关于线程数的设置，官方的建议是如果为 4 核的 CPU，建议线程数设置为 2 或 3，如果为 8 核 CPU 建议线程数设置为 6，线程数一定要小于机器核数，线程数并不是越大越好。</p>
+<p>因此， Redis 6.0 版本之后，Redis 在启动的时候，默认情况下会<strong>额外创建 6 个线程</strong>（<em>这里的线程数不包括主线程</em>）：</p>
+<ul>
+<li>Redis-server ： Redis的主线程，主要负责执行命令；</li>
+<li>bio_close_file、bio_aof_fsync、bio_lazy_free：三个后台线程，分别异步处理关闭文件任务、AOF刷盘任务、释放内存任务；</li>
+<li>io_thd_1、io_thd_2、io_thd_3：三个 I/O 线程，io-threads 默认是 4 ，所以会启动 3（4-1）个 I/O 多线程，用来分担 Redis 网络 I/O 的压力。</li>
+</ul>
  
       <!-- reward -->
       
@@ -248,7 +247,7 @@
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://example.com/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://example.com/2023/05/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" alt="微信分享二维码">
     </div>
 </div>
 
@@ -261,19 +260,19 @@
    
   <nav class="article-nav">
     
-      <a href="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/" class="article-nav-link">
+      <a href="/2023/09/03/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/" class="article-nav-link">
         <strong class="article-nav-caption">上一篇</strong>
         <div class="article-nav-title">
           
-            数据库和缓存如何保持一致性
+            什么是缓存雪崩、击穿、穿透？
           
         </div>
       </a>
     
     
-      <a href="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="article-nav-link">
+      <a href="/2023/05/12/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81/" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
-        <div class="article-nav-title">JAVA线上故障排查全套解决方案</div>
+        <div class="article-nav-title">如何避免死锁</div>
       </a>
     
   </nav>
