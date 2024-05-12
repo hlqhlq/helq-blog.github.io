@@ -155,6 +155,217 @@
     
     
     <article
+  id="post-外观模式"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/09/01/%E5%A4%96%E8%A7%82%E6%A8%A1%E5%BC%8F/"
+    >外观模式</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/09/01/%E5%A4%96%E8%A7%82%E6%A8%A1%E5%BC%8F/" class="article-date">
+  <time datetime="2022-09-01T08:00:32.000Z" itemprop="datePublished">2022-09-01</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="外观模式"><a href="#外观模式" class="headerlink" title="外观模式"></a>外观模式</h4><p>定义： <strong>隐藏了系统的复杂性，并向客户端提供了一个可以访问系统的接口</strong></p>
+<p>简单来说，该模式就是把一些复杂的流程封装成一个接口供给外部用户更简单的使用</p>
+<p>优点：</p>
+<p><strong>松散耦合</strong>：使得客户端和子系统之间解耦，让子系统内部的模块功能更容易扩展和维护；</p>
+<p><strong>简单易用</strong>：客户端根本不需要知道子系统内部的实现，或者根本不需要知道子系统内部的构成，它只需要<strong>跟Facade类（门面）交互</strong>即可</p>
+<p><img src><img src="/2022/09/01/%E5%A4%96%E8%A7%82%E6%A8%A1%E5%BC%8F/image-20230318160214913.png" alt="image-20230318160214913"></p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-责任链模式"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/08/18/%E8%B4%A3%E4%BB%BB%E9%93%BE%E6%A8%A1%E5%BC%8F/"
+    >责任链模式</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/08/18/%E8%B4%A3%E4%BB%BB%E9%93%BE%E6%A8%A1%E5%BC%8F/" class="article-date">
+  <time datetime="2022-08-18T07:45:51.000Z" itemprop="datePublished">2022-08-18</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="责任链模式"><a href="#责任链模式" class="headerlink" title="责任链模式"></a>责任链模式</h4><p>过滤器和拦截器</p>
+<p>责任链（Chain of Responsibility）模式的定义：为了避免请求发送者与多个请求处理者耦合在一起，于是将所有请求的处理者通过<strong>前一对象记住其下一个对象的引用而连成一条链</strong>；当有请求发生时，可将请求沿着这条链传递，直到有对象处理它为止。</p>
+<p>在责任链模式中，客户只需要将请求发送到责任链上即可，无须关心请求的处理细节和请求的传递过程，请求会自动进行传递。所以责任链将请求的发送者和请求的处理者解耦了。</p>
+<p>职责链模式主要包含以下角色：</p>
+<ul>
+<li>抽象处理者（Handler）角色：定义一个处理请求的接口，包含抽象处理方法和一个后继连接。</li>
+<li>具体处理者（Concrete Handler）角色：实现抽象处理者的处理方法，判断能否处理本次请求，如果可以处理请求则处理，否则将该请求转给它的后继者。</li>
+<li>客户类（Client）角色：创建处理链，并向链头的具体处理者对象提交请求，它不关心处理细节和请求的传递过程。</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">//组装责任链</span></span><br><span class="line">        Handler handlerA=<span class="keyword">new</span> <span class="title class_">ConcreteHandlerA</span>();</span><br><span class="line">        Handler handlerB=<span class="keyword">new</span> <span class="title class_">ConcreteHandlerB</span>();</span><br><span class="line">        handlerA.setNext(handlerB);</span><br><span class="line">        <span class="comment">//提交请求</span></span><br><span class="line">        handlerA.handleRequest(<span class="string">&quot;B&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *功能描述  抽象处理者角色</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">class</span>  <span class="title class_">Handler</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> Handler next;</span><br><span class="line">    <span class="keyword">public</span> Handler <span class="title function_">getNext</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setNext</span><span class="params">(Handler next)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.next = next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//处理请求的方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title function_">handleRequest</span><span class="params">(String requset)</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span>  具体处理者角色A</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ConcreteHandlerA</span> <span class="keyword">extends</span> <span class="title class_">Handler</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleRequest</span><span class="params">(String requset)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(requset.equals(<span class="string">&quot;A&quot;</span>))&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;具体处理者A负责处理该请求！&quot;</span>);</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="keyword">if</span>(getNext()!=<span class="literal">null</span>)&#123;</span><br><span class="line">                getNext().handleRequest(requset);</span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;没有人处理该请求！&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span>  具体处理者角色B</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ConcreteHandlerB</span> <span class="keyword">extends</span> <span class="title class_">Handler</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleRequest</span><span class="params">(String requset)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(requset.equals(<span class="string">&quot;B&quot;</span>))&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;具体处理者B负责处理该请求！&quot;</span>);</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="keyword">if</span>(getNext()!=<span class="literal">null</span>)&#123;</span><br><span class="line">                getNext().handleRequest(requset);</span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;没有人处理该请求！&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-代理模式"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/08/12/%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8F/"
+    >代理模式</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/08/12/%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8F/" class="article-date">
+  <time datetime="2022-08-12T07:34:28.000Z" itemprop="datePublished">2022-08-12</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h4 id="代理模式"><a href="#代理模式" class="headerlink" title="代理模式"></a>代理模式</h4><p>通过代理控制对象的访问，可以在这个<strong>对象调用方法之前、调用方法之后去处理/添加新的功能</strong></p>
+<p>代理在<strong>原有代码乃至原业务流程都不修改的情况</strong>下，直接在业务流程中<strong>切入新代码，增加新功能</strong></p>
+<p>如：<strong>Spring AOP、日志打印、异常处理、事务控制、权限控制</strong>等</p>
+<p><strong>Subject抽象主题角色</strong></p>
+<p>抽象主题类可以是抽象类也可以是接口，是一个最普通的业务类型定义，无特殊要求。</p>
+<p><strong>RealSubject具体主题角色</strong></p>
+<p>也叫做被委托角色、被代理角色。是业务逻辑的具体执行者。</p>
+<p><strong>Proxy代理主题角色</strong></p>
+<p>把所有抽象主题类定义的方法限制委托给真实主题角色实现，并且在真实主题角色处理完毕前后做预处理和善后处理工作，Proxy和具体主题都是去实现抽象主题。</p>
+<h5 id="静态代理"><a href="#静态代理" class="headerlink" title="静态代理"></a><strong>静态代理</strong></h5><p>所谓静态也就是<strong>在程序运行前就已经存在代理类的字节码文件，代理类和委托类的关系在运行前就确定了</strong></p>
+<p>缺点：每个需要代理的对象都需要自己重复编写代理，很不舒服，</p>
+<p>优点：但是可以面相实际对象或者是接口的方式实现代理</p>
+<p>如何能在不修改UserDao接口类的情况下开事务和关闭事务呢</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainRun</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        UserDao userDao=<span class="keyword">new</span> <span class="title class_">UserDao</span>();</span><br><span class="line">        <span class="type">UserDaoProxy</span> <span class="variable">userDaoProxy</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UserDaoProxy</span>(userDao);</span><br><span class="line">        userDaoProxy.save();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserDao</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">save</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;这是保存数据方法&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserDaoProxy</span> <span class="keyword">extends</span> <span class="title class_">UserDao</span>&#123;</span><br><span class="line">    <span class="keyword">private</span> UserDao userDao;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">UserDaoProxy</span><span class="params">(UserDao userDao)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.userDao = userDao;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">save</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;开启事务&quot;</span>);</span><br><span class="line">        userDao.save();</span><br><span class="line">        System.out.println(<span class="string">&quot;关闭事务&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="动态代理"><a href="#动态代理" class="headerlink" title="动态代理"></a>动态代理</h5><p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230318154047794.png" alt="image-20230318154047794"></p>
+<p>动态代理也叫做，<strong>JDK代理、接口代理</strong>。</p>
+<p>动态代理的对象，是利用JDK的API，<strong>动态的在内存中构建代理对象</strong>（是<strong>根据被代理的接口来动态</strong></p>
+<p><strong>生成代理类的class文件</strong>，并加载运行的过程），这就叫动态代理</p>
+<p>在程序运行时，运用<strong>反射机制动态创建而成</strong></p>
+<p>缺点：必须是面向接口，目标业务类必须实现接口</p>
+<p>优点：不用关心代理类，只需要在运行阶段才指定代理哪一个对象</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainRun</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">//被代理的对象</span></span><br><span class="line">        UserDao userDaoImpl=<span class="keyword">new</span> <span class="title class_">UserDaoImpl</span>();</span><br><span class="line">        <span class="comment">//代理对象的类加载器</span></span><br><span class="line">        <span class="type">ClassLoader</span> <span class="variable">classLoader</span> <span class="operator">=</span> userDaoImpl.getClass().getClassLoader();</span><br><span class="line">        <span class="comment">// interfaces 所有你需要代理的方法的接口</span></span><br><span class="line">        Class&lt;?&gt;[] interfaces = userDaoImpl.getClass().getInterfaces();</span><br><span class="line">        <span class="comment">//代理类 动态代理方法在执行时，会调用h里面的invoke方法去执行</span></span><br><span class="line">        <span class="type">InvocaionHandlerImpl</span> <span class="variable">invocaionHandler</span> <span class="operator">=</span> <span class="keyword">new</span>                       <span class="title class_">InvocaionHandlerImpl</span>(userDaoImpl);</span><br><span class="line">        </span><br><span class="line">        <span class="type">UserDao</span> <span class="variable">userDaoProxy</span> <span class="operator">=</span> (UserDao) Proxy.newProxyInstance(classLoader, interfaces, invocaionHandler);</span><br><span class="line">        userDaoProxy.save();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">UserDao</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">save</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserDaoImpl</span> <span class="keyword">implements</span> <span class="title class_">UserDao</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">save</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;这是保存数据的方法&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">InvocaionHandlerImpl</span> <span class="keyword">implements</span> <span class="title class_">InvocationHandler</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//业务实现类对象，用来调用具体的业务方法</span></span><br><span class="line">    <span class="keyword">private</span> Object target;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通过构造函数传入目标对象</span></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">InvocaionHandlerImpl</span><span class="params">(Object target)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.target = target;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//动态代理实际运行的代理方法</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">&quot;开始事务&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;打印日志&quot;</span>);</span><br><span class="line">        <span class="comment">//下面invoke()方法是以反射的方式来创建对象，第一个参数是要创建的对象，</span></span><br><span class="line">        <span class="comment">// 第二个是构成方法的参数，由第二个参数来决定创建对象使用哪个构造方法</span></span><br><span class="line">        <span class="type">Object</span> <span class="variable">invoke</span> <span class="operator">=</span> method.invoke(target, args);</span><br><span class="line">        System.out.println(<span class="string">&quot;关闭事务&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> invoke;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="CGLIB动态代理"><a href="#CGLIB动态代理" class="headerlink" title="CGLIB动态代理"></a><strong>CGLIB动态代理</strong></h5><p>利用<strong>asm开源包</strong>，对代理对象类的class文件加载进来，<strong>通过修改其字节码生成子类来处理</strong></p>
+<p>什么是CGLIB动态代理</p>
+<p>CGLIB动态代理和jdk代理一样，使用反射完成代理，不同的是他可以直接代理类（jdk动态代理不</p>
+<p>行，他必须目标业务类必须实现接口），CGLIB动态代理底层使用字节码技术，CGLIB动态代理不</p>
+<p>能对 final类进行继承。（CGLIB动态代理需要导入jar包）</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainRun</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        CglibProxy cglibProxy=<span class="keyword">new</span> <span class="title class_">CglibProxy</span>();</span><br><span class="line">        <span class="type">UserDao</span> <span class="variable">userDao</span> <span class="operator">=</span> (UserDao)cglibProxy.getProxyInstance(<span class="keyword">new</span> <span class="title class_">UserDaoImpl</span>());</span><br><span class="line">        userDao.save();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CglibProxy</span> <span class="keyword">implements</span> <span class="title class_">MethodInterceptor</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object targetObject;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//给目标对象创建一个代理对象</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">getProxyInstance</span><span class="params">(Object targetObject)</span>&#123;</span><br><span class="line">        <span class="built_in">this</span>.targetObject=targetObject;</span><br><span class="line">        <span class="comment">// 设置需要创建子类的类</span></span><br><span class="line">        <span class="comment">//1.工具类</span></span><br><span class="line">        Enhancer en=<span class="keyword">new</span> <span class="title class_">Enhancer</span>();</span><br><span class="line">        <span class="comment">//2.设置父类</span></span><br><span class="line">        en.setSuperclass(targetObject.getClass());</span><br><span class="line">        <span class="comment">//3.设置回调调用intercept方法</span></span><br><span class="line">        en.setCallback(<span class="built_in">this</span>);</span><br><span class="line">        <span class="comment">//4.创建子类(代理对象)</span></span><br><span class="line">        <span class="keyword">return</span> en.create();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 拦截所有目标类方法的调用</span></span><br><span class="line"><span class="comment">     * obj  目标类的实例</span></span><br><span class="line"><span class="comment">     * m   目标方法的反射对象</span></span><br><span class="line"><span class="comment">     * args  方法的参数</span></span><br><span class="line"><span class="comment">     * proxy代理类的实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">intercept</span><span class="params">(Object o, Method method, Object[] args, MethodProxy methodProxy)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;开启事务&quot;</span>);</span><br><span class="line">        <span class="type">Object</span> <span class="variable">invoke</span> <span class="operator">=</span> methodProxy.invoke(targetObject, args);</span><br><span class="line">        System.out.println(<span class="string">&quot;关闭事务&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> invoke;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-观察者模式"
   class="article article-type-post"
   itemscope
@@ -804,272 +1015,6 @@
     <footer class="article-footer">
        
   <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JVM/" rel="tag">JVM</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-JVM运行时数据区"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/"
-    >JVM运行时数据区</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/" class="article-date">
-  <time datetime="2022-07-25T05:12:39.000Z" itemprop="datePublished">2022-07-25</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/JVM/">JVM</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h4><p>VM(Java Virtual Machine/Java 虚拟机)在执行 Java 程序的过程中会把它所管理的<strong>内存划分为若干个不同的数据区域</strong>。这些区域有各自的用途，以及创建和销毁的时间，有的区域随着虚拟机<a target="_blank" rel="noopener" href="https://www.jianshu.com/p/94b7c2ab84ac">进程</a>的启动而一直存在，有的区域则是依赖用户线程的启动和结束而建立和销毁</p>
-<p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/CA1BB924A33442FC9CFC3BC482E62ABB.jpg"></p>
-<h4 id="运行时数据区"><a href="#运行时数据区" class="headerlink" title="运行时数据区"></a><strong>运行时数据区</strong></h4><h5 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a><strong>程序计数器</strong></h5><p>保存当前线程所正在执行的字节码指令的地址(行号)<strong>，为了</strong>线程切换后能恢复到正确的执行位置**，每条线程都有一个独立的程序计数器，各个线程之间计数器互不影响，独立存储</p>
-<p><strong>为什么要线程计数器？因为线程是不具备记忆功能</strong></p>
-<h5 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a><strong>虚拟机栈</strong></h5><p><strong>线程私有</strong>的，它的<strong>生命周期和线程相同</strong></p>
-<p>虚拟机栈描述的是Java方法执行的内存模型： 每个方法在执行的同时 都会创建一个<strong>栈帧</strong>（StackFrame）用于<strong>存储局部变量表、操作数栈、动态链接、方法出口</strong>等信息。</p>
-<p>虚拟机栈中是有单位的，单位就是栈帧，<strong>一个方法一个栈帧</strong>。一个栈帧中他又要存储，局部变量，操作数栈，动态链接，出口等。</p>
-<p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/0F361B626063436CA773F219E67AC2AC.jpg"></p>
-<p>解析栈帧：</p>
-<ul>
-<li> <strong>局部变量表</strong>：是用来<strong>存储我们临时8个基本数据类型、对象引用地址、returnAddress类型</strong>。</li>
-</ul>
-<p>  （returnAddress中保存的是return后要执行的字节码的指令地址。）</p>
-<ul>
-<li> <strong>操作数栈</strong>：操作数栈就是用来操作的，例如代码中有个 i = 6*6，他在一开始的时候就会进行操</li>
-</ul>
-<p>  作，读取我们的代码，<strong>进行计算后再放入局部变量表</strong>中去</p>
-<ul>
-<li><p><strong>动态链接</strong>：假如我方法中，有个 service.add()方法，要链接到别的方法中去，这就是动态链接，</p>
-<p>存储链接的地方。</p>
-</li>
-<li><p><strong>出口</strong>：出口是什呢，出口正常的话就是return 不正常的话就是抛出异常落</p>
-</li>
-</ul>
-<h5 id="堆"><a href="#堆" class="headerlink" title="堆"></a><strong>堆</strong></h5><p>被<strong>所有线程共享的一块内存区</strong>，<strong>存放对象实例</strong>，所有的对象实例以及数组都要在堆上分配</p>
-<h5 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a><strong>本地方法栈</strong></h5><p>栈很像，只不过方法上带了 <strong>native 关键字的栈字</strong>，且native关键字修饰的大部分源码都是C和C++的代码</p>
-<h5 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a><strong>方法区</strong></h5><p>所有<strong>线程共享的内存区域</strong>，它用于存储已<strong>被Java虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码</strong>等数据，别命叫Non-Heap（非堆）</p>
-<h4 id="JVM运行流程"><a href="#JVM运行流程" class="headerlink" title="JVM运行流程"></a>JVM运行流程</h4><p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/D3E84FA2772A4286B75ED4870D0CFB1D.jpg"></p>
-<p>JVM包含两个子系统和两个组件: 两个子系统为Class loader(类装载)、Execution engine(执行引擎)； 两个组件为Runtime data area(运行时数据区)、Native Interface(本地接口)。</p>
-<ul>
-<li><p>Class loader(类装载)：根据给定的全限定名类名(如：java.lang.Object)来装载class文件到Runtime data area中的method area。</p>
-</li>
-<li><p>Execution engine（执行引擎）：执行classes中的指令。</p>
-</li>
-<li><p>Native Interface(本地接口)：与native libraries交互，是其它编程语言交互的接口。</p>
-</li>
-<li><p>Runtime data area(运行时数据区域)：这就是我们常说的JVM的内存。</p>
-</li>
-</ul>
-<p>流程 ：首先通过<strong>编译器把 Java 代码转换成字节码</strong>，<strong>类加载器（ClassLoader）再把字节码加载到内存中，将其放在运行时数据区（Runtime data area）的方法区内</strong>，而<strong>字节码文件</strong>只是 JVM 的一套指令集规范，<strong>并不能直接交给底层操作系统去执行</strong>，因此<strong>需要特定的命令解析器执行引擎</strong>（Execution Engine），<strong>将字节码翻译成底层系统指令，</strong>再交由 CPU 去执行，而这个过程中需要<strong>调用其他语言的本地库接口</strong>（Native Interface）来实现整个程序的功能。</p>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/JVM/" rel="tag">JVM</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-Redis-value过大问题"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/07/22/Redis-value%E8%BF%87%E5%A4%A7%E9%97%AE%E9%A2%98/"
-    >Redis value过大问题</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/07/22/Redis-value%E8%BF%87%E5%A4%A7%E9%97%AE%E9%A2%98/" class="article-date">
-  <time datetime="2022-07-22T05:11:54.000Z" itemprop="datePublished">2022-07-22</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="多大的-key-算大？"><a href="#多大的-key-算大？" class="headerlink" title="多大的 key 算大？"></a><strong>多大的 key 算大？</strong></h4><p>阿里云Redis 最佳实践中提到 合理的 <strong>Key 中 Value 的字节大小，推荐小于10 KB</strong>。过大的 Value 会引发<strong>数据倾斜、热点Key、实例流量或 CPU 性能被占满</strong>等问题，应从设计源头上避免此类问题带来的性能影响。那么 value Bytes &gt;10kb 可以作为判断 大 key 的一个参考值</p>
-<h4 id="怎么发现大-Key-？"><a href="#怎么发现大-Key-？" class="headerlink" title="怎么发现大 Key ？"></a><strong>怎么发现大 Key ？</strong></h4><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">--bigkeys 命令</span><br></pre></td></tr></table></figure>
-
-<p>–bigkeys 是 redis 自带的命令，<strong>对整个 Key 进行扫描</strong>，统计 string，list，set，zset，hash 这几个常见数据类型中每种类型里的 最大的 key。<strong>string 类型统计的是 value 的字节数</strong>；<strong>另外 4 种复杂结构的类型统计的是 元素个数，不能直观的看出 value 占用字节数</strong>，所以 –bigkeys 对分析 string 类型的大 key 是有用的，而复杂结构的类型还需要一些第三方工具。（ 元素个数少，不一定 value 不大；元素个数多，也不一定 value 就大）</p>
-<p>root@vm1:~# redis-cli -h 127.0.0.1 -p 6379 -a “password” –bigkeys #　<strong>–bigkeys　是以 scan 延迟计算的方式扫描所有 key，因此执行过程中不会阻塞 redis，但实例存在 大量的 keys 时，命令执行的时间会很长</strong>，这种情况建议在 slave 上扫描。</p>
-<p>–-bigkeys 统计能直观的看出 string 类型 value 的大小，非 string 类型通常有以下两种方式统计：</p>
-<ul>
-<li>Redis 4.0 以后的版本：支持 了 <strong>memory 命令查看 key 的大小</strong></li>
-<li><strong>Rdbtools 工具包</strong>： Rdbtools 是 python写的 一个第三方开源工具，用来<strong>解析 Redis 快照文件</strong>。除了解析 rdb 文件，还提供了 <strong>统计单个 key 大小的工具</strong>。</li>
-</ul>
-<h4 id="如何优雅的删除-大-key-？"><a href="#如何优雅的删除-大-key-？" class="headerlink" title="如何优雅的删除 大 key ？"></a><strong>如何优雅的删除 大 key ？</strong></h4><h5 id="del-命令"><a href="#del-命令" class="headerlink" title="del 命令"></a>del 命令</h5><p>del 命令删除单个很大的 key 和 del 批量删除 大 key。</p>
-<p><strong>直接 del 命令 粗暴的 删大 key 容易造成 redis 线程阻塞</strong>。<strong>4.0 以前要优雅的删除就是针对不同的类型 写脚本，拆分链表，hash 表，分批删除</strong>。</p>
-<h5 id="UNLINK-命令"><a href="#UNLINK-命令" class="headerlink" title="UNLINK 命令"></a><strong>UNLINK</strong> 命令</h5><p><strong>4.0 版本以后</strong>官方对 删 大key 有了特别优化，<strong>支持了 lazy free 功能</strong>， 通常不需要开发脚本就可以删    </p>
-<p><strong>UNLINK mykey</strong> </p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; UNLINK mykey </span><br><span class="line">unlink 命令是  del 的异步版本，由 Lazyfree 机制实现。</span><br><span class="line">Lazyfree 机制的原理是在删除的时候只进行逻辑删除，</span><br><span class="line">把 key 释放操作放在 bio (Background I/O)单独的子线程中惰性处理，</span><br><span class="line">减少删除大 key 对 redis 主线程的阻塞，有效地避免因删除大key带来的性能问题。</span><br><span class="line">unlink 即使在批量删除 大 key 时，也不会对阻塞造成阻塞。</span><br></pre></td></tr></table></figure>
-
-
-
-<h5 id="被动删除大-key"><a href="#被动删除大-key" class="headerlink" title="被动删除大 key"></a><strong>被动删除大 key</strong></h5><p>被动删除是指 Redis 自身的 key 清除策略</p>
-<ul>
-<li>Redis 内存不够时 key 的淘汰策略 ，即超过了 maxmemory 的配置</li>
-<li>惰性删除：（建议开启惰性清除策略 ）</li>
-<li>定时删除：( redis 默认策略 )</li>
-</ul>
-<h4 id="Redis的-bigkey-有哪些影响"><a href="#Redis的-bigkey-有哪些影响" class="headerlink" title="Redis的 bigkey 有哪些影响"></a><strong>Redis的 bigkey 有哪些影响</strong></h4><ul>
-<li><strong>影响性能</strong></li>
-</ul>
-<p>因为 Redis <strong>单线程</strong>的工作机制，主线程处理所有key的增删改查。<strong>对bigkey的操作耗时增加将阻塞主线程处理其他业务请求，进而影响整体吞吐量</strong>。</p>
-<ul>
-<li><strong>影响带宽</strong></li>
-</ul>
-<p>前面的案例即是一个例子，单个key 7MB ，如果每秒100次查询，则带来700MB 的带宽，虽然现在大部分是万兆网卡<strong>，业务请求量再大一些，网卡也有被打满的风险</strong>。</p>
-<ul>
-<li><strong>数据倾斜</strong></li>
-</ul>
-<p><strong>对于分片的redis集群，存在bigkey 会导致单个分片数据量远大于其他节点，整体不均衡</strong>。<strong>如果一个分片空间容量满了，对系统造成不可访问</strong>，而且也不能随意扩容，因为不拆分key的情况下扩容，单个分片还是存在数据倾斜。更惨的是，<strong>数据量比较大，那么访问就增加，容易形成热点</strong>。热点不都是因为数据倾斜导致，数据倾斜会大概率导致热点。</p>
-<ul>
-<li><strong>影响主从同步</strong></li>
-</ul>
-<p>Redis Server 的输出大小通常是不可控制的。存在bigkey的时候，就会产生体积庞大的返回数据。另外也有可能因为执行了太多命令，导致产生返回数据的速率超过了往客户端发送的速率，导致服务器堆积大量消息，从而<strong>导致输出缓冲区越来越大，占用过多内存，甚至导致系统崩溃</strong>。Redis 通过设置client-output-buffer-limit 来保护系统安全。</p>
-<h4 id="如何解决大key？"><a href="#如何解决大key？" class="headerlink" title="如何解决大key？"></a><strong>如何解决大key？</strong></h4><p>其实就是一个字 “拆”。</p>
-<ul>
-<li><p>对于字符串类型的key，我们通常要在业务层面将value的大小控制在10KB左右，如果value确实很大，可以考虑<strong>采用序列化算法和压缩算法来处理</strong>，推荐常用的几种序列化算法:Protostuff、Kryo或者Fst。</p>
-</li>
-<li><p>对于集合类型的key，我们通常要通过控制集合内元素数量来避免bigKey，通常的做法是将<strong>一个大的集合类型的key拆分成若干小集合类型的key来达到目的</strong>。</p>
-</li>
-</ul>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-SpringMVC-Controller并发安全问题"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/"
-    >SpringMVC Controller并发安全问题</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/" class="article-date">
-  <time datetime="2022-07-21T06:09:01.000Z" itemprop="datePublished">2022-07-21</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%A1%86%E6%9E%B6/">框架</a> / <a class="article-category-link" href="/categories/%E6%A1%86%E6%9E%B6/SprigMVC/">SprigMVC</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a><strong>背景</strong></h4><p>根据Tomcat官网中的介绍，<strong>对于一个浏览器请求，tomcat会指定一个处理线程</strong>，或是在线程池中选取空闲的，或者新建一个线程。</p>
-<p>在Tomcat容器中，每个servlet是单例的。<strong>在SpringMVC中，Controller 默认也是单例</strong>。 采用单例模式的最大好处，就是可以<strong>在高并发场景下极大地节省内存资源，提高服务抗压能力</strong>。</p>
-<p>单例模式容易出现的问题是：在Controller中定义的<strong>实例变量</strong>，在多个请求并发时会出现竞争访问，<strong>Controller中的实例变量不是线程安全的</strong>。</p>
-<h4 id="Controller不是线程安全的"><a href="#Controller不是线程安全的" class="headerlink" title="Controller不是线程安全的"></a><strong>Controller不是线程安全的</strong></h4><p>正因为Controller默认是单例，所以不是线程安全的。如果用SpringMVC 的 Controller时，尽量不在 Controller中使用实例变量，否则会出现线程不安全性的情况，导致数据逻辑混乱。</p>
-<p>举一个简单的例子，在一个Controller中定义一个非静态成员变量 num 。通过Controller成员方法来对 num 增加。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">首先访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是1</span></span><br><span class="line">再次访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是 2。</span></span><br><span class="line">两次访问得到的结果不同，num已经被修改，并不是我们希望的结果，接口的幂等性被破坏。</span><br></pre></td></tr></table></figure>
-
-<p>所有的请求访问同一个Controller实例，<strong>Controller的私有成员变量就是线程共用的</strong>。某个请求对应的线程如果修改了这个变量，那么在别的请求中也可以读到这个变量修改后的的值。</p>
-<h4 id="Controller并发安全的解决办法"><a href="#Controller并发安全的解决办法" class="headerlink" title="Controller并发安全的解决办法"></a><strong>Controller并发安全的解决办法</strong></h4><ul>
-<li><p>尽量不要在 Controller 中定义成员变量 ；</p>
-</li>
-<li><p>如果必须要定义一个非静态成员变量，那么可以通过注解 @Scope(“prototype”) ，将Controller设置为多例模式，容器在接受到该类型对象的请求时，每次都会重新生成一个新的对象给请求方。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="meta">@Scope(value=&quot;prototype&quot;)</span><span class="comment">// 多例</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p>Controller 中使用 ThreadLocal 变量。 每一个线程都有一个变量的副本</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ThreadLocal &lt;Integer&gt; uniqueNum =</span><br><span class="line">             <span class="keyword">new</span> <span class="title class_">ThreadLocal</span> &lt;Integer&gt; () &#123;</span><br><span class="line">                 <span class="meta">@Override</span> <span class="keyword">protected</span> Integer <span class="title function_">initialValue</span><span class="params">()</span> &#123;</span><br><span class="line">                     <span class="keyword">return</span> num;</span><br><span class="line">                 &#125;</span><br><span class="line">             &#125;;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">unum</span> <span class="operator">=</span> uniqueNum.get();</span><br><span class="line">       uniqueNum.set(++unum);</span><br><span class="line">       System.out.println(uniqueNum.get());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">以上代码运行以后，每次请求 http:<span class="comment">// localhost:8080 / addNum , 得到的结果都是1。</span></span><br><span class="line">更严格的做法是用AtomicInteger类型定义成员变量，对于成员变量的操作使用AtomicInteger的自增方法完成。</span><br></pre></td></tr></table></figure>
-
-
-
-</li>
-</ul>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SprigMVC/" rel="tag">SprigMVC</a></li></ul>
 
     </footer>
   </div>

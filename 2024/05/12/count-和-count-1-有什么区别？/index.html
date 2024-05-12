@@ -11,7 +11,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>什么是缓存雪崩、击穿、穿透？ |  迷途小书童</title>
+      <title>count(*) 和 count(1) 有什么区别？ |  迷途小书童</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/favicon.ico" />
@@ -53,7 +53,7 @@
     <main class="content on">
       <section class="outer">
   <article
-  id="post-什么是缓存雪崩、击穿、穿透？"
+  id="post-count-和-count-1-有什么区别？"
   class="article article-type-post"
   itemscope
   itemprop="blogPost"
@@ -64,7 +64,7 @@
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  什么是缓存雪崩、击穿、穿透？
+  count(*) 和 count(1) 有什么区别？
 </h1>
  
 
@@ -72,11 +72,11 @@
     </header>
      
     <div class="article-meta">
-      <a href="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/" class="article-date">
-  <time datetime="2022-11-05T07:49:23.000Z" itemprop="datePublished">2022-11-05</time>
+      <a href="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/" class="article-date">
+  <time datetime="2024-05-12T10:11:29.000Z" itemprop="datePublished">2024-05-12</time>
 </a> 
   <div class="article-category">
-    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a>
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
   </div>
   
 <div class="word_count">
@@ -84,7 +84,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> Word count:</span>
-            <span class="post-count">2.5k</span>
+            <span class="post-count">2.3k</span>
         </span>
     </span>
 
@@ -108,76 +108,77 @@
   
     <div class="article-entry" itemprop="articleBody">
        
-  <h1 id="什么是缓存雪崩、击穿、穿透"><a href="#什么是缓存雪崩、击穿、穿透" class="headerlink" title="什么是缓存雪崩、击穿、穿透"></a>什么是缓存雪崩、击穿、穿透</h1><p>用户的数据一般都是存储于数据库，数据库的数据是落在磁盘上的，磁盘的读写速度可以说是计算机里最慢的硬件了。</p>
-<p>当用户的请求，都访问数据库的话，请求数量一上来，数据库很容易就奔溃的了，所以为了避免用户直接访问数据库，会用 Redis 作为缓存层。</p>
-<p>因为 Redis 是内存数据库，我们可以将数据库的数据缓存在 Redis 里，相当于数据缓存在内存，内存的读写速度比硬盘快好几个数量级，这样大大提高了系统性能</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/37e4378d2edcb5e217b00e5f12973efd-20230309232858764.png" alt="图片"></p>
-<p>引入了缓存层，就会有缓存异常的三个问题，分别是<strong>缓存雪崩、缓存击穿、缓存穿透</strong>。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/61781cd6d82e4a0cc5f7521333049f0d.png" alt="图片"></p>
-<h2 id="缓存雪崩"><a href="#缓存雪崩" class="headerlink" title="缓存雪崩"></a>缓存雪崩</h2><p>通常我们为了保证缓存中的数据与数据库中的数据一致性，会给 Redis 里的数据设置过期时间，当缓存数据过期后，用户访问的数据如果不在缓存里，业务系统需要重新生成缓存，因此就会访问数据库，并将数据更新到 Redis 里，这样后续请求都可以直接命中缓存。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/e2b8d2eb5536aa71664772457792ec40-20230309232851699.png" alt="图片"></p>
-<p>那么，当<strong>大量缓存数据在同一时间过期（失效）或者 Redis 故障宕机</strong>时，如果此时有大量的用户请求，都无法在 Redis 中处理，于是全部请求都直接访问数据库，从而导致数据库的压力骤增，严重的会造成数据库宕机，从而形成一系列连锁反应，造成整个系统崩溃，这就是<strong>缓存雪崩</strong>的问题。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/717343a0da7a1b05edab1d1cdf8f28e5.png" alt="图片"></p>
-<p>可以看到，发生缓存雪崩有两个原因：</p>
-<ul>
-<li>大量数据同时过期；</li>
-<li>Redis 故障宕机；</li>
-</ul>
-<p>不同的诱因，应对的策略也会不同</p>
-<h3 id="大量数据同时过期"><a href="#大量数据同时过期" class="headerlink" title="大量数据同时过期"></a>大量数据同时过期</h3><p><em>1. 均匀设置过期时间</em></p>
-<p>如果要给缓存数据设置过期时间，应该避免将大量的数据设置成同一个过期时间。我们可以在对缓存数据设置过期时间时，<strong>给这些数据的过期时间加上一个随机数</strong>，这样就保证数据不会在同一时间过期。</p>
-<p><em>2. 互斥锁</em></p>
-<p>当业务线程在处理用户请求时，<strong>如果发现访问的数据不在 Redis 里，就加个互斥锁，保证同一时间内只有一个请求来构建缓存</strong>（从数据库读取数据，再将数据更新到 Redis 里），当缓存构建完成后，再释放锁。未能获取互斥锁的请求，要么等待锁释放后重新读取缓存，要么就返回空值或者默认值。</p>
-<p>实现互斥锁的时候，最好设置<strong>超时时间</strong>，不然第一个请求拿到了锁，然后这个请求发生了某种意外而一直阻塞，一直不释放锁，这时其他请求也一直拿不到锁，整个系统就会出现无响应的现象。</p>
-<p><em>3. 数据预热</em></p>
-<p>在业务刚上线的时候，我们最好提前把数据缓起来，而不是等待用户访问才来触发缓存构建</p>
-<h3 id="Redis-故障宕机"><a href="#Redis-故障宕机" class="headerlink" title="Redis 故障宕机"></a>Redis 故障宕机</h3><p>针对 Redis 故障宕机而引发的缓存雪崩问题，常见的应对方法有下面这几种：</p>
-<ul>
-<li>服务熔断或请求限流机制；</li>
-<li>构建 Redis 缓存高可靠集群；</li>
-</ul>
-<p><em>1. 服务熔断或请求限流机制</em></p>
-<p>因为 Redis 故障宕机而导致缓存雪崩问题时，我们可以启动<strong>服务熔断</strong>机制，<strong>暂停业务应用对缓存服务的访问，直接返回错误</strong>，不用再继续访问数据库，从而降低对数据库的访问压力，保证数据库系统的正常运行，然后等到 Redis 恢复正常后，再允许业务应用访问缓存服务。</p>
-<p>服务熔断机制是保护数据库的正常允许，但是暂停了业务应用访问缓存服系统，全部业务都无法正常工作</p>
-<p>为了减少对业务的影响，我们可以启用<strong>请求限流</strong>机制，<strong>只将少部分请求发送到数据库进行处理，再多的请求就在入口直接拒绝服务</strong>，等到 Redis 恢复正常并把缓存预热完后，再解除请求限流的机制。</p>
-<p><em>2. 构建 Redis 缓存高可靠集群</em></p>
-<p>服务熔断或请求限流机制是缓存雪崩发生后的应对方案，我们最好通过<strong>主从节点的方式构建 Redis 缓存高可靠集群</strong>。</p>
-<p>如果 Redis 缓存的主节点故障宕机，从节点可以切换成为主节点，继续提供缓存服务，避免了由于 Redis 故障宕机而导致的缓存雪崩问题</p>
-<h2 id="缓存击穿"><a href="#缓存击穿" class="headerlink" title="缓存击穿"></a>缓存击穿</h2><p>我们的业务通常会有几个数据会被频繁地访问，比如秒杀活动，这类被频地访问的数据被称为热点数据。</p>
-<p>如果缓存中的<strong>某个热点数据过期</strong>了，此时大量的请求访问了该热点数据，就无法从缓存中读取，直接访问数据库，数据库很容易就被高并发的请求冲垮，这就是<strong>缓存击穿</strong>的问题。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/acb5f4e7ef24a524a53c39eb016f63d4-20230309232840753.png" alt="图片"></p>
-<p>可以发现缓存击穿跟缓存雪崩很相似，你可以认为缓存击穿是缓存雪崩的一个子集。</p>
-<p>应对缓存击穿可以采取前面说到两种方案：</p>
-<ul>
-<li>互斥锁方案，保证同一时间只有一个业务线程更新缓存，未能获取互斥锁的请求，要么等待锁释放后重新读取缓存，要么就返回空值或者默认值。</li>
-<li>不给热点数据设置过期时间，由后台异步更新缓存，或者在热点数据准备要过期前，提前通知后台线程更新缓存以及重新设置过期时间；</li>
-</ul>
-<h2 id="缓存穿透"><a href="#缓存穿透" class="headerlink" title="缓存穿透"></a>缓存穿透</h2><p>当发生缓存雪崩或击穿时，数据库中还是保存了应用要访问的数据，一旦缓存恢复相对应的数据，就可以减轻数据库的压力，而缓存穿透就不一样了。</p>
-<p>当用户访问的数据，<strong>既不在缓存中，也不在数据库中</strong>，导致请求在访问缓存时，发现缓存缺失，再去访问数据库时，发现数据库中也没有要访问的数据，没办法构建缓存数据，来服务后续的请求。那么当有大量这样的请求到来时，数据库的压力骤增，这就是<strong>缓存穿透</strong>的问题。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/b7031182f770a7a5b3c82eaf749f53b0-20230309232834574.png" alt="图片"></p>
-<p>缓存穿透的发生一般有这两种情况：</p>
-<ul>
-<li>业务误操作，缓存中的数据和数据库中的数据都被误删除了，所以导致缓存和数据库中都没有数据；</li>
-<li>黑客恶意攻击，故意大量访问某些读取不存在数据的业务；</li>
-</ul>
-<p>应对缓存穿透的方案，常见的方案有三种。</p>
-<ul>
-<li>第一种方案，非法请求的限制；</li>
-<li>第二种方案，缓存空值或者默认值；</li>
-<li>第三种方案，使用布隆过滤器快速判断数据是否存在，避免通过查询数据库来判断数据是否存在；</li>
-</ul>
-<p>第一种方案，非法请求的限制</p>
-<p>当有大量恶意请求访问不存在的数据的时候，也会发生缓存穿透，因此在 API 入口处我们要判断求请求参数是否合理，请求参数是否含有非法值、请求字段是否存在，如果判断出是恶意请求就直接返回错误，避免进一步访问缓存和数据库。</p>
-<p>第二种方案，缓存空值或者默认值</p>
-<p>当我们线上业务发现缓存穿透的现象时，可以针对查询的数据，在缓存中设置一个空值或者默认值，这样后续请求就可以从缓存中读取到空值或者默认值，返回给应用，而不会继续查询数据库。</p>
-<p><em>第三种方案，使用布隆过滤器快速判断数据是否存在，避免通过查询数据库来判断数据是否存在。</em></p>
-<p>我们可以在写入数据库数据时，使用布隆过滤器做个标记，然后在用户请求到来时，业务线程确认缓存失效后，可以通过查询布隆过滤器快速判断数据是否存在，如果不存在，就不用通过查询数据库来判断数据是否存在。</p>
-<p>即使发生了缓存穿透，大量请求只会查询 Redis 和布隆过滤器，而不会查询数据库，保证了数据库能正常运行，Redis 自身也是支持布隆过滤器的。</p>
-<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>缓存异常会面临的三个问题：缓存雪崩、击穿和穿透。</p>
-<p>其中，缓存雪崩和缓存击穿主要原因是数据不在缓存中，而导致大量请求访问了数据库，数据库压力骤增，容易引发一系列连锁反应，导致系统奔溃。不过，一旦数据被重新加载回缓存，应用又可以从缓存快速读取数据，不再继续访问数据库，数据库的压力也会瞬间降下来。因此，缓存雪崩和缓存击穿应对的方案比较类似。</p>
-<p>而缓存穿透主要原因是数据既不在缓存也不在数据库中。因此，缓存穿透与缓存雪崩、击穿应对的方案不太一样。</p>
-<p>我这里整理了表格，你可以从下面这张表格很好的知道缓存雪崩、击穿和穿透的区别以及应对方案。</p>
-<p><img src="/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/061e2c04e0ebca3425dd75dd035b6b7b.png" alt="图片"></p>
+  <h1 id="count-和-count-1-有什么区别？哪个性能最好？"><a href="#count-和-count-1-有什么区别？哪个性能最好？" class="headerlink" title="count(*) 和 count(1) 有什么区别？哪个性能最好？"></a>count(*) 和 count(1) 有什么区别？哪个性能最好？</h1><p>当我们对一张数据表中的记录进行统计的时候，习惯都会使用 count 函数来统计，但是 count 函数传入的参数有很多种，比如 count(1)、count(<code>*</code>)、count(字段) 等。</p>
+<p>到底哪种效率是最好的呢？是不是 count(<code>*</code>) 效率最差？</p>
+<p>我曾经以为 count(<code>*</code>) 是效率最差的，因为认知上 <code>selete * from t</code> 会读取所有表中的字段，所以凡事带有 <code>*</code> 字符的就觉得会读取表中所有的字段，当时网上有很多博客也这么说。</p>
+<p>但是，当我深入 count 函数的原理后，被啪啪啪的打脸了！</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/d9b9817e92f805e9a16faf31a2c10d9a.png" alt="图片"></p>
+<h2 id="哪种-count-性能最好？"><a href="#哪种-count-性能最好？" class="headerlink" title="哪种 count 性能最好？"></a>哪种 count 性能最好？</h2><p>我先直接说结论：</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/af711033aa3423330d3a4bc6baeb9532.png" alt="图片"></p>
+<p>要弄明白这个，我们得要深入 count 的原理，以下内容基于常用的 innodb 存储引擎来说明。</p>
+<h3 id="count-是什么？"><a href="#count-是什么？" class="headerlink" title="#count() 是什么？"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/mysql/index/count.html#count-%E6%98%AF%E4%BB%80%E4%B9%88">#</a>count() 是什么？</h3><p>count() 是一个聚合函数，函数的参数不仅可以是字段名，也可以是其他任意表达式，该函数作用是<strong>统计符合查询条件的记录中，函数指定的参数不为 NULL 的记录有多少个</strong>。</p>
+<p>假设 count() 函数的参数是字段名，如下：</p>
+<p><code>select count(name) from t_order;</code></p>
+<p>这条语句是统计「 t_order 表中，name 字段不为 NULL 的记录」有多少个。也就是说，如果某一条记录中的 name 字段的值为 NULL，则就不会被统计进去。</p>
+<p>再来假设 count() 函数的参数是数字 1 这个表达式，如下：</p>
+<p><code>select count(1) from t_order;</code></p>
+<p>这条语句是统计「 t_order 表中，1 这个表达式不为 NULL 的记录」有多少个。</p>
+<p>1 这个表达式就是单纯数字，它永远都不是 NULL，所以上面这条语句，其实是在统计 t_order 表中有多少个记录</p>
+<h3 id="count-主键字段-执行过程是怎样的？"><a href="#count-主键字段-执行过程是怎样的？" class="headerlink" title="count(主键字段) 执行过程是怎样的？"></a>count(主键字段) 执行过程是怎样的？</h3><p>在通过 count 函数统计有多少个记录时，MySQL 的 server 层会维护一个名叫 count 的变量。</p>
+<p>server 层会循环向 InnoDB 读取一条记录，如果 count 函数指定的参数不为 NULL，那么就会将变量 count 加 1，直到符合查询的全部记录被读完，就退出循环。最后将 count 变量的值发送给客户端。</p>
+<p>InnoDB 是通过 B+ 树来保存记录的，根据索引的类型又分为聚簇索引和二级索引，它们区别在于，聚簇索引的叶子节点存放的是实际数据，而二级索引的叶子节点存放的是主键值，而不是实际数据。</p>
+<p>用下面这条语句作为例子：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span>id 为主键值</span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(id) <span class="keyword">from</span> t_order;</span><br></pre></td></tr></table></figure>
+
+<p>如果表里只有主键索引，没有二级索引时，那么，InnoDB 循环遍历聚簇索引，将读取到的记录返回给 server 层，然后读取记录中的 id 值，就会 id 值判断是否为 NULL，如果不为 NULL，就将 count 变量加 1。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/9bb4f32ac843467684a2664d4db61ae3.png" alt="图片"></p>
+<p>但是，如果表里有二级索引时，InnoDB 循环遍历的对象就不是聚簇索引，而是二级索引。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/aac550602ef1022e0b45020dbe0f716a.png" alt="图片"></p>
+<p>这是因为相同数量的二级索引记录可以比聚簇索引记录占用更少的存储空间，所以二级索引树比聚簇索引树小，这样遍历二级索引的 I/O 成本比遍历聚簇索引的 I/O 成本小，因此「优化器」优先选择的是二级索引。</p>
+<h3 id="count-1-执行过程是怎样的？"><a href="#count-1-执行过程是怎样的？" class="headerlink" title="count(1) 执行过程是怎样的？"></a>count(1) 执行过程是怎样的？</h3><p>用下面这条语句作为例子：</p>
+<p><code>select count(1) from t_order;</code></p>
+<p>如果表里只有主键索引，没有二级索引时。</p>
+<p>那么，InnoDB 循环遍历聚簇索引（主键索引），将读取到的记录返回给 server 层，<strong>但是不会读取记录中的任何字段的值</strong>，因为 count 函数的参数是 1，不是字段，所以不需要读取记录中的字段值。参数 1 很明显并不是 NULL，因此 server 层每从 InnoDB 读取到一条记录，就将 count 变量加 1。</p>
+<p>可以看到，count(1) 相比 count(主键字段) 少一个步骤，就是不需要读取记录中的字段值，所以通常会说 count(1) 执行效率会比 count(主键字段) 高一点。</p>
+<p>但是，如果表里有二级索引时，InnoDB 循环遍历的对象就二级索引了。</p>
+<h3 id="count-执行过程是怎样的？"><a href="#count-执行过程是怎样的？" class="headerlink" title="count(*) 执行过程是怎样的？"></a>count(*) 执行过程是怎样的？</h3><p>看到 <code>*</code> 这个字符的时候，是不是大家觉得是读取记录中的所有字段值？</p>
+<p>对于 <code>selete *</code> 这条语句来说是这个意思，但是在 count(*) 中并不是这个意思。</p>
+<p>**count(<code>\*</code>) 其实等于 count(<code>0</code>)**，也就是说，当你使用 count(<code>*</code>) 时，MySQL 会将 <code>*</code> 参数转化为参数 0 来处理。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/27b229f049b27898f3a86c7da7e26114.png" alt="图片"></p>
+<p>所以，<strong>count(*) 执行过程跟 count(1) 执行过程基本一样的</strong>，性能没有什么差异。</p>
+<p>在 MySQL 5.7 的官方手册中有这么一句话：</p>
+<p><em>InnoDB handles SELECT COUNT(<code>\*</code>) and SELECT COUNT(<code>1</code>) operations in the same way. There is no performance difference.</em></p>
+<p><em>翻译：InnoDB以相同的方式处理SELECT COUNT（<code>\*</code>）和SELECT COUNT（<code>1</code>）操作，没有性能差异。</em></p>
+<p>而且 MySQL 会对 count(*) 和 count(1) 有个优化，如果有多个二级索引的时候，优化器会使用key_len 最小的二级索引进行扫描。</p>
+<p>只有当没有二级索引的时候，才会采用主键索引来进行统计。</p>
+<h3 id="count-字段-执行过程是怎样的？"><a href="#count-字段-执行过程是怎样的？" class="headerlink" title="count(字段) 执行过程是怎样的？"></a>count(字段) 执行过程是怎样的？</h3><p>count(字段) 的执行效率相比前面的 count(1)、 count(*)、 count(主键字段) 执行效率是最差的。</p>
+<p>用下面这条语句作为例子：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span> name不是索引，普通字段</span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(name) <span class="keyword">from</span> t_order;</span><br></pre></td></tr></table></figure>
+
+<p>对于这个查询来说，会采用全表扫描的方式来计数，所以它的执行效率是比较差的。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/f24dfeb85e2cfce0e4dc3a17b893b3f5.png" alt="图片"></p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>count(1)、 count(*)、 count(主键字段)在执行的时候，如果表里存在二级索引，优化器就会选择二级索引进行扫描。</p>
+<p>所以，如果要执行 count(1)、 count(*)、 count(主键字段) 时，尽量在数据表上建立二级索引，这样优化器会自动采用 key_len 最小的二级索引进行扫描，相比于扫描主键索引效率会高一些。</p>
+<p>再来，就是不要使用 count(字段) 来统计记录个数，因为它的效率是最差的，会采用全表扫描的方式来统计。如果你非要统计表中该字段不为 NULL 的记录个数，建议给这个字段建立一个二级索引。</p>
+<h2 id="为什么要通过遍历的方式来计数？"><a href="#为什么要通过遍历的方式来计数？" class="headerlink" title="为什么要通过遍历的方式来计数？"></a>为什么要通过遍历的方式来计数？</h2><p>你可能会好奇，为什么 count 函数需要通过遍历的方式来统计记录个数？</p>
+<p>我前面将的案例都是基于 Innodb 存储引擎来说明的，但是在 MyISAM 存储引擎里，执行 count 函数的方式是不一样的，通常在没有任何查询条件下的 count(*)，MyISAM 的查询速度要明显快于 InnoDB。</p>
+<p>使用 MyISAM 引擎时，执行 count 函数只需要 O(1 )复杂度，这是因为每张 MyISAM 的数据表都有一个 meta 信息有存储了row_count值，由表级锁保证一致性，所以直接读取 row_count 值就是 count 函数的执行结果。</p>
+<p>而 InnoDB 存储引擎是支持事务的，同一个时刻的多个查询，由于多版本并发控制（MVCC）的原因，InnoDB 表“应该返回多少行”也是不确定的，所以无法像 MyISAM一样，只维护一个 row_count 变量。</p>
+<p>举个例子，假设表 t_order 有 100 条记录，现在有两个会话并行以下语句：</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/04d714293f5c687810562e984b67d2e7.png" alt="图片"></p>
+<p>在会话 A 和会话 B的最后一个时刻，同时查表 t_order 的记录总个数，可以发现，显示的结果是不一样的。所以，在使用 InnoDB 存储引擎时，就需要扫描表来统计具体的记录。</p>
+<p>而当带上 where 条件语句之后，MyISAM 跟 InnoDB 就没有区别了，它们都需要扫描表来进行记录个数的统计。</p>
+<h2 id="如何优化-count-？"><a href="#如何优化-count-？" class="headerlink" title="如何优化 count(*)？"></a>如何优化 count(*)？</h2><p>如果对一张大表经常用 count(*) 来做统计，其实是很不好的。</p>
+<p>比如下面我这个案例，表 t_order 共有 1200+ 万条记录，我也创建了二级索引，但是执行一次 <code>select count(*) from t_order</code> 要花费差不多 5 秒！</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/74a4359b58dc6ed41a241e425f43764d.png" alt="图片"></p>
+<p>面对大表的记录统计，我们有没有什么其他更好的办法呢？</p>
+<h3 id="第一种，近似值"><a href="#第一种，近似值" class="headerlink" title="#第一种，近似值"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/mysql/index/count.html#%E7%AC%AC%E4%B8%80%E7%A7%8D-%E8%BF%91%E4%BC%BC%E5%80%BC">#</a>第一种，近似值</h3><p>如果你的业务对于统计个数不需要很精确，比如搜索引擎在搜索关键词的时候，给出的搜索结果条数是一个大概值。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/cd18879de0c0b37660f53a5f1af3d172.png" alt="图片"></p>
+<p>这时，我们就可以使用 show table status 或者 explain 命令来表进行估算。</p>
+<p>执行 explain 命令效率是很高的，因为它并不会真正的去查询，下图中的 rows 字段值就是 explain 命令对表 t_order 记录的估算值。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/7590623443e8f225e5652109e6d9e3d2.png" alt="图片"></p>
+<h3 id="第二种，额外表保存计数值"><a href="#第二种，额外表保存计数值" class="headerlink" title="第二种，额外表保存计数值"></a>第二种，额外表保存计数值</h3><p>如果是想精确的获取表的记录总数，我们可以将这个计数值保存到单独的一张计数表中。</p>
+<p>当我们在数据表插入一条记录的同时，将计数表中的计数字段 + 1。也就是说，在新增和删除操作时，我们需要额外维护这个计数表。</p>
  
       <!-- reward -->
       
@@ -248,12 +249,12 @@
     <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
     <p>扫一扫，分享到微信</p>
     <div class="wx-qrcode">
-      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://example.com/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/" alt="微信分享二维码">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=http://example.com/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/" alt="微信分享二维码">
     </div>
 </div>
 
 <div id="share-mask"></div>  
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li></ul>
 
     </footer>
   </div>
@@ -261,19 +262,10 @@
    
   <nav class="article-nav">
     
-      <a href="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/" class="article-nav-link">
-        <strong class="article-nav-caption">上一篇</strong>
-        <div class="article-nav-title">
-          
-            数据库和缓存如何保持一致性
-          
-        </div>
-      </a>
     
-    
-      <a href="/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/" class="article-nav-link">
+      <a href="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" class="article-nav-link">
         <strong class="article-nav-caption">下一篇</strong>
-        <div class="article-nav-title">JAVA线上故障排查全套解决方案</div>
+        <div class="article-nav-title">Redis 线程模型</div>
       </a>
     
   </nav>

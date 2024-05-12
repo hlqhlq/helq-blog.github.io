@@ -252,60 +252,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Java定时器</title>
-    <url>/2022/07/19/Java%E5%AE%9A%E6%97%B6%E5%99%A8/</url>
-    <content><![CDATA[<h4 id="Java定时器任务"><a href="#Java定时器任务" class="headerlink" title="Java定时器任务"></a>Java定时器任务</h4><h5 id="Timer"><a href="#Timer" class="headerlink" title="Timer"></a><strong>Timer</strong></h5><p><strong>JDK 自带的定时任务执行类</strong>，无论任何项目都可以直接使用 Timer 来实现定时任务，所以 Timer 的优点就是使用方便</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义一个任务</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>缺点分析</p>
-<p><strong>①任务执行时间长影响其他任务</strong></p>
-<p>当一个任务的执行时间过长时，会影响其他任务的调度，如下代码所示：</p>
-<p>当任务 1 运行时间超过设定的间隔时间时，任务 2 也会延迟执行。 原本任务 1 和任务 2 的执行时间间隔都是 3s，但因为任务 1 执行了 5s，因此任务 2 的执行时间间隔也变成了 10s（和原定时间不符）</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义任务 1</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;进入 timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="comment">// 休眠 5 秒</span></span><br><span class="line">                    TimeUnit.SECONDS.sleep(<span class="number">5</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 定义任务 2</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 2：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">        timer.schedule(timerTask2, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:08 CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span>  Run timerTask <span class="number">2</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">18</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">18</span> CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span>  Run timerTask <span class="number">2</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span></span><br></pre></td></tr></table></figure>
-
-<p><strong>②任务异常影响其他任务</strong></p>
-<p>使用 Timer 类实现定时任务时，当一个任务抛出异常，其他任务也会终止运行，如下代码所示：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义任务 1</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;进入 timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                <span class="comment">// 模拟异常</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">8</span> / <span class="number">0</span>;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 定义任务 2</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 2：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">        timer.schedule(timerTask2, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>Timer 小结</p>
-<p><strong>Timer 类实现定时任务的优点是方便，因为它是 JDK 自定的定时任务，但缺点是任务如果执行时间太长或者是任务执行异常，会影响其他任务调度</strong>，所以在生产环境下建议谨慎使用</p>
-<h5 id="ScheduledExecutorService"><a href="#ScheduledExecutorService" class="headerlink" title="ScheduledExecutorService"></a><strong>ScheduledExecutorService</strong></h5><p><strong>ScheduledExecutorService 也是 JDK 1.5 自带的 API</strong>，我们可以使用它来实现定时任务的功能，也就是说 ScheduledExecutorService <strong>可以实现 Timer 类具备的所有功能，并且它可以解决了 Timer 类存在的所有问题。</strong></p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyScheduledExecutorService</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建任务队列</span></span><br><span class="line">        <span class="type">ScheduledExecutorService</span> <span class="variable">scheduledExecutorService</span> <span class="operator">=</span></span><br><span class="line">                Executors.newScheduledThreadPool(<span class="number">10</span>); <span class="comment">// 10 为线程数量</span></span><br><span class="line">  		<span class="comment">// 执行任务</span></span><br><span class="line">        scheduledExecutorService.scheduleAtFixedRate(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;Run Schedule：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">        &#125;, <span class="number">1</span>, <span class="number">3</span>, TimeUnit.SECONDS); <span class="comment">// 1s 后开始执行，每 3s 执行一次</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>ScheduledExecutorService 小结</p>
-<p><strong>在单机生产环境下建议使用 ScheduledExecutorService 来执行定时任务</strong>，它是 JDK 1.5 之后自带的 API，因此使用起来也比较方便，并且使用 ScheduledExecutorService 来执行任务，不会造成任务间的相互影响。</p>
-<h5 id="Spring-Task"><a href="#Spring-Task" class="headerlink" title="Spring Task"></a><strong>Spring Task</strong></h5><p>如果使用的是 <strong>Spring 或 Spring Boot 框架</strong>，可以直接使用 Spring Framework 自带的定时任务，使用上面两种定时任务的实现方式，很难实现设定了<strong>具体时间的定时任务</strong>，比如当我们需要每周五来执行某项任务时，但如果使用 Spring Task 就可轻松的实现此需求。</p>
-<p>以 Spring Boot 为例，实现定时任务只需两步：</p>
-<ul>
-<li>开启定时任务</li>
-<li>添加定时任务</li>
-</ul>
-<p>① 开启定时任务</p>
-<p>开启定时任务只需要在 Spring Boot 的启动类上声明 <strong>@EnableScheduling</strong> 即可</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="meta">@EnableScheduling</span> <span class="comment">// 开启定时任务</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DemoApplication</span> &#123;</span><br><span class="line">    <span class="comment">// do someing</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>② 添加定时任务</p>
-<p>定时任务的添加只需要使用 <strong>@Scheduled 注解标注</strong>即可，如果有多个定时任务可以创建多个 @Scheduled 注解标注的方法</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span> <span class="comment">// 把此类托管给 Spring，不能省略</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TaskUtils</span> &#123;</span><br><span class="line">    <span class="comment">// 添加定时任务</span></span><br><span class="line">    <span class="meta">@Scheduled(cron = &quot;59 59 23 0 0 5&quot;)</span> <span class="comment">// cron 表达式，每周五 23:59:59 执行</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">doTask</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;我是定时任务~&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>Spring Task 的实现需要使用 cron 表达式来声明执行的频率和规则</p>
-<p><img src="/2022/07/19/Java%E5%AE%9A%E6%97%B6%E5%99%A8/42E5476AD7944654AD48B290D4FE0629.jpg"></p>
-<ul>
-<li><p>缺点：<strong>jvm启动之后会记录系统时间，然后jvm根据CPU ticks自己来算时间</strong>，此时<strong>获取的是定时任务的基准时间</strong>。如果此时将<strong>系统时间进行了修改</strong>，当Spring将之前获取的基准时间与当下获取的系统时间进行比对时，就会造成<strong>Spring内部定时任务失效</strong>。因为此时系统时间发生变化了，不会触发定时任务。</p>
-</li>
-<li><p>方案：为了避免使用@Scheduled注解，在修改服务器时间导致定时任务不执行情况的发生。在项目中需要使用定时任务场景的情况下，使<strong>ScheduledThreadPoolExecutor进行替代</strong>，它任务的调度是<strong>基于相对时间的</strong>，原因是它在任务的内部 存储了该任务距离下次调度还需要的时间（使用的是基于 System.nanoTime实现的相对时间 ，不会因为系统时间改变而改变，如距离下次执行还有10秒，不会因为将系统时间调前6秒而变成4秒后执行）</p>
-</li>
-</ul>
-]]></content>
-      <categories>
-        <category>分布式</category>
-        <category>定时器</category>
-      </categories>
-      <tags>
-        <tag>定时器</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Java垃圾回收机制</title>
     <url>/2022/07/25/Java%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6%E6%9C%BA%E5%88%B6/</url>
     <content><![CDATA[<h4 id="简述"><a href="#简述" class="headerlink" title="简述"></a>简述</h4><p>在java中，程序员是<strong>不需要显示的去释放一个对象的内存的</strong>，而是<strong>由虚拟机自行执行</strong>。在JVM中，<br>有一个垃圾回收线程，它是低优先级的，在正常情况下是不会执行的，只有<strong>在虚拟机空闲或者当前</strong><br><strong>堆内存不足时，才会触发执行</strong>，<strong>扫面那些没有被任何引用的对象</strong>，并将它们添加到要回收的集合<br>中，进行回收<br>程序员可以**手动执行System.gc()**，通知GC运行，但是Java语言规范并不保证GC一定会执行</p>
@@ -409,6 +355,60 @@
       </tags>
   </entry>
   <entry>
+    <title>Java定时器</title>
+    <url>/2022/07/19/Java%E5%AE%9A%E6%97%B6%E5%99%A8/</url>
+    <content><![CDATA[<h4 id="Java定时器任务"><a href="#Java定时器任务" class="headerlink" title="Java定时器任务"></a>Java定时器任务</h4><h5 id="Timer"><a href="#Timer" class="headerlink" title="Timer"></a><strong>Timer</strong></h5><p><strong>JDK 自带的定时任务执行类</strong>，无论任何项目都可以直接使用 Timer 来实现定时任务，所以 Timer 的优点就是使用方便</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义一个任务</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>缺点分析</p>
+<p><strong>①任务执行时间长影响其他任务</strong></p>
+<p>当一个任务的执行时间过长时，会影响其他任务的调度，如下代码所示：</p>
+<p>当任务 1 运行时间超过设定的间隔时间时，任务 2 也会延迟执行。 原本任务 1 和任务 2 的执行时间间隔都是 3s，但因为任务 1 执行了 5s，因此任务 2 的执行时间间隔也变成了 10s（和原定时间不符）</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义任务 1</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;进入 timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="comment">// 休眠 5 秒</span></span><br><span class="line">                    TimeUnit.SECONDS.sleep(<span class="number">5</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 定义任务 2</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 2：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">        timer.schedule(timerTask2, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:08 CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span>  Run timerTask <span class="number">2</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">18</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">18</span> CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span>  Run timerTask <span class="number">2</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>②任务异常影响其他任务</strong></p>
+<p>使用 Timer 类实现定时任务时，当一个任务抛出异常，其他任务也会终止运行，如下代码所示：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义任务 1</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;进入 timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                <span class="comment">// 模拟异常</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">8</span> / <span class="number">0</span>;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 定义任务 2</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 2：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">        timer.schedule(timerTask2, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>Timer 小结</p>
+<p><strong>Timer 类实现定时任务的优点是方便，因为它是 JDK 自定的定时任务，但缺点是任务如果执行时间太长或者是任务执行异常，会影响其他任务调度</strong>，所以在生产环境下建议谨慎使用</p>
+<h5 id="ScheduledExecutorService"><a href="#ScheduledExecutorService" class="headerlink" title="ScheduledExecutorService"></a><strong>ScheduledExecutorService</strong></h5><p><strong>ScheduledExecutorService 也是 JDK 1.5 自带的 API</strong>，我们可以使用它来实现定时任务的功能，也就是说 ScheduledExecutorService <strong>可以实现 Timer 类具备的所有功能，并且它可以解决了 Timer 类存在的所有问题。</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyScheduledExecutorService</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建任务队列</span></span><br><span class="line">        <span class="type">ScheduledExecutorService</span> <span class="variable">scheduledExecutorService</span> <span class="operator">=</span></span><br><span class="line">                Executors.newScheduledThreadPool(<span class="number">10</span>); <span class="comment">// 10 为线程数量</span></span><br><span class="line">  		<span class="comment">// 执行任务</span></span><br><span class="line">        scheduledExecutorService.scheduleAtFixedRate(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;Run Schedule：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">        &#125;, <span class="number">1</span>, <span class="number">3</span>, TimeUnit.SECONDS); <span class="comment">// 1s 后开始执行，每 3s 执行一次</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>ScheduledExecutorService 小结</p>
+<p><strong>在单机生产环境下建议使用 ScheduledExecutorService 来执行定时任务</strong>，它是 JDK 1.5 之后自带的 API，因此使用起来也比较方便，并且使用 ScheduledExecutorService 来执行任务，不会造成任务间的相互影响。</p>
+<h5 id="Spring-Task"><a href="#Spring-Task" class="headerlink" title="Spring Task"></a><strong>Spring Task</strong></h5><p>如果使用的是 <strong>Spring 或 Spring Boot 框架</strong>，可以直接使用 Spring Framework 自带的定时任务，使用上面两种定时任务的实现方式，很难实现设定了<strong>具体时间的定时任务</strong>，比如当我们需要每周五来执行某项任务时，但如果使用 Spring Task 就可轻松的实现此需求。</p>
+<p>以 Spring Boot 为例，实现定时任务只需两步：</p>
+<ul>
+<li>开启定时任务</li>
+<li>添加定时任务</li>
+</ul>
+<p>① 开启定时任务</p>
+<p>开启定时任务只需要在 Spring Boot 的启动类上声明 <strong>@EnableScheduling</strong> 即可</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="meta">@EnableScheduling</span> <span class="comment">// 开启定时任务</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DemoApplication</span> &#123;</span><br><span class="line">    <span class="comment">// do someing</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>② 添加定时任务</p>
+<p>定时任务的添加只需要使用 <strong>@Scheduled 注解标注</strong>即可，如果有多个定时任务可以创建多个 @Scheduled 注解标注的方法</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span> <span class="comment">// 把此类托管给 Spring，不能省略</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TaskUtils</span> &#123;</span><br><span class="line">    <span class="comment">// 添加定时任务</span></span><br><span class="line">    <span class="meta">@Scheduled(cron = &quot;59 59 23 0 0 5&quot;)</span> <span class="comment">// cron 表达式，每周五 23:59:59 执行</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">doTask</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;我是定时任务~&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Spring Task 的实现需要使用 cron 表达式来声明执行的频率和规则</p>
+<p><img src="/2022/07/19/Java%E5%AE%9A%E6%97%B6%E5%99%A8/42E5476AD7944654AD48B290D4FE0629.jpg"></p>
+<ul>
+<li><p>缺点：<strong>jvm启动之后会记录系统时间，然后jvm根据CPU ticks自己来算时间</strong>，此时<strong>获取的是定时任务的基准时间</strong>。如果此时将<strong>系统时间进行了修改</strong>，当Spring将之前获取的基准时间与当下获取的系统时间进行比对时，就会造成<strong>Spring内部定时任务失效</strong>。因为此时系统时间发生变化了，不会触发定时任务。</p>
+</li>
+<li><p>方案：为了避免使用@Scheduled注解，在修改服务器时间导致定时任务不执行情况的发生。在项目中需要使用定时任务场景的情况下，使<strong>ScheduledThreadPoolExecutor进行替代</strong>，它任务的调度是<strong>基于相对时间的</strong>，原因是它在任务的内部 存储了该任务距离下次调度还需要的时间（使用的是基于 System.nanoTime实现的相对时间 ，不会因为系统时间改变而改变，如距离下次执行还有10秒，不会因为将系统时间调前6秒而变成4秒后执行）</p>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>分布式</category>
+        <category>定时器</category>
+      </categories>
+      <tags>
+        <tag>定时器</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Redis value过大问题</title>
     <url>/2022/07/22/Redis-value%E8%BF%87%E5%A4%A7%E9%97%AE%E9%A2%98/</url>
     <content><![CDATA[<h4 id="多大的-key-算大？"><a href="#多大的-key-算大？" class="headerlink" title="多大的 key 算大？"></a><strong>多大的 key 算大？</strong></h4><p>阿里云Redis 最佳实践中提到 合理的 <strong>Key 中 Value 的字节大小，推荐小于10 KB</strong>。过大的 Value 会引发<strong>数据倾斜、热点Key、实例流量或 CPU 性能被占满</strong>等问题，应从设计源头上避免此类问题带来的性能影响。那么 value Bytes &gt;10kb 可以作为判断 大 key 的一个参考值</p>
@@ -468,70 +468,85 @@
       </tags>
   </entry>
   <entry>
-    <title>Vue的生命周期</title>
-    <url>/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
-    <content><![CDATA[<h4 id="Vue的优点"><a href="#Vue的优点" class="headerlink" title="Vue的优点"></a>Vue的优点</h4><ul>
-<li><strong>轻量级框架</strong>：只<strong>关注视图层</strong></li>
-<li><strong>双向数据绑定</strong>：保留了 angular 的特点，在数据操作方面更为简单</li>
-<li><strong>组件化</strong>：保留了 react 的优点，实现了 html 的封装和重用，在构建单页面应用方面有着独特的优势</li>
-<li><strong>虚拟DOM</strong>：dom 操作是非常耗费性能的， 不再使用原生的 dom 操作节点。而是预先通过JavaScript进行各种计算，把最终的DOM操作计算出来并优化。由于这个DOM操作属于预处理操作，并没有真实的操作DOM，所以叫做虚拟DOM。只有最后在计算完毕才真正将DOM操作提交，将DOM操作变化反映到DOM树上</li>
+    <title>Redis 线程模型</title>
+    <url>/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/</url>
+    <content><![CDATA[<h2 id="Redis-线程模型"><a href="#Redis-线程模型" class="headerlink" title="Redis 线程模型"></a>Redis 线程模型</h2><h3 id="Redis-是单线程吗？"><a href="#Redis-是单线程吗？" class="headerlink" title="#Redis 是单线程吗？"></a><a href="https://www.xiaolincoding.com/redis/base/redis_interview.html#redis-%E6%98%AF%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%90%97">#</a>Redis 是单线程吗？</h3><p><strong>Redis 单线程指的是「接收客户端请求-&gt;解析请求 -&gt;进行数据读写等操作-&gt;发送数据给客户端」这个过程是由一个线程（主线程）来完成的</strong>，这也是我们常说 Redis 是单线程的原因。</p>
+<p>但是，<strong>Redis 程序并不是单线程的</strong>，Redis 在启动的时候，是会<strong>启动后台线程</strong>（BIO）的：</p>
+<ul>
+<li><strong>Redis 在 2.6 版本</strong>，会启动 2 个后台线程，分别处理关闭文件、AOF 刷盘这两个任务；</li>
+<li><strong>Redis 在 4.0 版本之后</strong>，新增了一个新的后台线程，用来异步释放 Redis 内存，也就是 lazyfree 线程。例如执行 unlink key / flushdb async / flushall async 等命令，会把这些删除操作交给后台线程来执行，好处是不会导致 Redis 主线程卡顿。因此，当我们要删除一个大 key 的时候，不要使用 del 命令删除，因为 del 是在主线程处理的，这样会导致 Redis 主线程卡顿，因此我们应该使用 unlink 命令来异步删除大key。</li>
 </ul>
-<h4 id="对MVVM的理解？"><a href="#对MVVM的理解？" class="headerlink" title="对MVVM的理解？"></a>对MVVM的理解？</h4><p>MVVM 由 <strong>Model、View、ViewModel</strong> 三部分构成，<strong>Model 层代表数据模型</strong>，也可以在Model中定义数据修改和操作的业务逻辑；<strong>View 代表UI 组件</strong>，它负责将数据模型转化成UI 展现出来；<strong>ViewModel 是一个同步View 和 Model的对象</strong>。</p>
-<p>在MVVM架构下，<strong>View 和 Model 之间并没有直接的联系，而是通过ViewModel进行交互</strong>，Model 和 ViewModel 之间的交互是双向的， 因此View 数据的变化会同步到Model中，而Model 数据的变化也会立即反应到View 上。</p>
-<p><strong>ViewModel 通过双向数据绑定把 View 层和 Model 层连接了起来，而View 和 Model 之间的同步工作完全是自动的</strong>，无需人为干涉，因此开发者只需关注业务逻辑，不需要手动操作DOM， 不需要关注数据状态的同步问题，复杂的数据状态维护完全由 MVVM 来统一管理</p>
-<h4 id="Vue数据双向绑定原理"><a href="#Vue数据双向绑定原理" class="headerlink" title="Vue数据双向绑定原理"></a>Vue数据双向绑定原理</h4><p>实现mvvm的数据双向绑定，是采用<strong>数据劫持结合发布者-订阅者模式的方式</strong>，通过<strong>Object.defineProperty()来给各个属性添加setter，getter并劫持监听</strong>，在<strong>数据变动时发布消息给订阅者，触发相应的监听回调</strong>。就必须要实现以下几点：</p>
-<ol>
-<li>实现一个数据监听器Observer，能够对数据对象的所有属性进行监听，如有变动可拿到最新值并通知订阅者</li>
-<li>实现一个指令解析器Compile，对每个元素节点的指令进行扫描和解析，根据指令模板替换数据，以及绑定相应的更新函数</li>
-<li>实现一个Watcher，作为连接Observer和Compile的桥梁，能够订阅并收到每个属性变动的通知，执行指令绑定的相应回调函数，从而更新视图</li>
-</ol>
-<p><img src="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/clipboard.png"></p>
-<h4 id="生命周期简介"><a href="#生命周期简介" class="headerlink" title="生命周期简介"></a>生命周期简介</h4><p><strong>每个Vue实例在被创建时都要经过一系列的初始化过程</strong>，例如：需要设置<strong>数据的监听</strong>，编译模板，将<strong>实例挂载</strong>到DOM上，并且在<strong>数据变化时更新DOM</strong>等，这些过程统称为Vue实例的生命周期。</p>
-<p>这个过程中也会运行一些叫做<strong>生命周期钩子的函数</strong>，这给了用户在不同阶段添加自己的代码的机会</p>
-<p>Vue实例的生命周期，主要分为三个阶段，每个阶段都会执行不同的钩子函数</p>
-<h5 id="挂载-初始化相关属性-例如watch属性，method属性"><a href="#挂载-初始化相关属性-例如watch属性，method属性" class="headerlink" title="挂载(初始化相关属性,例如watch属性，method属性)"></a><strong>挂载</strong>(初始化相关属性,例如watch属性，method属性)</h5><ul>
-<li>beforeCreate</li>
-<li>created</li>
-<li>beforeMount</li>
-<li>mounted</li>
+<p>之所以 Redis 为「关闭文件、AOF 刷盘、释放内存」这些任务创建单独的线程来处理，是因为这些任务的操作都是很耗时的，如果把这些任务都放在主线程来处理，那么 Redis 主线程就很容易发生阻塞，这样就无法处理后续的请求了。</p>
+<p>后台线程相当于一个消费者，生产者把耗时任务丢到任务队列中，消费者（BIO）不停轮询这个队列，拿出任务就去执行对应的方法即可。</p>
+<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/%E5%90%8E%E5%8F%B0%E7%BA%BF%E7%A8%8B.jpg" alt="img"></p>
+<p>关闭文件、AOF 刷盘、释放内存这三个任务都有各自的任务队列：</p>
+<ul>
+<li>BIO_CLOSE_FILE，关闭文件任务队列：当队列有任务后，后台线程会调用 close(fd) ，将文件关闭；</li>
+<li>BIO_AOF_FSYNC，AOF刷盘任务队列：当 AOF 日志配置成 everysec 选项后，主线程会把 AOF 写日志操作封装成一个任务，也放到队列中。当发现队列有任务后，后台线程会调用 fsync(fd)，将 AOF 文件刷盘，</li>
+<li>BIO_LAZY_FREE，lazy free 任务队列：当队列有任务后，后台线程会 free(obj) 释放对象 / free(dict) 删除数据库所有对象 / free(skiplist) 释放跳表对象；</li>
 </ul>
-<h5 id="更新-元素或组件的变更操作"><a href="#更新-元素或组件的变更操作" class="headerlink" title="**更新(**元素或组件的变更操作)"></a>**更新(**元素或组件的变更操作)</h5><ul>
-<li>beforeUpdate</li>
-<li>updated</li>
+<h3 id="Redis-单线程模式是怎样的？"><a href="#Redis-单线程模式是怎样的？" class="headerlink" title="Redis 单线程模式是怎样的？"></a>Redis 单线程模式是怎样的？</h3><p>Redis 6.0 版本之前的单线模式如下图：</p>
+<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/redis%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B.drawio.png" alt="img"></p>
+<p>图中的蓝色部分是一个事件循环，是由主线程负责的，可以看到网络 I/O 和命令处理都是单线程。 Redis 初始化的时候，会做下面这几件事情：</p>
+<ul>
+<li>首先，调用 epoll_create() 创建一个 epoll 对象和调用 socket() 创建一个服务端 socket</li>
+<li>然后，调用 bind() 绑定端口和调用 listen() 监听该 socket；</li>
+<li>然后，将调用 epoll_ctl() 将 listen socket 加入到 epoll，同时注册「连接事件」处理函数。</li>
 </ul>
-<h5 id="销毁（销毁相关属性）"><a href="#销毁（销毁相关属性）" class="headerlink" title="销毁（销毁相关属性）"></a><strong>销毁</strong>（销毁相关属性）</h5><ul>
-<li>beforeDestroy</li>
-<li>destroyed</li>
+<p>初始化完后，主线程就进入到一个<strong>事件循环函数</strong>，主要会做以下事情：</p>
+<ul>
+<li><p>首先，先调用<strong>处理发送队列函数</strong>，看是发送队列里是否有任务，如果有发送任务，则通过 write 函数将客户端发送缓存区里的数据发送出去，如果这一轮数据没有发送完，就会注册写事件处理函数，等待 epoll_wait 发现可写后再处理 。</p>
+</li>
+<li><p>接着，调用 epoll_wait 函数等待事件的到来：</p>
+<ul>
+<li><p>如果是<strong>连接事件</strong>到来，则会调用<strong>连接事件处理函数</strong>，该函数会做这些事情：调用 accpet 获取已连接的 socket -&gt; 调用 epoll_ctl 将已连接的 socket 加入到 epoll -&gt; 注册「读事件」处理函数；</p>
+</li>
+<li><p>如果是<strong>读事件</strong>到来，则会调用<strong>读事件处理函数</strong>，该函数会做这些事情：调用 read 获取客户端发送的数据 -&gt; 解析命令 -&gt; 处理命令 -&gt; 将客户端对象添加到发送队列 -&gt; 将执行结果写到发送缓存区等待发送；</p>
+</li>
+<li><p>如果是<strong>写事件</strong>到来，则会调用<strong>写事件处理函数</strong>，该函数会做这些事情：通过 write 函数将客户端发送缓存区里的数据发送出去，如果这一轮数据没有发送完，就会继续注册写事件处理函数，等待 epoll_wait 发现可写后再处理 。</p>
+</li>
 </ul>
-<p><img src="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/clipboard2.png"></p>
-<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="title function_">beforeCreate</span>( )<span class="comment">// 该钩子函数执行时，组件实例还未创建.</span></span><br><span class="line"><span class="title function_">created</span>()<span class="comment">//组件初始化完毕，各种数据可以使用，可以使用ajax发送异步请求获取数据</span></span><br><span class="line"><span class="title function_">beforeMounted</span>()<span class="comment">// 未执行渲染，更新，虚拟DOM完成，真实DOM未创建</span></span><br><span class="line"><span class="title function_">mounted</span>()<span class="comment">// 初始化阶段结束，真实DOM已经创建，可以发送异步请求获取数据,也可以访问dom元素</span></span><br><span class="line"><span class="title function_">beforeUpdate</span>()<span class="comment">//更新前，可用于获取更新前各种状态数据</span></span><br><span class="line"><span class="title function_">updated</span>()<span class="comment">//更新后执行该钩子函数，所有的状态数据是最新的。</span></span><br><span class="line"><span class="title function_">beforeDestroy</span>() <span class="comment">// 销毁前执行，可以用于一些定时器的清除。</span></span><br><span class="line"><span class="title function_">destroyed</span>()<span class="comment">//组件已经销毁，事件监听器被移除，所有的子实例也会被销毁。</span></span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>（另外版本：</p>
+<p>redis 内部使⽤<strong>⽂件事件处理器</strong> file event handler ，这个<strong>⽂件事件处理器是单线程的</strong>，所 以 redis 才叫做单线程的模型。它<strong>采⽤ IO 多路复⽤机制同时监听多个 socket</strong>，<strong>将产⽣事件的 socket 压⼊内存队列中，事件分派器根据 socket 上的事件类型来选择对应的事件处理器进⾏处 理</strong>。</p>
+<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/image-20240512180058421.png" alt="image-20240512180058421">)</p>
+<h3 id="Redis-采用单线程为什么还这么快？"><a href="#Redis-采用单线程为什么还这么快？" class="headerlink" title="Redis 采用单线程为什么还这么快？"></a>Redis 采用单线程为什么还这么快？</h3><p>官方使用基准测试的结果是，<strong>单线程的 Redis 吞吐量可以达到 10W/每秒</strong></p>
+<p>之所以 Redis 采用单线程（网络 I/O 和执行命令）那么快，有如下几个原因：</p>
+<ul>
+<li>Redis 的大部分操作<strong>都在内存中完成</strong>，并且采用了高效的数据结构，因此 Redis 瓶颈可能是机器的内存或者网络带宽，而并非 CPU，既然 CPU 不是瓶颈，那么自然就采用单线程的解决方案了；</li>
+<li>Redis 采用单线程模型可以<strong>避免了多线程之间的竞争</strong>，省去了多线程切换带来的时间和性能上的开销，而且也不会导致死锁问题。</li>
+<li>Redis 采用了 <strong>I/O 多路复用机制</strong>处理大量的客户端 Socket 请求，IO 多路复用机制是指一个线程处理多个 IO 流，就是我们经常听到的 select/epoll 机制。简单来说，在 Redis 只运行单线程的情况下，该机制允许内核中，同时存在多个监听 Socket 和已连接 Socket。内核会一直监听这些 Socket 上的连接请求或数据请求。一旦有请求到达，就会交给 Redis 线程处理，这就实现了一个 Redis 线程处理多个 IO 流的效果。</li>
+</ul>
+<h3 id="Redis-6-0-之前为什么使用单线程？"><a href="#Redis-6-0-之前为什么使用单线程？" class="headerlink" title="Redis 6.0 之前为什么使用单线程？"></a>Redis 6.0 之前为什么使用单线程？</h3><p>我们都知道单线程的程序是无法利用服务器的多核 CPU 的，那么早期 Redis 版本的主要工作（网络 I/O 和执行命令）为什么还要使用单线程呢？我们不妨先看一下Redis官方给出的<a href="https://link.juejin.cn/?target=https://redis.io/topics/faq">FAQ</a></p>
+<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/redis%E5%AE%98%E6%96%B9%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%9B%9E%E7%AD%94.png" alt="img"></p>
+<p>核心意思是：<strong>CPU 并不是制约 Redis 性能表现的瓶颈所在</strong>，更多情况下是受到内存大小和网络I/O的限制，所以 Redis 核心网络模型使用单线程并没有什么问题，如果你想要使用服务的多核CPU，可以在一台服务器上启动多个节点或者采用分片集群的方式。</p>
+<p>除了上面的官方回答，选择单线程的原因也有下面的考虑。</p>
+<p>使用了单线程后，可维护性高，多线程模型虽然在某些方面表现优异，但是它却引入了程序执行顺序的不确定性，带来了并发读写的一系列问题，<strong>增加了系统复杂度、同时可能存在线程切换、甚至加锁解锁、死锁造成的性能损耗</strong>。</p>
+<h3 id="Redis-6-0-之后为什么引入了多线程？"><a href="#Redis-6-0-之后为什么引入了多线程？" class="headerlink" title="#Redis 6.0 之后为什么引入了多线程？"></a><a href="https://www.xiaolincoding.com/redis/base/redis_interview.html#redis-6-0-%E4%B9%8B%E5%90%8E%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BC%95%E5%85%A5%E4%BA%86%E5%A4%9A%E7%BA%BF%E7%A8%8B">#</a>Redis 6.0 之后为什么引入了多线程？</h3><p>虽然 Redis 的主要工作（网络 I/O 和执行命令）一直是单线程模型，但是<strong>在 Redis 6.0 版本之后，也采用了多个 I/O 线程来处理网络请求</strong>，<strong>这是因为随着网络硬件的性能提升，Redis 的性能瓶颈有时会出现在网络 I/O 的处理上</strong>。</p>
+<p>所以为了提高网络 I/O 的并行度，Redis 6.0 对于网络 I/O 采用多线程来处理。**但是对于命令的执行，Redis 仍然使用单线程来处理，*<em>所以大家*<em>不要误解</em></em> Redis 有多线程同时执行命令。</p>
+<p>Redis 官方表示，<strong>Redis 6.0 版本引入的多线程 I/O 特性对性能提升至少是一倍以上</strong>。</p>
+<p>Redis 6.0 版本支持的 I/O 多线程特性，默认情况下 I/O 多线程只针对发送响应数据（write client socket），并不会以多线程的方式处理读请求（read client socket）。要想开启多线程处理客户端读请求，就需要把 Redis.conf 配置文件中的 io-threads-do-reads 配置项设为 yes。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">//读请求也使用io多线程</span></span><br><span class="line">io-threads-<span class="keyword">do</span>-reads yes </span><br></pre></td></tr></table></figure>
 
+<p>同时， Redis.conf 配置文件中提供了 IO 多线程个数的配置项。</p>
+<figure class="highlight c"><table><tr><td class="code"><pre><span class="line"><span class="comment">// io-threads N，表示启用 N-1 个 I/O 多线程（主线程也算一个 I/O 线程）</span></span><br><span class="line">io-threads <span class="number">4</span></span><br></pre></td></tr></table></figure>
+
+<p>关于线程数的设置，官方的建议是如果为 4 核的 CPU，建议线程数设置为 2 或 3，如果为 8 核 CPU 建议线程数设置为 6，线程数一定要小于机器核数，线程数并不是越大越好。</p>
+<p>因此， Redis 6.0 版本之后，Redis 在启动的时候，默认情况下会<strong>额外创建 6 个线程</strong>（<em>这里的线程数不包括主线程</em>）：</p>
+<ul>
+<li>Redis-server ： Redis的主线程，主要负责执行命令；</li>
+<li>bio_close_file、bio_aof_fsync、bio_lazy_free：三个后台线程，分别异步处理关闭文件任务、AOF刷盘任务、释放内存任务；</li>
+<li>io_thd_1、io_thd_2、io_thd_3：三个 I/O 线程，io-threads 默认是 4 ，所以会启动 3（4-1）个 I/O 多线程，用来分担 Redis 网络 I/O 的压力。</li>
+</ul>
 ]]></content>
       <categories>
-        <category>前端</category>
-        <category>Vue</category>
+        <category>数据库</category>
+        <category>Redis</category>
       </categories>
       <tags>
-        <tag>Vue</tag>
+        <tag>Redis</tag>
       </tags>
-  </entry>
-  <entry>
-    <title>Hello World</title>
-    <url>/2022/07/01/hello-world/</url>
-    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
-
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
-]]></content>
   </entry>
   <entry>
     <title>SpringMVC Controller并发安全问题</title>
@@ -657,6 +672,155 @@
       </tags>
   </entry>
   <entry>
+    <title>Vue的生命周期</title>
+    <url>/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
+    <content><![CDATA[<h4 id="Vue的优点"><a href="#Vue的优点" class="headerlink" title="Vue的优点"></a>Vue的优点</h4><ul>
+<li><strong>轻量级框架</strong>：只<strong>关注视图层</strong></li>
+<li><strong>双向数据绑定</strong>：保留了 angular 的特点，在数据操作方面更为简单</li>
+<li><strong>组件化</strong>：保留了 react 的优点，实现了 html 的封装和重用，在构建单页面应用方面有着独特的优势</li>
+<li><strong>虚拟DOM</strong>：dom 操作是非常耗费性能的， 不再使用原生的 dom 操作节点。而是预先通过JavaScript进行各种计算，把最终的DOM操作计算出来并优化。由于这个DOM操作属于预处理操作，并没有真实的操作DOM，所以叫做虚拟DOM。只有最后在计算完毕才真正将DOM操作提交，将DOM操作变化反映到DOM树上</li>
+</ul>
+<h4 id="对MVVM的理解？"><a href="#对MVVM的理解？" class="headerlink" title="对MVVM的理解？"></a>对MVVM的理解？</h4><p>MVVM 由 <strong>Model、View、ViewModel</strong> 三部分构成，<strong>Model 层代表数据模型</strong>，也可以在Model中定义数据修改和操作的业务逻辑；<strong>View 代表UI 组件</strong>，它负责将数据模型转化成UI 展现出来；<strong>ViewModel 是一个同步View 和 Model的对象</strong>。</p>
+<p>在MVVM架构下，<strong>View 和 Model 之间并没有直接的联系，而是通过ViewModel进行交互</strong>，Model 和 ViewModel 之间的交互是双向的， 因此View 数据的变化会同步到Model中，而Model 数据的变化也会立即反应到View 上。</p>
+<p><strong>ViewModel 通过双向数据绑定把 View 层和 Model 层连接了起来，而View 和 Model 之间的同步工作完全是自动的</strong>，无需人为干涉，因此开发者只需关注业务逻辑，不需要手动操作DOM， 不需要关注数据状态的同步问题，复杂的数据状态维护完全由 MVVM 来统一管理</p>
+<h4 id="Vue数据双向绑定原理"><a href="#Vue数据双向绑定原理" class="headerlink" title="Vue数据双向绑定原理"></a>Vue数据双向绑定原理</h4><p>实现mvvm的数据双向绑定，是采用<strong>数据劫持结合发布者-订阅者模式的方式</strong>，通过<strong>Object.defineProperty()来给各个属性添加setter，getter并劫持监听</strong>，在<strong>数据变动时发布消息给订阅者，触发相应的监听回调</strong>。就必须要实现以下几点：</p>
+<ol>
+<li>实现一个数据监听器Observer，能够对数据对象的所有属性进行监听，如有变动可拿到最新值并通知订阅者</li>
+<li>实现一个指令解析器Compile，对每个元素节点的指令进行扫描和解析，根据指令模板替换数据，以及绑定相应的更新函数</li>
+<li>实现一个Watcher，作为连接Observer和Compile的桥梁，能够订阅并收到每个属性变动的通知，执行指令绑定的相应回调函数，从而更新视图</li>
+</ol>
+<p><img src="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/clipboard.png"></p>
+<h4 id="生命周期简介"><a href="#生命周期简介" class="headerlink" title="生命周期简介"></a>生命周期简介</h4><p><strong>每个Vue实例在被创建时都要经过一系列的初始化过程</strong>，例如：需要设置<strong>数据的监听</strong>，编译模板，将<strong>实例挂载</strong>到DOM上，并且在<strong>数据变化时更新DOM</strong>等，这些过程统称为Vue实例的生命周期。</p>
+<p>这个过程中也会运行一些叫做<strong>生命周期钩子的函数</strong>，这给了用户在不同阶段添加自己的代码的机会</p>
+<p>Vue实例的生命周期，主要分为三个阶段，每个阶段都会执行不同的钩子函数</p>
+<h5 id="挂载-初始化相关属性-例如watch属性，method属性"><a href="#挂载-初始化相关属性-例如watch属性，method属性" class="headerlink" title="挂载(初始化相关属性,例如watch属性，method属性)"></a><strong>挂载</strong>(初始化相关属性,例如watch属性，method属性)</h5><ul>
+<li>beforeCreate</li>
+<li>created</li>
+<li>beforeMount</li>
+<li>mounted</li>
+</ul>
+<h5 id="更新-元素或组件的变更操作"><a href="#更新-元素或组件的变更操作" class="headerlink" title="**更新(**元素或组件的变更操作)"></a>**更新(**元素或组件的变更操作)</h5><ul>
+<li>beforeUpdate</li>
+<li>updated</li>
+</ul>
+<h5 id="销毁（销毁相关属性）"><a href="#销毁（销毁相关属性）" class="headerlink" title="销毁（销毁相关属性）"></a><strong>销毁</strong>（销毁相关属性）</h5><ul>
+<li>beforeDestroy</li>
+<li>destroyed</li>
+</ul>
+<p><img src="/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/clipboard2.png"></p>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><figure class="highlight javascript"><table><tr><td class="code"><pre><span class="line"><span class="title function_">beforeCreate</span>( )<span class="comment">// 该钩子函数执行时，组件实例还未创建.</span></span><br><span class="line"><span class="title function_">created</span>()<span class="comment">//组件初始化完毕，各种数据可以使用，可以使用ajax发送异步请求获取数据</span></span><br><span class="line"><span class="title function_">beforeMounted</span>()<span class="comment">// 未执行渲染，更新，虚拟DOM完成，真实DOM未创建</span></span><br><span class="line"><span class="title function_">mounted</span>()<span class="comment">// 初始化阶段结束，真实DOM已经创建，可以发送异步请求获取数据,也可以访问dom元素</span></span><br><span class="line"><span class="title function_">beforeUpdate</span>()<span class="comment">//更新前，可用于获取更新前各种状态数据</span></span><br><span class="line"><span class="title function_">updated</span>()<span class="comment">//更新后执行该钩子函数，所有的状态数据是最新的。</span></span><br><span class="line"><span class="title function_">beforeDestroy</span>() <span class="comment">// 销毁前执行，可以用于一些定时器的清除。</span></span><br><span class="line"><span class="title function_">destroyed</span>()<span class="comment">//组件已经销毁，事件监听器被移除，所有的子实例也会被销毁。</span></span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>前端</category>
+        <category>Vue</category>
+      </categories>
+      <tags>
+        <tag>Vue</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>count(*) 和 count(1) 有什么区别？</title>
+    <url>/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/</url>
+    <content><![CDATA[<h1 id="count-和-count-1-有什么区别？哪个性能最好？"><a href="#count-和-count-1-有什么区别？哪个性能最好？" class="headerlink" title="count(*) 和 count(1) 有什么区别？哪个性能最好？"></a>count(*) 和 count(1) 有什么区别？哪个性能最好？</h1><p>当我们对一张数据表中的记录进行统计的时候，习惯都会使用 count 函数来统计，但是 count 函数传入的参数有很多种，比如 count(1)、count(<code>*</code>)、count(字段) 等。</p>
+<p>到底哪种效率是最好的呢？是不是 count(<code>*</code>) 效率最差？</p>
+<p>我曾经以为 count(<code>*</code>) 是效率最差的，因为认知上 <code>selete * from t</code> 会读取所有表中的字段，所以凡事带有 <code>*</code> 字符的就觉得会读取表中所有的字段，当时网上有很多博客也这么说。</p>
+<p>但是，当我深入 count 函数的原理后，被啪啪啪的打脸了！</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/d9b9817e92f805e9a16faf31a2c10d9a.png" alt="图片"></p>
+<h2 id="哪种-count-性能最好？"><a href="#哪种-count-性能最好？" class="headerlink" title="哪种 count 性能最好？"></a>哪种 count 性能最好？</h2><p>我先直接说结论：</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/af711033aa3423330d3a4bc6baeb9532.png" alt="图片"></p>
+<p>要弄明白这个，我们得要深入 count 的原理，以下内容基于常用的 innodb 存储引擎来说明。</p>
+<h3 id="count-是什么？"><a href="#count-是什么？" class="headerlink" title="#count() 是什么？"></a><a href="https://www.xiaolincoding.com/mysql/index/count.html#count-%E6%98%AF%E4%BB%80%E4%B9%88">#</a>count() 是什么？</h3><p>count() 是一个聚合函数，函数的参数不仅可以是字段名，也可以是其他任意表达式，该函数作用是<strong>统计符合查询条件的记录中，函数指定的参数不为 NULL 的记录有多少个</strong>。</p>
+<p>假设 count() 函数的参数是字段名，如下：</p>
+<p><code>select count(name) from t_order;</code></p>
+<p>这条语句是统计「 t_order 表中，name 字段不为 NULL 的记录」有多少个。也就是说，如果某一条记录中的 name 字段的值为 NULL，则就不会被统计进去。</p>
+<p>再来假设 count() 函数的参数是数字 1 这个表达式，如下：</p>
+<p><code>select count(1) from t_order;</code></p>
+<p>这条语句是统计「 t_order 表中，1 这个表达式不为 NULL 的记录」有多少个。</p>
+<p>1 这个表达式就是单纯数字，它永远都不是 NULL，所以上面这条语句，其实是在统计 t_order 表中有多少个记录</p>
+<h3 id="count-主键字段-执行过程是怎样的？"><a href="#count-主键字段-执行过程是怎样的？" class="headerlink" title="count(主键字段) 执行过程是怎样的？"></a>count(主键字段) 执行过程是怎样的？</h3><p>在通过 count 函数统计有多少个记录时，MySQL 的 server 层会维护一个名叫 count 的变量。</p>
+<p>server 层会循环向 InnoDB 读取一条记录，如果 count 函数指定的参数不为 NULL，那么就会将变量 count 加 1，直到符合查询的全部记录被读完，就退出循环。最后将 count 变量的值发送给客户端。</p>
+<p>InnoDB 是通过 B+ 树来保存记录的，根据索引的类型又分为聚簇索引和二级索引，它们区别在于，聚簇索引的叶子节点存放的是实际数据，而二级索引的叶子节点存放的是主键值，而不是实际数据。</p>
+<p>用下面这条语句作为例子：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span>id 为主键值</span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(id) <span class="keyword">from</span> t_order;</span><br></pre></td></tr></table></figure>
+
+<p>如果表里只有主键索引，没有二级索引时，那么，InnoDB 循环遍历聚簇索引，将读取到的记录返回给 server 层，然后读取记录中的 id 值，就会 id 值判断是否为 NULL，如果不为 NULL，就将 count 变量加 1。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/9bb4f32ac843467684a2664d4db61ae3.png" alt="图片"></p>
+<p>但是，如果表里有二级索引时，InnoDB 循环遍历的对象就不是聚簇索引，而是二级索引。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/aac550602ef1022e0b45020dbe0f716a.png" alt="图片"></p>
+<p>这是因为相同数量的二级索引记录可以比聚簇索引记录占用更少的存储空间，所以二级索引树比聚簇索引树小，这样遍历二级索引的 I/O 成本比遍历聚簇索引的 I/O 成本小，因此「优化器」优先选择的是二级索引。</p>
+<h3 id="count-1-执行过程是怎样的？"><a href="#count-1-执行过程是怎样的？" class="headerlink" title="count(1) 执行过程是怎样的？"></a>count(1) 执行过程是怎样的？</h3><p>用下面这条语句作为例子：</p>
+<p><code>select count(1) from t_order;</code></p>
+<p>如果表里只有主键索引，没有二级索引时。</p>
+<p>那么，InnoDB 循环遍历聚簇索引（主键索引），将读取到的记录返回给 server 层，<strong>但是不会读取记录中的任何字段的值</strong>，因为 count 函数的参数是 1，不是字段，所以不需要读取记录中的字段值。参数 1 很明显并不是 NULL，因此 server 层每从 InnoDB 读取到一条记录，就将 count 变量加 1。</p>
+<p>可以看到，count(1) 相比 count(主键字段) 少一个步骤，就是不需要读取记录中的字段值，所以通常会说 count(1) 执行效率会比 count(主键字段) 高一点。</p>
+<p>但是，如果表里有二级索引时，InnoDB 循环遍历的对象就二级索引了。</p>
+<h3 id="count-执行过程是怎样的？"><a href="#count-执行过程是怎样的？" class="headerlink" title="count(*) 执行过程是怎样的？"></a>count(*) 执行过程是怎样的？</h3><p>看到 <code>*</code> 这个字符的时候，是不是大家觉得是读取记录中的所有字段值？</p>
+<p>对于 <code>selete *</code> 这条语句来说是这个意思，但是在 count(*) 中并不是这个意思。</p>
+<p>**count(<code>\*</code>) 其实等于 count(<code>0</code>)**，也就是说，当你使用 count(<code>*</code>) 时，MySQL 会将 <code>*</code> 参数转化为参数 0 来处理。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/27b229f049b27898f3a86c7da7e26114.png" alt="图片"></p>
+<p>所以，<strong>count(*) 执行过程跟 count(1) 执行过程基本一样的</strong>，性能没有什么差异。</p>
+<p>在 MySQL 5.7 的官方手册中有这么一句话：</p>
+<p><em>InnoDB handles SELECT COUNT(<code>\*</code>) and SELECT COUNT(<code>1</code>) operations in the same way. There is no performance difference.</em></p>
+<p><em>翻译：InnoDB以相同的方式处理SELECT COUNT（<code>\*</code>）和SELECT COUNT（<code>1</code>）操作，没有性能差异。</em></p>
+<p>而且 MySQL 会对 count(*) 和 count(1) 有个优化，如果有多个二级索引的时候，优化器会使用key_len 最小的二级索引进行扫描。</p>
+<p>只有当没有二级索引的时候，才会采用主键索引来进行统计。</p>
+<h3 id="count-字段-执行过程是怎样的？"><a href="#count-字段-执行过程是怎样的？" class="headerlink" title="count(字段) 执行过程是怎样的？"></a>count(字段) 执行过程是怎样的？</h3><p>count(字段) 的执行效率相比前面的 count(1)、 count(*)、 count(主键字段) 执行效率是最差的。</p>
+<p>用下面这条语句作为例子：</p>
+<figure class="highlight sql"><table><tr><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span> name不是索引，普通字段</span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(name) <span class="keyword">from</span> t_order;</span><br></pre></td></tr></table></figure>
+
+<p>对于这个查询来说，会采用全表扫描的方式来计数，所以它的执行效率是比较差的。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/f24dfeb85e2cfce0e4dc3a17b893b3f5.png" alt="图片"></p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>count(1)、 count(*)、 count(主键字段)在执行的时候，如果表里存在二级索引，优化器就会选择二级索引进行扫描。</p>
+<p>所以，如果要执行 count(1)、 count(*)、 count(主键字段) 时，尽量在数据表上建立二级索引，这样优化器会自动采用 key_len 最小的二级索引进行扫描，相比于扫描主键索引效率会高一些。</p>
+<p>再来，就是不要使用 count(字段) 来统计记录个数，因为它的效率是最差的，会采用全表扫描的方式来统计。如果你非要统计表中该字段不为 NULL 的记录个数，建议给这个字段建立一个二级索引。</p>
+<h2 id="为什么要通过遍历的方式来计数？"><a href="#为什么要通过遍历的方式来计数？" class="headerlink" title="为什么要通过遍历的方式来计数？"></a>为什么要通过遍历的方式来计数？</h2><p>你可能会好奇，为什么 count 函数需要通过遍历的方式来统计记录个数？</p>
+<p>我前面将的案例都是基于 Innodb 存储引擎来说明的，但是在 MyISAM 存储引擎里，执行 count 函数的方式是不一样的，通常在没有任何查询条件下的 count(*)，MyISAM 的查询速度要明显快于 InnoDB。</p>
+<p>使用 MyISAM 引擎时，执行 count 函数只需要 O(1 )复杂度，这是因为每张 MyISAM 的数据表都有一个 meta 信息有存储了row_count值，由表级锁保证一致性，所以直接读取 row_count 值就是 count 函数的执行结果。</p>
+<p>而 InnoDB 存储引擎是支持事务的，同一个时刻的多个查询，由于多版本并发控制（MVCC）的原因，InnoDB 表“应该返回多少行”也是不确定的，所以无法像 MyISAM一样，只维护一个 row_count 变量。</p>
+<p>举个例子，假设表 t_order 有 100 条记录，现在有两个会话并行以下语句：</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/04d714293f5c687810562e984b67d2e7.png" alt="图片"></p>
+<p>在会话 A 和会话 B的最后一个时刻，同时查表 t_order 的记录总个数，可以发现，显示的结果是不一样的。所以，在使用 InnoDB 存储引擎时，就需要扫描表来统计具体的记录。</p>
+<p>而当带上 where 条件语句之后，MyISAM 跟 InnoDB 就没有区别了，它们都需要扫描表来进行记录个数的统计。</p>
+<h2 id="如何优化-count-？"><a href="#如何优化-count-？" class="headerlink" title="如何优化 count(*)？"></a>如何优化 count(*)？</h2><p>如果对一张大表经常用 count(*) 来做统计，其实是很不好的。</p>
+<p>比如下面我这个案例，表 t_order 共有 1200+ 万条记录，我也创建了二级索引，但是执行一次 <code>select count(*) from t_order</code> 要花费差不多 5 秒！</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/74a4359b58dc6ed41a241e425f43764d.png" alt="图片"></p>
+<p>面对大表的记录统计，我们有没有什么其他更好的办法呢？</p>
+<h3 id="第一种，近似值"><a href="#第一种，近似值" class="headerlink" title="#第一种，近似值"></a><a href="https://www.xiaolincoding.com/mysql/index/count.html#%E7%AC%AC%E4%B8%80%E7%A7%8D-%E8%BF%91%E4%BC%BC%E5%80%BC">#</a>第一种，近似值</h3><p>如果你的业务对于统计个数不需要很精确，比如搜索引擎在搜索关键词的时候，给出的搜索结果条数是一个大概值。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/cd18879de0c0b37660f53a5f1af3d172.png" alt="图片"></p>
+<p>这时，我们就可以使用 show table status 或者 explain 命令来表进行估算。</p>
+<p>执行 explain 命令效率是很高的，因为它并不会真正的去查询，下图中的 rows 字段值就是 explain 命令对表 t_order 记录的估算值。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/7590623443e8f225e5652109e6d9e3d2.png" alt="图片"></p>
+<h3 id="第二种，额外表保存计数值"><a href="#第二种，额外表保存计数值" class="headerlink" title="第二种，额外表保存计数值"></a>第二种，额外表保存计数值</h3><p>如果是想精确的获取表的记录总数，我们可以将这个计数值保存到单独的一张计数表中。</p>
+<p>当我们在数据表插入一条记录的同时，将计数表中的计数字段 + 1。也就是说，在新增和删除操作时，我们需要额外维护这个计数表。</p>
+]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>MySQL</category>
+      </categories>
+      <tags>
+        <tag>MySQL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Hello World</title>
+    <url>/2022/07/01/hello-world/</url>
+    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
+  </entry>
+  <entry>
     <title>openFeign介绍</title>
     <url>/2022/07/10/openFeign%E4%BB%8B%E7%BB%8D/</url>
     <content><![CDATA[<p>Feign是Spring Cloud组件中的一个轻量级RESTful的HTTP服务客户端，Feign内置了Ribbon，用来做客户端负载均衡，去调用服务注册中心的服务。Feign的使用方式是：使用Feign的注解定义接口，调用这个接口，就可以调用服务注册中心的服务，简化成就像调用本地方法那样简单。</p>
@@ -716,6 +880,21 @@
       </categories>
       <tags>
         <tag>SpringCould</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>享元模式</title>
+    <url>/2022/09/04/%E4%BA%AB%E5%85%83%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[<h4 id="享元模式"><a href="#享元模式" class="headerlink" title="享元模式"></a>享元模式</h4><p>享元模式（Flyweight Pattern）主要用于<strong>减少创建对象的数量，以减少内存占用和提高性能</strong></p>
+<p><strong>String常量池、数据库连接池、缓冲池</strong>等等都是享元模式的应用，所以说享元模式是池技术的重要实现方式</p>
+<p>比如我们每次创建字符串对象时，都需要创建一个新的字符串对象的话，内存开销会很大，所以如果第一次创建了字符串对象“adam“，下次再创建相同的字符串”adam“时，只是把它的引用指向”adam“，这样就实现了”adam“字符串再内存中的共享</p>
+<p><strong>用HashMap/HashTable存储</strong> </p>
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
       </tags>
   </entry>
   <entry>
@@ -846,21 +1025,6 @@
       </tags>
   </entry>
   <entry>
-    <title>享元模式</title>
-    <url>/2022/09/04/%E4%BA%AB%E5%85%83%E6%A8%A1%E5%BC%8F/</url>
-    <content><![CDATA[<h4 id="享元模式"><a href="#享元模式" class="headerlink" title="享元模式"></a>享元模式</h4><p>享元模式（Flyweight Pattern）主要用于<strong>减少创建对象的数量，以减少内存占用和提高性能</strong></p>
-<p><strong>String常量池、数据库连接池、缓冲池</strong>等等都是享元模式的应用，所以说享元模式是池技术的重要实现方式</p>
-<p>比如我们每次创建字符串对象时，都需要创建一个新的字符串对象的话，内存开销会很大，所以如果第一次创建了字符串对象“adam“，下次再创建相同的字符串”adam“时，只是把它的引用指向”adam“，这样就实现了”adam“字符串再内存中的共享</p>
-<p><strong>用HashMap/HashTable存储</strong> </p>
-]]></content>
-      <categories>
-        <category>设计模式</category>
-      </categories>
-      <tags>
-        <tag>设计模式</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>代理模式</title>
     <url>/2022/08/12/%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8F/</url>
     <content><![CDATA[<h4 id="代理模式"><a href="#代理模式" class="headerlink" title="代理模式"></a>代理模式</h4><p>通过代理控制对象的访问，可以在这个<strong>对象调用方法之前、调用方法之后去处理/添加新的功能</strong></p>
@@ -897,69 +1061,6 @@
 <p>行，他必须目标业务类必须实现接口），CGLIB动态代理底层使用字节码技术，CGLIB动态代理不</p>
 <p>能对 final类进行继承。（CGLIB动态代理需要导入jar包）</p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainRun</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        CglibProxy cglibProxy=<span class="keyword">new</span> <span class="title class_">CglibProxy</span>();</span><br><span class="line">        <span class="type">UserDao</span> <span class="variable">userDao</span> <span class="operator">=</span> (UserDao)cglibProxy.getProxyInstance(<span class="keyword">new</span> <span class="title class_">UserDaoImpl</span>());</span><br><span class="line">        userDao.save();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CglibProxy</span> <span class="keyword">implements</span> <span class="title class_">MethodInterceptor</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object targetObject;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//给目标对象创建一个代理对象</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">getProxyInstance</span><span class="params">(Object targetObject)</span>&#123;</span><br><span class="line">        <span class="built_in">this</span>.targetObject=targetObject;</span><br><span class="line">        <span class="comment">// 设置需要创建子类的类</span></span><br><span class="line">        <span class="comment">//1.工具类</span></span><br><span class="line">        Enhancer en=<span class="keyword">new</span> <span class="title class_">Enhancer</span>();</span><br><span class="line">        <span class="comment">//2.设置父类</span></span><br><span class="line">        en.setSuperclass(targetObject.getClass());</span><br><span class="line">        <span class="comment">//3.设置回调调用intercept方法</span></span><br><span class="line">        en.setCallback(<span class="built_in">this</span>);</span><br><span class="line">        <span class="comment">//4.创建子类(代理对象)</span></span><br><span class="line">        <span class="keyword">return</span> en.create();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 拦截所有目标类方法的调用</span></span><br><span class="line"><span class="comment">     * obj  目标类的实例</span></span><br><span class="line"><span class="comment">     * m   目标方法的反射对象</span></span><br><span class="line"><span class="comment">     * args  方法的参数</span></span><br><span class="line"><span class="comment">     * proxy代理类的实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">intercept</span><span class="params">(Object o, Method method, Object[] args, MethodProxy methodProxy)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;开启事务&quot;</span>);</span><br><span class="line">        <span class="type">Object</span> <span class="variable">invoke</span> <span class="operator">=</span> methodProxy.invoke(targetObject, args);</span><br><span class="line">        System.out.println(<span class="string">&quot;关闭事务&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> invoke;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>设计模式</category>
-      </categories>
-      <tags>
-        <tag>设计模式</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>单例模式</title>
-    <url>/2022/08/03/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/</url>
-    <content><![CDATA[<h4 id="单例模式"><a href="#单例模式" class="headerlink" title="单例模式"></a>单例模式</h4><h5 id="适用场景"><a href="#适用场景" class="headerlink" title="适用场景"></a>适用场景</h5><ul>
-<li><p><strong>保证一个类只有一个实例</strong>，并且提供一个访问该全局访问点</p>
-</li>
-<li><p>对于 Java 来说，<strong>单例模式可以保证在一个 JVM 中只存在单一实例</strong>。单例模式的应用场景主要有以下几个方面。</p>
-</li>
-<li><p><strong>需要频繁创建的一些类</strong>，使用单例可以<strong>降低系统的内存压力，减少 GC</strong>。</p>
-</li>
-<li><p>某类只要求生成一个对象的时候，如一个班中的班长、每个人的身份证号等。</p>
-</li>
-<li><p><strong>某些类创建实例时占用资源较多，或实例化耗时较长</strong>，且经常使用。</p>
-</li>
-<li><p><strong>某类需要频繁实例化，而创建的对象又频繁被销毁的时候</strong>，如<strong>多线程的线程池、网络连接池</strong>等。</p>
-</li>
-<li><p>频繁访问数据库或文件的对象。</p>
-</li>
-<li><p>对于一些控制硬件级别的操作，或者从系统上来讲应当是单一控制逻辑的操作，如果有多个实例，则系统会完全乱套。</p>
-</li>
-<li><p><strong>当对象需要被共享的场合</strong>。由于单例模式只允许创建一个对象，共享该对象可以节省内存，并加快对象访问速度。如 Web 中的配置对象、数据库的连接池等</p>
-</li>
-</ul>
-<h5 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h5><ul>
-<li>构造方法私有化，</li>
-<li>获取方法公开化</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"> <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> LazySingleton instance=<span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">LazySingleton</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="comment">// private私有 避免类在外部被实例化</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> LazySingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(instance == <span class="literal">null</span>)&#123;</span><br><span class="line">            instance = <span class="keyword">new</span> <span class="title class_">LazySingleton</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h5 id="单例防止反射漏洞攻击"><a href="#单例防止反射漏洞攻击" class="headerlink" title="单例防止反射漏洞攻击"></a><strong>单例防止反射漏洞攻击</strong></h5>   <figure class="highlight java"><table><tr><td class="code"><pre><span class="line">     <span class="keyword">private</span> <span class="keyword">static</span> <span class="type">boolean</span> <span class="variable">flag</span> <span class="operator">=</span> <span class="literal">false</span>; </span><br><span class="line"><span class="keyword">private</span> <span class="title function_">Singleton</span><span class="params">()</span> &#123;</span><br><span class="line">     <span class="keyword">if</span> (flag == <span class="literal">false</span>) &#123; </span><br><span class="line">         flag = !flag; </span><br><span class="line">     &#125; <span class="keyword">else</span> &#123; </span><br><span class="line">         <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;单例模式被侵犯！&quot;</span>); </span><br><span class="line">     &#125; </span><br><span class="line">&#125; </span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
-
-<p>​                </p>
-<h5 id="懒汉式单例"><a href="#懒汉式单例" class="headerlink" title="懒汉式单例"></a><strong>懒汉式单例</strong></h5><p><strong>类初始化时,不会初始化该对象,真正需要使用的时候才会创建该对象,具备懒加载功能</strong></p>
-   <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 懒汉式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LazySingleton</span> &#123;</span><br><span class="line">    <span class="comment">// 保证 instance 在所有线程中同步 防止指令重排序</span></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *uniqueInstance 采用 volatile 关键字修饰也是很有必要的， uniqueInstance = new Singleton();</span></span><br><span class="line"><span class="comment">     * 这段代码其实是分为三步执行：</span></span><br><span class="line"><span class="comment">     * 1. 为 uniqueInstance 分配内存空间</span></span><br><span class="line"><span class="comment">     * 2. 初始化 uniqueInstance</span></span><br><span class="line"><span class="comment">     * 3. 将 uniqueInstance 指向分配的内存地址</span></span><br><span class="line"><span class="comment">     * 但是由于 JVM 具有指令重排的特性，执行顺序有可能变成 1-&gt;3-&gt;2。、</span></span><br><span class="line"><span class="comment">        指令重排在单线程环境下不会出现问题，</span></span><br><span class="line"><span class="comment">     * 但是在多线程环境下会导致一个线程获得还没有初始化的实例。</span></span><br><span class="line"><span class="comment">       例如，线程 T1 执行了 1 和 3，此时 T2 调用</span></span><br><span class="line"><span class="comment">     * getUniqueInstance() 后发现 uniqueInstance 不为空，</span></span><br><span class="line"><span class="comment">       因此返回 uniqueInstance，但此时</span></span><br><span class="line"><span class="comment">     * uniqueInstance 还未被初始化。</span></span><br><span class="line"><span class="comment">     * 使用 volatile 可以禁止 JVM 的指令重排，保证在多线程环境下也能正常运行。</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> LazySingleton instance=<span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">LazySingleton</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="comment">// private私有 避免类在外部被实例化</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> LazySingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(instance == <span class="literal">null</span>)&#123;</span><br><span class="line">            instance = <span class="keyword">new</span> <span class="title class_">LazySingleton</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>​                      </p>
-<h5 id="饿汉式"><a href="#饿汉式" class="headerlink" title="饿汉式"></a><strong>饿汉式</strong></h5><p><strong>类加载阶段完成实例的初始化</strong>   类加载机制保证线程安全</p>
-<p>类初始化时,会立即加载该对象，线程天生安全,调用效率高</p>
-  <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HungrySingleton</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> HungrySingleton instance=<span class="keyword">new</span> <span class="title class_">HungrySingleton</span>();</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">HungrySingleton</span><span class="params">()</span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> HungrySingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>​                       </p>
-<h5 id="静态内部类"><a href="#静态内部类" class="headerlink" title="静态内部类"></a><strong>静态内部类</strong></h5><p><strong>类加载机制保证线程安全</strong></p>
- <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 静态内部类</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">StaticInnerSingleton</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">StaticInnerSingleton</span><span class="params">()</span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">InnerClass</span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">StaticInnerSingleton</span> <span class="variable">staticInnerSingleton</span></span><br><span class="line">            <span class="operator">=</span><span class="keyword">new</span> <span class="title class_">StaticInnerSingleton</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> StaticInnerSingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> InnerClass.staticInnerSingleton;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>​         </p>
-<h5 id="枚举单例式"><a href="#枚举单例式" class="headerlink" title="枚举单例式"></a><strong>枚举单例式</strong></h5><p>使用枚举实现单例模式 优点:实现简单、调用效率高，<strong>枚举本身就是单例，由jvm从根本</strong></p>
-<p><strong>上提供保障</strong>!<strong>避免通过反射和反序列化的漏洞， 缺点没有延迟加载</strong></p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 枚举单例</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">EnumSingleton</span> &#123;</span><br><span class="line">    <span class="comment">//定义枚举</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">enum</span> <span class="title class_">Demo</span>&#123;</span><br><span class="line">        INSTANCE;<span class="comment">// 枚举元素为单例</span></span><br><span class="line">        <span class="keyword">private</span> EnumSingleton enumSingleton;</span><br><span class="line">        <span class="keyword">private</span> <span class="title function_">Demo</span><span class="params">()</span>&#123;</span><br><span class="line">            enumSingleton=<span class="keyword">new</span> <span class="title class_">EnumSingleton</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">public</span> EnumSingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">            <span class="keyword">return</span> enumSingleton;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> EnumSingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> Demo.INSTANCE.getInstance();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">EnumSingleton</span> <span class="variable">s1</span> <span class="operator">=</span> EnumSingleton.getInstance();</span><br><span class="line">        <span class="type">EnumSingleton</span> <span class="variable">s2</span> <span class="operator">=</span> EnumSingleton.getInstance();</span><br><span class="line">        System.out.println(s1 == s2);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h5 id="双重检测锁方式"><a href="#双重检测锁方式" class="headerlink" title="双重检测锁方式"></a><strong>双重检测锁方式</strong></h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 双重检测锁</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DoubleCheckLock</span> &#123;</span><br><span class="line">    <span class="comment">// volatile 防止指令重排序优化</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">static</span> DoubleCheckLock doubleCheckLock;</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">DoubleCheckLock</span><span class="params">()</span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 此处检测doubleCheckLock == null,是为了防止当singletonMode已经初始化后，</span></span><br><span class="line"><span class="comment">     * 还会继续调用同步锁，造成不必要的损耗</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> DoubleCheckLock <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">         <span class="comment">// 加锁目的，防止多线程同时进入造成对象多次实例化</span></span><br><span class="line">        <span class="keyword">if</span>(doubleCheckLock == <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="comment">// 为了在null的情况下创建实例，防止不必要的损耗</span></span><br><span class="line">            <span class="keyword">synchronized</span> (DoubleCheckLock.class)&#123;</span><br><span class="line">                <span class="keyword">if</span>(doubleCheckLock == <span class="literal">null</span>)&#123;</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">DoubleCheckLock</span>();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> doubleCheckLock;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
 
 ]]></content>
       <categories>
@@ -1033,48 +1134,6 @@
       </tags>
   </entry>
   <entry>
-    <title>外观模式</title>
-    <url>/2022/09/01/%E5%A4%96%E8%A7%82%E6%A8%A1%E5%BC%8F/</url>
-    <content><![CDATA[<h4 id="外观模式"><a href="#外观模式" class="headerlink" title="外观模式"></a>外观模式</h4><p>定义： <strong>隐藏了系统的复杂性，并向客户端提供了一个可以访问系统的接口</strong></p>
-<p>简单来说，该模式就是把一些复杂的流程封装成一个接口供给外部用户更简单的使用</p>
-<p>优点：</p>
-<p><strong>松散耦合</strong>：使得客户端和子系统之间解耦，让子系统内部的模块功能更容易扩展和维护；</p>
-<p><strong>简单易用</strong>：客户端根本不需要知道子系统内部的实现，或者根本不需要知道子系统内部的构成，它只需要<strong>跟Facade类（门面）交互</strong>即可</p>
-<p><img src><img src="/2022/09/01/%E5%A4%96%E8%A7%82%E6%A8%A1%E5%BC%8F/image-20230318160214913.png" alt="image-20230318160214913"></p>
-]]></content>
-      <categories>
-        <category>设计模式</category>
-      </categories>
-      <tags>
-        <tag>设计模式</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>数据库范式</title>
-    <url>/2022/07/21/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%8C%83%E5%BC%8F/</url>
-    <content><![CDATA[<p>范式是关系数据库理论的基础，也是我们在设计数据库结构过程中所要遵循的规则和指导方法</p>
-<h4 id="第一范式（1NF）"><a href="#第一范式（1NF）" class="headerlink" title="第一范式（1NF）"></a>第一范式（1NF）</h4><p>数据表中的每一列（每个字段）必须是不可拆分的最小单元，也就是确保<strong>每一列的原子性   (值不可再分)</strong></p>
-<h4 id="第二范式（2NF）"><a href="#第二范式（2NF）" class="headerlink" title="第二范式（2NF）"></a>第二范式（2NF）</h4><p>满足1NF后，要求表中的<strong>所有列，都必须依赖于主键</strong>，而不能有任何一列与主键没有关系，也就是说<strong>一个表只描述一件事情</strong>；(<strong>消除了部份依赖</strong>)</p>
-<p>例如：订单表只描述订单相关的信息，所以所有字段都必须与订单id相关 产品表只描述产品相关的信息，所以所有字段都必须与产品id相 关；因此不能在一张表中同时出现订单信息与产品信息</p>
-<h4 id="第三范式（3NF）"><a href="#第三范式（3NF）" class="headerlink" title="第三范式（3NF）"></a>第三范式（3NF）</h4><p>必须先满足第二范式（2NF），要求：表中的<strong>每一列只与主键直接相关而不是间接相关</strong>，（表中的每一列只能依赖于主键）；(<strong>消除了传递依赖</strong>)</p>
-<p>订单表中需要有客户相关信息，在分离出客户表之后，订单表中只需要有一个用户id即可，而不能有其他的客户信息。因为其他的客户信息直接关联于用户id，而不是直接与订单id直接相关</p>
-<h4 id="数据库五大约束"><a href="#数据库五大约束" class="headerlink" title="数据库五大约束"></a>数据库五大约束</h4><ul>
-<li><strong>primary KEY</strong>:设置主键约束；</li>
-<li><strong>UNIQUE</strong>：设置唯一性约束，不能有重复值；</li>
-<li><strong>DEFAULT</strong> 默认值约束，height DOUBLE(3,2)DEFAULT 1.2 height不输入是默认为1,2</li>
-<li><strong>NOT NULL</strong>：设置非空约束，该字段不能为空；</li>
-<li><strong>FOREIGN key</strong> :设置外键约束</li>
-</ul>
-]]></content>
-      <categories>
-        <category>数据库</category>
-        <category>MySQL</category>
-      </categories>
-      <tags>
-        <tag>MySQL</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>分布式定时器解决方案</title>
     <url>/2022/07/19/%E5%88%86%E5%B8%83%E5%BC%8F%E5%AE%9A%E6%97%B6%E5%99%A8%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</url>
     <content><![CDATA[<h4 id="背景问题"><a href="#背景问题" class="headerlink" title="背景问题"></a>背景问题</h4><p>项目同时部署在多台集群机器上，因此到达指定的定时时间时，<strong>多台机器上的定时器可能会同时启动，造成重复数据或者程序异常等问题</strong></p>
@@ -1119,6 +1178,69 @@
       </categories>
       <tags>
         <tag>定时器</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>单例模式</title>
+    <url>/2022/08/03/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[<h4 id="单例模式"><a href="#单例模式" class="headerlink" title="单例模式"></a>单例模式</h4><h5 id="适用场景"><a href="#适用场景" class="headerlink" title="适用场景"></a>适用场景</h5><ul>
+<li><p><strong>保证一个类只有一个实例</strong>，并且提供一个访问该全局访问点</p>
+</li>
+<li><p>对于 Java 来说，<strong>单例模式可以保证在一个 JVM 中只存在单一实例</strong>。单例模式的应用场景主要有以下几个方面。</p>
+</li>
+<li><p><strong>需要频繁创建的一些类</strong>，使用单例可以<strong>降低系统的内存压力，减少 GC</strong>。</p>
+</li>
+<li><p>某类只要求生成一个对象的时候，如一个班中的班长、每个人的身份证号等。</p>
+</li>
+<li><p><strong>某些类创建实例时占用资源较多，或实例化耗时较长</strong>，且经常使用。</p>
+</li>
+<li><p><strong>某类需要频繁实例化，而创建的对象又频繁被销毁的时候</strong>，如<strong>多线程的线程池、网络连接池</strong>等。</p>
+</li>
+<li><p>频繁访问数据库或文件的对象。</p>
+</li>
+<li><p>对于一些控制硬件级别的操作，或者从系统上来讲应当是单一控制逻辑的操作，如果有多个实例，则系统会完全乱套。</p>
+</li>
+<li><p><strong>当对象需要被共享的场合</strong>。由于单例模式只允许创建一个对象，共享该对象可以节省内存，并加快对象访问速度。如 Web 中的配置对象、数据库的连接池等</p>
+</li>
+</ul>
+<h5 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h5><ul>
+<li>构造方法私有化，</li>
+<li>获取方法公开化</li>
+</ul>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"> <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> LazySingleton instance=<span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">LazySingleton</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="comment">// private私有 避免类在外部被实例化</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> LazySingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(instance == <span class="literal">null</span>)&#123;</span><br><span class="line">            instance = <span class="keyword">new</span> <span class="title class_">LazySingleton</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="单例防止反射漏洞攻击"><a href="#单例防止反射漏洞攻击" class="headerlink" title="单例防止反射漏洞攻击"></a><strong>单例防止反射漏洞攻击</strong></h5>   <figure class="highlight java"><table><tr><td class="code"><pre><span class="line">     <span class="keyword">private</span> <span class="keyword">static</span> <span class="type">boolean</span> <span class="variable">flag</span> <span class="operator">=</span> <span class="literal">false</span>; </span><br><span class="line"><span class="keyword">private</span> <span class="title function_">Singleton</span><span class="params">()</span> &#123;</span><br><span class="line">     <span class="keyword">if</span> (flag == <span class="literal">false</span>) &#123; </span><br><span class="line">         flag = !flag; </span><br><span class="line">     &#125; <span class="keyword">else</span> &#123; </span><br><span class="line">         <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RuntimeException</span>(<span class="string">&quot;单例模式被侵犯！&quot;</span>); </span><br><span class="line">     &#125; </span><br><span class="line">&#125; </span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>​                </p>
+<h5 id="懒汉式单例"><a href="#懒汉式单例" class="headerlink" title="懒汉式单例"></a><strong>懒汉式单例</strong></h5><p><strong>类初始化时,不会初始化该对象,真正需要使用的时候才会创建该对象,具备懒加载功能</strong></p>
+   <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 懒汉式</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">LazySingleton</span> &#123;</span><br><span class="line">    <span class="comment">// 保证 instance 在所有线程中同步 防止指令重排序</span></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *uniqueInstance 采用 volatile 关键字修饰也是很有必要的， uniqueInstance = new Singleton();</span></span><br><span class="line"><span class="comment">     * 这段代码其实是分为三步执行：</span></span><br><span class="line"><span class="comment">     * 1. 为 uniqueInstance 分配内存空间</span></span><br><span class="line"><span class="comment">     * 2. 初始化 uniqueInstance</span></span><br><span class="line"><span class="comment">     * 3. 将 uniqueInstance 指向分配的内存地址</span></span><br><span class="line"><span class="comment">     * 但是由于 JVM 具有指令重排的特性，执行顺序有可能变成 1-&gt;3-&gt;2。、</span></span><br><span class="line"><span class="comment">        指令重排在单线程环境下不会出现问题，</span></span><br><span class="line"><span class="comment">     * 但是在多线程环境下会导致一个线程获得还没有初始化的实例。</span></span><br><span class="line"><span class="comment">       例如，线程 T1 执行了 1 和 3，此时 T2 调用</span></span><br><span class="line"><span class="comment">     * getUniqueInstance() 后发现 uniqueInstance 不为空，</span></span><br><span class="line"><span class="comment">       因此返回 uniqueInstance，但此时</span></span><br><span class="line"><span class="comment">     * uniqueInstance 还未被初始化。</span></span><br><span class="line"><span class="comment">     * 使用 volatile 可以禁止 JVM 的指令重排，保证在多线程环境下也能正常运行。</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">volatile</span> LazySingleton instance=<span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">LazySingleton</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="comment">// private私有 避免类在外部被实例化</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">synchronized</span> LazySingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">if</span>(instance == <span class="literal">null</span>)&#123;</span><br><span class="line">            instance = <span class="keyword">new</span> <span class="title class_">LazySingleton</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>​                      </p>
+<h5 id="饿汉式"><a href="#饿汉式" class="headerlink" title="饿汉式"></a><strong>饿汉式</strong></h5><p><strong>类加载阶段完成实例的初始化</strong>   类加载机制保证线程安全</p>
+<p>类初始化时,会立即加载该对象，线程天生安全,调用效率高</p>
+  <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HungrySingleton</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> HungrySingleton instance=<span class="keyword">new</span> <span class="title class_">HungrySingleton</span>();</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">HungrySingleton</span><span class="params">()</span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> HungrySingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> instance;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>​                       </p>
+<h5 id="静态内部类"><a href="#静态内部类" class="headerlink" title="静态内部类"></a><strong>静态内部类</strong></h5><p><strong>类加载机制保证线程安全</strong></p>
+ <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 静态内部类</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">StaticInnerSingleton</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">StaticInnerSingleton</span><span class="params">()</span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">InnerClass</span>&#123;</span><br><span class="line">        <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">StaticInnerSingleton</span> <span class="variable">staticInnerSingleton</span></span><br><span class="line">            <span class="operator">=</span><span class="keyword">new</span> <span class="title class_">StaticInnerSingleton</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> StaticInnerSingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> InnerClass.staticInnerSingleton;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>​         </p>
+<h5 id="枚举单例式"><a href="#枚举单例式" class="headerlink" title="枚举单例式"></a><strong>枚举单例式</strong></h5><p>使用枚举实现单例模式 优点:实现简单、调用效率高，<strong>枚举本身就是单例，由jvm从根本</strong></p>
+<p><strong>上提供保障</strong>!<strong>避免通过反射和反序列化的漏洞， 缺点没有延迟加载</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span> 枚举单例</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">EnumSingleton</span> &#123;</span><br><span class="line">    <span class="comment">//定义枚举</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">enum</span> <span class="title class_">Demo</span>&#123;</span><br><span class="line">        INSTANCE;<span class="comment">// 枚举元素为单例</span></span><br><span class="line">        <span class="keyword">private</span> EnumSingleton enumSingleton;</span><br><span class="line">        <span class="keyword">private</span> <span class="title function_">Demo</span><span class="params">()</span>&#123;</span><br><span class="line">            enumSingleton=<span class="keyword">new</span> <span class="title class_">EnumSingleton</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">public</span> EnumSingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">            <span class="keyword">return</span> enumSingleton;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> EnumSingleton <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">        <span class="keyword">return</span> Demo.INSTANCE.getInstance();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">EnumSingleton</span> <span class="variable">s1</span> <span class="operator">=</span> EnumSingleton.getInstance();</span><br><span class="line">        <span class="type">EnumSingleton</span> <span class="variable">s2</span> <span class="operator">=</span> EnumSingleton.getInstance();</span><br><span class="line">        System.out.println(s1 == s2);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="双重检测锁方式"><a href="#双重检测锁方式" class="headerlink" title="双重检测锁方式"></a><strong>双重检测锁方式</strong></h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 双重检测锁</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DoubleCheckLock</span> &#123;</span><br><span class="line">    <span class="comment">// volatile 防止指令重排序优化</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">volatile</span> <span class="keyword">static</span> DoubleCheckLock doubleCheckLock;</span><br><span class="line">    <span class="keyword">private</span> <span class="title function_">DoubleCheckLock</span><span class="params">()</span>&#123;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 此处检测doubleCheckLock == null,是为了防止当singletonMode已经初始化后，</span></span><br><span class="line"><span class="comment">     * 还会继续调用同步锁，造成不必要的损耗</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> DoubleCheckLock <span class="title function_">getInstance</span><span class="params">()</span>&#123;</span><br><span class="line">         <span class="comment">// 加锁目的，防止多线程同时进入造成对象多次实例化</span></span><br><span class="line">        <span class="keyword">if</span>(doubleCheckLock == <span class="literal">null</span>)&#123;</span><br><span class="line">            <span class="comment">// 为了在null的情况下创建实例，防止不必要的损耗</span></span><br><span class="line">            <span class="keyword">synchronized</span> (DoubleCheckLock.class)&#123;</span><br><span class="line">                <span class="keyword">if</span>(doubleCheckLock == <span class="literal">null</span>)&#123;</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">DoubleCheckLock</span>();</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> doubleCheckLock;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
       </tags>
   </entry>
   <entry>
@@ -1178,6 +1300,187 @@
       </tags>
   </entry>
   <entry>
+    <title>外观模式</title>
+    <url>/2022/09/01/%E5%A4%96%E8%A7%82%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[<h4 id="外观模式"><a href="#外观模式" class="headerlink" title="外观模式"></a>外观模式</h4><p>定义： <strong>隐藏了系统的复杂性，并向客户端提供了一个可以访问系统的接口</strong></p>
+<p>简单来说，该模式就是把一些复杂的流程封装成一个接口供给外部用户更简单的使用</p>
+<p>优点：</p>
+<p><strong>松散耦合</strong>：使得客户端和子系统之间解耦，让子系统内部的模块功能更容易扩展和维护；</p>
+<p><strong>简单易用</strong>：客户端根本不需要知道子系统内部的实现，或者根本不需要知道子系统内部的构成，它只需要<strong>跟Facade类（门面）交互</strong>即可</p>
+<p><img src><img src="/2022/09/01/%E5%A4%96%E8%A7%82%E6%A8%A1%E5%BC%8F/image-20230318160214913.png" alt="image-20230318160214913"></p>
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>数据库和缓存如何保持一致性</title>
+    <url>/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/</url>
+    <content><![CDATA[<h2 id="数据库和缓存如何保证一致性？"><a href="#数据库和缓存如何保证一致性？" class="headerlink" title="数据库和缓存如何保证一致性？"></a>数据库和缓存如何保证一致性？</h2><h3 id="先更新数据库，还是先更新缓存？"><a href="#先更新数据库，还是先更新缓存？" class="headerlink" title="先更新数据库，还是先更新缓存？"></a>先更新数据库，还是先更新缓存？</h3><p><strong>由于引入了缓存，那么在数据更新时，不仅要更新数据库，而且要更新缓存，这两个更新操作存在前后的问题</strong>：</p>
+<ul>
+<li><p>先更新数据库，再更新缓存；</p>
+</li>
+<li><p>先更新缓存，再更新数据库；</p>
+</li>
+</ul>
+<h4 id="先更新数据库，再更新缓存"><a href="#先更新数据库，再更新缓存" class="headerlink" title="先更新数据库，再更新缓存"></a>先更新数据库，再更新缓存</h4><p>举个例子，比如「请求 A 」和「请求 B 」两个请求，同时更新「同一条」数据，则可能出现这样的顺序：</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/8febac10b14bed16cb96d1d944cd08da.png" alt="图片"></p>
+<p>A 请求先将数据库的数据更新为 1，然后在更新缓存前，请求 B 将数据库的数据更新为 2，紧接着也把缓存更新为 2，然后 A 请求更新缓存为 1。</p>
+<p>此时，数据库中的数据是 2，而缓存中的数据却是 1，<strong>出现了缓存和数据库中的数据不一致的现象</strong>。</p>
+<h4 id="先更新缓存，再更新数据库"><a href="#先更新缓存，再更新数据库" class="headerlink" title="先更新缓存，再更新数据库"></a>先更新缓存，再更新数据库</h4><p>那换成「<strong>先更新缓存，再更新数据库</strong>」这个方案，还会有问题吗？</p>
+<p>依然还是存在并发的问题，分析思路也是一样。</p>
+<p>假设「请求 A 」和「请求 B 」两个请求，同时更新「同一条」数据，则可能出现这样的顺序：</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/454a8228a6549176ad7e0484fba3c92b.png" alt="图片"></p>
+<p>A 请求先将缓存的数据更新为 1，然后在更新数据库前，B 请求来了， 将缓存的数据更新为 2，紧接着把数据库更新为 2，然后 A 请求将数据库的数据更新为 1。</p>
+<p>此时，数据库中的数据是 1，而缓存中的数据却是 2，<strong>出现了缓存和数据库中的数据不一致的现象</strong>。</p>
+<p>所以，<strong>无论是「先更新数据库，再更新缓存」，还是「先更新缓存，再更新数据库」，这两个方案都存在并发问题，当两个请求并发更新同一条数据的时候，可能会出现缓存和数据库中的数据不一致的现象</strong>。</p>
+<h3 id="先更新数据库，还是先删除缓存？"><a href="#先更新数据库，还是先删除缓存？" class="headerlink" title="先更新数据库，还是先删除缓存？"></a>先更新数据库，还是先删除缓存？</h3><p>思考了一番后，决定在更新数据时，<strong>不更新缓存，而是删除缓存中的数据。然后，到读取数据时，发现缓存中没了数据之后，再从数据库中读取数据，更新到缓存中。</strong></p>
+<p>个策略是有名字的，是叫 <strong>Cache Aside 策略</strong>，中文是叫旁路缓存策略。</p>
+<p>该策略又可以细分为「读策略」和「写策略」。</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/6e3db3ba2f829ddc14237f5c7c00e7ce.png" alt="图片"></p>
+<p><strong>写策略的步骤：</strong></p>
+<ul>
+<li>更新数据库中的数据；</li>
+<li>删除缓存中的数据。</li>
+</ul>
+<p><strong>读策略的步骤：</strong></p>
+<ul>
+<li>如果读取的数据命中了缓存，则直接返回数据；</li>
+<li>如果读取的数据没有命中缓存，则从数据库中读取数据，然后将数据写入到缓存，并且返回给用户。</li>
+</ul>
+<p>「写策略」的时候，又陷入更深层次的思考，到底该选择哪种顺序呢？</p>
+<ul>
+<li>先删除缓存，再更新数据库；</li>
+<li>先更新数据库，再删除缓存。</li>
+</ul>
+<p>用并发的角度来分析，看看这两种方案哪个可以保证数据库与缓存的数据一致性。</p>
+<h4 id="先删除缓存，再更新数据库"><a href="#先删除缓存，再更新数据库" class="headerlink" title="先删除缓存，再更新数据库"></a>先删除缓存，再更新数据库</h4><p>以用户表的场景来分析。</p>
+<p>假设某个用户的年龄是 20，请求 A 要更新用户年龄为 21，所以它会删除缓存中的内容。这时，另一个请求 B 要读取这个用户的年龄，它查询缓存发现未命中后，会从数据库中读取到年龄为 20，并且写入到缓存中，然后请求 A 继续更改数据库，将用户的年龄更新为 21。</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/cc208c2931b4e889d1a58cb655537767.png" alt="图片"></p>
+<p>最终，该用户年龄在缓存中是 20（旧值），在数据库中是 21（新值），缓存和数据库的数据不一致。</p>
+<p>可以看到，<strong>先删除缓存，再更新数据库，在「读 + 写」并发的时候，还是会出现缓存和数据库的数据不一致的问题</strong></p>
+<h4 id="先更新数据库，再删除缓存"><a href="#先更新数据库，再删除缓存" class="headerlink" title="先更新数据库，再删除缓存"></a>先更新数据库，再删除缓存</h4><p>继续用「读 + 写」请求的并发的场景来分析。</p>
+<p>假如某个用户数据在缓存中不存在，请求 A 读取数据时从数据库中查询到年龄为 20，在未写入缓存中时另一个请求 B 更新数据。它更新数据库中的年龄为 21，并且清空缓存。这时请求 A 把从数据库中读到的年龄为 20 的数据写入到缓存中。</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/1cc7401143e79383ead96582ac11b615.png" alt="图片"></p>
+<p>最终，该用户年龄在缓存中是 20（旧值），在数据库中是 21（新值），缓存和数据库数据不一致。</p>
+<p>从上面的理论上分析，先更新数据库，再删除缓存也是会出现数据不一致性的问题，<strong>但是在实际中，这个问题出现的概率并不高</strong>。</p>
+<p><strong>因为缓存的写入通常要远远快于数据库的写入</strong>，所以在实际中很难出现请求 B 已经更新了数据库并且删除了缓存，请求 A 才更新完缓存的情况。</p>
+<p>而一旦请求 A 早于请求 B 删除缓存之前更新了缓存，那么接下来的请求就会因为缓存不命中而从数据库中重新读取数据，所以不会出现这种不一致的情况。</p>
+<p>所以，<strong>「先更新数据库 + 再删除缓存」的方案，是可以保证数据一致性的</strong>。</p>
+<p>而且为了确保万无一失，还给缓存数据加上了「<strong>过期时间</strong>」，就算在这期间存在缓存数据不一致，有过期时间来兜底，这样也能达到最终一致。</p>
+<p>但是「先更新数据库， 再删除缓存」其实是两个操作，前面的所有分析都是建立在这两个操作都能同时执行成功，存在问题，<strong>在删除缓存（第二个操作）的时候失败了，会导致缓存中的数据是旧值</strong>。</p>
+<p>好在之前给缓存加上了过期时间，所以过一段时间才更新生效的现象，假设如果没有这个过期时间的兜底，那后续的请求读到的就会一直是缓存中的旧数据，这样问题就更大了。</p>
+<p>所以新的问题来了，<strong>如何保证「先更新数据库 ，再删除缓存」这两个操作能执行成功？</strong></p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>我们继续说点其他。</p>
+<p>「先更新数据库，再删除缓存」的方案虽然保证了数据库与缓存的数据一致性，但是每次更新数据的时候，缓存的数据都会被删除，这样会对缓存的命中率带来影响。</p>
+<p>所以，<strong>如果我们的业务对缓存命中率有很高的要求，我们可以采用「更新数据库 + 更新缓存」的方案，因为更新缓存并不会出现缓存未命中的情况</strong>。</p>
+<p>但是这个方案前面我们也分析过，在两个更新请求并发执行的时候，会出现数据不一致的问题，因为更新数据库和更新缓存这两个操作是独立的，而我们又没有对操作做任何并发控制，那么当两个线程并发更新它们的话，就会因为写入顺序的不同造成数据的不一致。</p>
+<p>所以我们得增加一些手段来解决这个问题，这里提供两种做法：</p>
+<ul>
+<li>在更新缓存前先加个<strong>分布式锁</strong>，保证同一时间只运行一个请求更新缓存，就会不会产生并发问题了，当然引入了锁后，对于写入的性能就会带来影响。</li>
+<li>在更新完缓存时，给缓存加上较短的<strong>过期时间</strong>，这样即时出现缓存不一致的情况，缓存的数据也会很快过期，对业务还是能接受的。</li>
+</ul>
+<p>对了，针对「先删除缓存，再更新数据库」方案在「读 + 写」并发请求而造成缓存不一致的解决办法是「<strong>延迟双删</strong>」。</p>
+<p>延迟双删实现的伪代码如下：</p>
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">#删除缓存</span><br><span class="line">redis.delKey(X)</span><br><span class="line">#更新数据库</span><br><span class="line">db.update(X)</span><br><span class="line">#睡眠</span><br><span class="line">Thread.sleep(N)</span><br><span class="line">#再删除缓存</span><br><span class="line">redis.delKey(X)</span><br></pre></td></tr></table></figure>
+
+<p>加了个睡眠时间，主要是为了确保请求 A 在睡眠的时候，请求 B 能够在这这一段时间完成「从数据库读取数据，再把缺失的缓存写入缓存」的操作，然后请求 A 睡眠完，再删除缓存。</p>
+<p>所以，请求 A 的睡眠时间就需要大于请求 B 「从数据库读取数据 + 写入缓存」的时间。</p>
+<p>但是具体睡眠多久其实是个<strong>玄学</strong>，很难评估出来，所以这个方案也只是<strong>尽可能</strong>保证一致性而已，极端情况下，依然也会出现缓存不一致的现象。</p>
+<p>因此，还是比较建议用「先更新数据库，再删除缓存」的方案。</p>
+<h3 id="前情回顾"><a href="#前情回顾" class="headerlink" title="前情回顾"></a>前情回顾</h3><p>为了提升数据访问的性能，引入 Redis 作为 MySQL 缓存层，但是这件事情并不是那么简单，因为还要考虑 Redis 和 MySQL 双写一致性的问题。</p>
+<p>经过一番周折，最终选用了「<strong>先更新数据库，再删缓存</strong>」的策略，原因是这个策略即使在并发读写时，也能最大程度保证数据一致性。</p>
+<p>还搞了个兜底的方案，就是给缓存加上了过期时间。</p>
+<p>本以为就这样不会在出现数据一致性的问题，结果将功能上线后，还是收到用户的投诉「说自己明明更新了数据，但是数据要过一段时间才生效」，客户接受不了。</p>
+<p>立马就登录服务器去排查问题，查看日志后得知了原因。</p>
+<p>「先更新数据库， 再删除缓存」其实是两个操作，这次客户投诉的问题就在于，<strong>在删除缓存（第二个操作）的时候失败了，导致缓存中的数据是旧值，而数据库是最新值</strong>。</p>
+<p>好在之前给缓存加上了过期时间，所以才会出现客户说的过一段时间才更新生效的现象，假设如果没有这个过期时间的兜底，那后续的请求读到的就会一直是缓存中的旧数据，这样问题就更大了。</p>
+<p>所以新的问题来了，<strong>如何保证「先更新数据库 ，再删除缓存」这两个操作能执行成功？</strong></p>
+<h3 id="如何保证两个操作都能执行成功？"><a href="#如何保证两个操作都能执行成功？" class="headerlink" title="如何保证两个操作都能执行成功？"></a>如何保证两个操作都能执行成功？</h3><p>这次用户的投诉是因为在删除缓存（第二个操作）的时候失败了，导致缓存还是旧值，而数据库是最新值，造成数据库和缓存数据不一致的问题，会对敏感业务造成影响。</p>
+<p>举个例子，来说明下。</p>
+<p>应用要把数据 X 的值从 1 更新为 2，先成功更新了数据库，然后在 Redis 缓存中删除 X 的缓存，但是这个操作却失败了，这个时候数据库中 X 的新值为 2，Redis 中的 X 的缓存值为 1，出现了数据库和缓存数据不一致的问题。</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/2a2ea2854bbc3ae8ae86d7da45fa32ee.png" alt="图片"></p>
+<p>那么，后续有访问数据 X 的请求，会先在 Redis 中查询，因为缓存并没有 诶删除，所以会缓存命中，但是读到的却是旧值 1。</p>
+<p>其实不管是先操作数据库，还是先操作缓存，只要第二个操作失败都会出现数据部一致的问题。</p>
+<p>问题原因知道了，该怎么解决呢？有两种方法：</p>
+<ul>
+<li>重试机制。</li>
+<li>订阅 MySQL binlog，再操作缓存。</li>
+</ul>
+<p>先来说第一种。</p>
+<h5 id="重试机制"><a href="#重试机制" class="headerlink" title="#重试机制"></a><a href="https://www.xiaolincoding.com/redis/architecture/mysql_redis_consistency.html#%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6">#</a>重试机制</h5><p>我们可以引入<strong>消息队列</strong>，将第二个操作（删除缓存）要操作的数据加入到消息队列，由消费者来操作数据。</p>
+<ul>
+<li>如果应用<strong>删除缓存失败</strong>，可以从消息队列中重新读取数据，然后再次删除缓存，这个就是<strong>重试机制</strong>。当然，如果重试超过的一定次数，还是没有成功，我们就需要向业务层发送报错信息了。</li>
+<li>如果<strong>删除缓存成功</strong>，就要把数据从消息队列中移除，避免重复操作，否则就继续重试。</li>
+</ul>
+<p>举个例子，来说明重试机制的过程。</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/a4440f0d572612e0832b903e4a62bd2b.png" alt="图片"></p>
+<h5 id="订阅-MySQL-binlog，再操作缓存"><a href="#订阅-MySQL-binlog，再操作缓存" class="headerlink" title="订阅 MySQL binlog，再操作缓存"></a>订阅 MySQL binlog，再操作缓存</h5><p>「<strong>先更新数据库，再删缓存</strong>」的策略的第一步是更新数据库，那么更新数据库成功，就会产生一条变更日志，记录在 binlog 里。</p>
+<p>于是我们就可以通过订阅 binlog 日志，拿到具体要操作的数据，然后再执行缓存删除，阿里巴巴开源的 Canal 中间件就是基于这个实现的。</p>
+<p>Canal 模拟 MySQL 主从复制的交互协议，把自己伪装成一个 MySQL 的从节点，向 MySQL 主节点发送 dump 请求，MySQL 收到请求后，就会开始推送 Binlog 给 Canal，Canal 解析 Binlog 字节流之后，转换为便于读取的结构化数据，供下游程序订阅使用。</p>
+<p>下图是 Canal 的工作原理：</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/2ee2280e9f59b6b4879ebdec6eb0cf52.png" alt="图片"></p>
+<p>所以，<strong>如果要想保证「先更新数据库，再删缓存」策略第二个操作能执行成功，我们可以使用「消息队列来重试缓存的删除」，或者「订阅 MySQL binlog 再操作缓存」，这两种方法有一个共同的特点，都是采用异步操作缓存。</strong></p>
+<h2 id="为什么是删除缓存，而不是更新缓存呢？"><a href="#为什么是删除缓存，而不是更新缓存呢？" class="headerlink" title="为什么是删除缓存，而不是更新缓存呢？"></a>为什么是删除缓存，而不是更新缓存呢？</h2><p>删除一个数据，相比更新一个数据更加轻量级，出问题的概率更小。在实际业务中，缓存的数据可能不是直接来自数据库表，也许来自多张底层数据表的聚合。</p>
+<p>比如商品详情信息，在底层可能会关联商品表、价格表、库存表等，如果更新了一个价格字段，那么就要更新整个数据库，还要关联的去查询和汇总各个周边业务系统的数据，这个操作会非常耗时。 从另外一个角度，不是所有的缓存数据都是频繁访问的，更新后的缓存可能会长时间不被访问，所以说，从计算资源和整体性能的考虑，更新的时候删除缓存，等到下次查询命中再填充缓存，是一个更好的方案。</p>
+<p>系统设计中有一个思想叫 Lazy Loading，适用于那些加载代价大的操作，删除缓存而不是更新缓存，就是懒加载思想的一个应用。</p>
+]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>数据库范式</title>
+    <url>/2022/07/21/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%8C%83%E5%BC%8F/</url>
+    <content><![CDATA[<p>范式是关系数据库理论的基础，也是我们在设计数据库结构过程中所要遵循的规则和指导方法</p>
+<h4 id="第一范式（1NF）"><a href="#第一范式（1NF）" class="headerlink" title="第一范式（1NF）"></a>第一范式（1NF）</h4><p>数据表中的每一列（每个字段）必须是不可拆分的最小单元，也就是确保<strong>每一列的原子性   (值不可再分)</strong></p>
+<h4 id="第二范式（2NF）"><a href="#第二范式（2NF）" class="headerlink" title="第二范式（2NF）"></a>第二范式（2NF）</h4><p>满足1NF后，要求表中的<strong>所有列，都必须依赖于主键</strong>，而不能有任何一列与主键没有关系，也就是说<strong>一个表只描述一件事情</strong>；(<strong>消除了部份依赖</strong>)</p>
+<p>例如：订单表只描述订单相关的信息，所以所有字段都必须与订单id相关 产品表只描述产品相关的信息，所以所有字段都必须与产品id相 关；因此不能在一张表中同时出现订单信息与产品信息</p>
+<h4 id="第三范式（3NF）"><a href="#第三范式（3NF）" class="headerlink" title="第三范式（3NF）"></a>第三范式（3NF）</h4><p>必须先满足第二范式（2NF），要求：表中的<strong>每一列只与主键直接相关而不是间接相关</strong>，（表中的每一列只能依赖于主键）；(<strong>消除了传递依赖</strong>)</p>
+<p>订单表中需要有客户相关信息，在分离出客户表之后，订单表中只需要有一个用户id即可，而不能有其他的客户信息。因为其他的客户信息直接关联于用户id，而不是直接与订单id直接相关</p>
+<h4 id="数据库五大约束"><a href="#数据库五大约束" class="headerlink" title="数据库五大约束"></a>数据库五大约束</h4><ul>
+<li><strong>primary KEY</strong>:设置主键约束；</li>
+<li><strong>UNIQUE</strong>：设置唯一性约束，不能有重复值；</li>
+<li><strong>DEFAULT</strong> 默认值约束，height DOUBLE(3,2)DEFAULT 1.2 height不输入是默认为1,2</li>
+<li><strong>NOT NULL</strong>：设置非空约束，该字段不能为空；</li>
+<li><strong>FOREIGN key</strong> :设置外键约束</li>
+</ul>
+]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>MySQL</category>
+      </categories>
+      <tags>
+        <tag>MySQL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>桥接模式</title>
+    <url>/2022/09/10/%E6%A1%A5%E6%8E%A5%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[<h4 id="桥接模式"><a href="#桥接模式" class="headerlink" title="桥接模式"></a>桥接模式</h4><p>定义： <strong>将抽象部分与它的实现部分分离</strong>，使它们都可以独立地变化</p>
+<p>主要解决：在有多种可能会变化的情况下，<strong>用继承会造成类爆炸问题</strong>，扩展起来不灵活</p>
+<p>何时使用：实现系统可能有多个角度分类，每一种角度都可能变化。</p>
+<p>如何解决：把这种多角度分类分离出来，让它们独立变化，减少它们之间耦合</p>
+<p>桥接模式通常适用于以下场景：</p>
+<p><strong>当一个类存在两个独立变化的维度</strong>，且这两个维度都需要进行扩展时</p>
+<p>当一个系统<strong>不希望使用继承或因为多层次继承导致系统类的个数急剧增加</strong>时</p>
+<p>Jdk中用到的桥接模式：<strong>JDBC</strong>，JDBC连接数据库时：<strong>利用驱动来桥接</strong>，JDBC连接数据库时，<strong>在各个数据库之间进行切换，基本不需要动太多的代码</strong>，甚至丝毫不动，原因就是JDBC提供了统一接口，<strong>每个数据库提供各自的实现</strong>，用一个叫做<strong>数据库驱动的程序来桥接</strong>就行了</p>
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>策略模式</title>
     <url>/2022/09/15/%E7%AD%96%E7%95%A5%E6%A8%A1%E5%BC%8F/</url>
     <content><![CDATA[<h4 id="策略模式"><a href="#策略模式" class="headerlink" title="策略模式"></a>策略模式</h4><p>在策略模式（Strategy Pattern）中，<strong>一个类的行为或其算法可以在运行时更改</strong></p>
@@ -1196,25 +1499,6 @@
 <p><img src="https://www.runoob.com/wp-content/uploads/2014/08/strategy_pattern_uml_diagram.jpg" alt="策略模式的 UML 图"></p>
 <figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建一个接口</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Strategy</span> &#123;</span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 创建实现接口的实体类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationAdd</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 + num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationSubtract</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 - num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationMultiply</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 * num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 创建 Context 类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Context</span> &#123;</span><br><span class="line">   <span class="keyword">private</span> Strategy strategy;</span><br><span class="line"> </span><br><span class="line">   <span class="keyword">public</span> <span class="title function_">Context</span><span class="params">(Strategy strategy)</span>&#123;</span><br><span class="line">      <span class="built_in">this</span>.strategy = strategy;</span><br><span class="line">   &#125;</span><br><span class="line"> </span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">executeStrategy</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span>&#123;</span><br><span class="line">      <span class="keyword">return</span> strategy.doOperation(num1, num2);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 使用 Context 来查看当它改变策略 Strategy 时的行为变化</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">StrategyPatternDemo</span> &#123;</span><br><span class="line">   <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">      <span class="type">Context</span> <span class="variable">context</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationAdd</span>());    </span><br><span class="line">      System.out.println(<span class="string">&quot;10 + 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line"> </span><br><span class="line">      context = <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationSubtract</span>());      </span><br><span class="line">      System.out.println(<span class="string">&quot;10 - 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line"> </span><br><span class="line">      context = <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationMultiply</span>());    </span><br><span class="line">      System.out.println(<span class="string">&quot;10 * 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 执行程序，输出结果</span></span><br><span class="line"><span class="number">10</span> + <span class="number">5</span> = <span class="number">15</span></span><br><span class="line"><span class="number">10</span> - <span class="number">5</span> = <span class="number">5</span></span><br><span class="line"><span class="number">10</span> * <span class="number">5</span> = <span class="number">50</span></span><br></pre></td></tr></table></figure>
 
-]]></content>
-      <categories>
-        <category>设计模式</category>
-      </categories>
-      <tags>
-        <tag>设计模式</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>桥接模式</title>
-    <url>/2022/09/10/%E6%A1%A5%E6%8E%A5%E6%A8%A1%E5%BC%8F/</url>
-    <content><![CDATA[<h4 id="桥接模式"><a href="#桥接模式" class="headerlink" title="桥接模式"></a>桥接模式</h4><p>定义： <strong>将抽象部分与它的实现部分分离</strong>，使它们都可以独立地变化</p>
-<p>主要解决：在有多种可能会变化的情况下，<strong>用继承会造成类爆炸问题</strong>，扩展起来不灵活</p>
-<p>何时使用：实现系统可能有多个角度分类，每一种角度都可能变化。</p>
-<p>如何解决：把这种多角度分类分离出来，让它们独立变化，减少它们之间耦合</p>
-<p>桥接模式通常适用于以下场景：</p>
-<p><strong>当一个类存在两个独立变化的维度</strong>，且这两个维度都需要进行扩展时</p>
-<p>当一个系统<strong>不希望使用继承或因为多层次继承导致系统类的个数急剧增加</strong>时</p>
-<p>Jdk中用到的桥接模式：<strong>JDBC</strong>，JDBC连接数据库时：<strong>利用驱动来桥接</strong>，JDBC连接数据库时，<strong>在各个数据库之间进行切换，基本不需要动太多的代码</strong>，甚至丝毫不动，原因就是JDBC提供了统一接口，<strong>每个数据库提供各自的实现</strong>，用一个叫做<strong>数据库驱动的程序来桥接</strong>就行了</p>
 ]]></content>
       <categories>
         <category>设计模式</category>
@@ -1260,39 +1544,6 @@
       </categories>
       <tags>
         <tag>JVM</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>观察者模式</title>
-    <url>/2022/08/08/%E8%A7%82%E5%AF%9F%E8%80%85%E6%A8%A1%E5%BC%8F/</url>
-    <content><![CDATA[<h4 id="观察者模式"><a href="#观察者模式" class="headerlink" title="观察者模式"></a><strong>观察者模式</strong></h4><p>需要对<strong>某个事物（类的对象等）的某种状态进行监测</strong>，当<strong>被观察者的状态改变的时候</strong>，需要进行某些相应的操作</p>
-<p>分为抽象被观察者、具体被观察者、抽象观察者、具体观察者</p>
-<p>情景：在学校中，老师和学生听到上课铃声之后开始上课</p>
-<h5 id="抽象观察者"><a href="#抽象观察者" class="headerlink" title="抽象观察者"></a><strong>抽象观察者</strong></h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h5 id="具体观察者"><a href="#具体观察者" class="headerlink" title="具体观察者"></a><strong>具体观察者</strong></h5><p>学生</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Student</span> <span class="keyword">implements</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响，学生开始上课！！！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>老师</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Teacher</span> <span class="keyword">implements</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响，老师开始讲课！！！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h5 id="抽象被观察者"><a href="#抽象被观察者" class="headerlink" title="抽象被观察者"></a><strong>抽象被观察者</strong></h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">ISubject</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//增加观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(IOberver oberver)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//删除观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">remove</span><span class="params">(IOberver oberver)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//通知观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">notifyOberver</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h5 id="具体的被观察者"><a href="#具体的被观察者" class="headerlink" title="具体的被观察者"></a><strong>具体的被观察者</strong></h5><p>铃响</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RingBell</span> <span class="keyword">implements</span> <span class="title class_">ISubject</span> &#123;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">private</span> List&lt;IOberver&gt; list=<span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(IOberver oberver)</span> &#123;</span><br><span class="line">        list.add(oberver);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">remove</span><span class="params">(IOberver oberver)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(!list.isEmpty())&#123;</span><br><span class="line">            list.remove(oberver);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">notifyOberver</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">for</span>(IOberver oberver:list)&#123;</span><br><span class="line">            oberver.update();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">ring</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响了&quot;</span>);</span><br><span class="line">        <span class="comment">// 通知老师学生</span></span><br><span class="line">        notifyOberver();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h5 id="运行结果"><a href="#运行结果" class="headerlink" title="运行结果"></a>运行结果</h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *创建观察者实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">Teacher</span> <span class="variable">mathTeacher</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Teacher</span>();</span><br><span class="line">    Student studentA=<span class="keyword">new</span> <span class="title class_">Student</span>();</span><br><span class="line">    Student studentB=<span class="keyword">new</span> <span class="title class_">Student</span>();</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *被观察者实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    RingBell ringBell=<span class="keyword">new</span> <span class="title class_">RingBell</span>();</span><br><span class="line">    ringBell.add(mathTeacher);</span><br><span class="line">    ringBell.add(studentA);</span><br><span class="line">    ringBell.add(studentB);</span><br><span class="line"></span><br><span class="line">    ringBell.ring();</span><br><span class="line">&#125;</span><br><span class="line">铃声响了</span><br><span class="line">铃声响，老师开始讲课！！！</span><br><span class="line">铃声响，学生开始上课！！！</span><br><span class="line">铃声响，学生开始上课！！！ </span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>设计模式</category>
-      </categories>
-      <tags>
-        <tag>设计模式</tag>
       </tags>
   </entry>
   <entry>
@@ -1393,6 +1644,51 @@
       </tags>
   </entry>
   <entry>
+    <title>观察者模式</title>
+    <url>/2022/08/08/%E8%A7%82%E5%AF%9F%E8%80%85%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[<h4 id="观察者模式"><a href="#观察者模式" class="headerlink" title="观察者模式"></a><strong>观察者模式</strong></h4><p>需要对<strong>某个事物（类的对象等）的某种状态进行监测</strong>，当<strong>被观察者的状态改变的时候</strong>，需要进行某些相应的操作</p>
+<p>分为抽象被观察者、具体被观察者、抽象观察者、具体观察者</p>
+<p>情景：在学校中，老师和学生听到上课铃声之后开始上课</p>
+<h5 id="抽象观察者"><a href="#抽象观察者" class="headerlink" title="抽象观察者"></a><strong>抽象观察者</strong></h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="具体观察者"><a href="#具体观察者" class="headerlink" title="具体观察者"></a><strong>具体观察者</strong></h5><p>学生</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Student</span> <span class="keyword">implements</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响，学生开始上课！！！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>老师</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Teacher</span> <span class="keyword">implements</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响，老师开始讲课！！！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="抽象被观察者"><a href="#抽象被观察者" class="headerlink" title="抽象被观察者"></a><strong>抽象被观察者</strong></h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">ISubject</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//增加观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(IOberver oberver)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//删除观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">remove</span><span class="params">(IOberver oberver)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//通知观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">notifyOberver</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="具体的被观察者"><a href="#具体的被观察者" class="headerlink" title="具体的被观察者"></a><strong>具体的被观察者</strong></h5><p>铃响</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RingBell</span> <span class="keyword">implements</span> <span class="title class_">ISubject</span> &#123;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">private</span> List&lt;IOberver&gt; list=<span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(IOberver oberver)</span> &#123;</span><br><span class="line">        list.add(oberver);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">remove</span><span class="params">(IOberver oberver)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(!list.isEmpty())&#123;</span><br><span class="line">            list.remove(oberver);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">notifyOberver</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">for</span>(IOberver oberver:list)&#123;</span><br><span class="line">            oberver.update();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">ring</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响了&quot;</span>);</span><br><span class="line">        <span class="comment">// 通知老师学生</span></span><br><span class="line">        notifyOberver();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="运行结果"><a href="#运行结果" class="headerlink" title="运行结果"></a>运行结果</h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *创建观察者实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">Teacher</span> <span class="variable">mathTeacher</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Teacher</span>();</span><br><span class="line">    Student studentA=<span class="keyword">new</span> <span class="title class_">Student</span>();</span><br><span class="line">    Student studentB=<span class="keyword">new</span> <span class="title class_">Student</span>();</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *被观察者实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    RingBell ringBell=<span class="keyword">new</span> <span class="title class_">RingBell</span>();</span><br><span class="line">    ringBell.add(mathTeacher);</span><br><span class="line">    ringBell.add(studentA);</span><br><span class="line">    ringBell.add(studentB);</span><br><span class="line"></span><br><span class="line">    ringBell.ring();</span><br><span class="line">&#125;</span><br><span class="line">铃声响了</span><br><span class="line">铃声响，老师开始讲课！！！</span><br><span class="line">铃声响，学生开始上课！！！</span><br><span class="line">铃声响，学生开始上课！！！ </span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>设计模式是什么</title>
+    <url>/2022/08/01/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E6%98%AF%E4%BB%80%E4%B9%88/</url>
+    <content><![CDATA[<h4 id="设计模式是什么"><a href="#设计模式是什么" class="headerlink" title="设计模式是什么"></a>设计模式是什么</h4><p>​        代表了最佳的实践，通常被有经验的面向对象的软件开发人员所采用。<strong>设计模式是软件开发人员在软件开发过程中面临的一般问题的解决方案</strong>。这些解决方案是众多软件开发人员经过相当长的一段时间的<strong>试验和错误总结出来的</strong>。</p>
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>责任链模式</title>
     <url>/2022/08/18/%E8%B4%A3%E4%BB%BB%E9%93%BE%E6%A8%A1%E5%BC%8F/</url>
     <content><![CDATA[<h4 id="责任链模式"><a href="#责任链模式" class="headerlink" title="责任链模式"></a>责任链模式</h4><p>过滤器和拦截器</p>
@@ -1438,199 +1734,6 @@
       </categories>
       <tags>
         <tag>设计模式</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>设计模式是什么</title>
-    <url>/2022/08/01/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F%E6%98%AF%E4%BB%80%E4%B9%88/</url>
-    <content><![CDATA[<h4 id="设计模式是什么"><a href="#设计模式是什么" class="headerlink" title="设计模式是什么"></a>设计模式是什么</h4><p>​        代表了最佳的实践，通常被有经验的面向对象的软件开发人员所采用。<strong>设计模式是软件开发人员在软件开发过程中面临的一般问题的解决方案</strong>。这些解决方案是众多软件开发人员经过相当长的一段时间的<strong>试验和错误总结出来的</strong>。</p>
-]]></content>
-      <categories>
-        <category>设计模式</category>
-      </categories>
-      <tags>
-        <tag>设计模式</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>MySQL索引</title>
-    <url>/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/</url>
-    <content><![CDATA[<h4 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h4><p>索引是一种<strong>数据结构</strong>，用于帮助我们<strong>在大量数据中快速定位到我们想要查找的数据</strong>。<br>索引最形象的比喻就是图书的目录了。注意这里的大量，数据量大了索引才显得有意义。</p>
-<h4 id="InnoDB-存储引擎中的-B-树索引"><a href="#InnoDB-存储引擎中的-B-树索引" class="headerlink" title="InnoDB 存储引擎中的 B+ 树索引"></a>InnoDB 存储引擎中的 B+ 树索引</h4><p>要介绍 B+ 树索引，就不得不提<strong>二叉查找树，平衡二叉树和 B 树</strong>这三种数据结构。B+ 树就是从他们仨<strong>演化来的</strong>。</p>
-<ul>
-<li><h5 id="二叉查找树"><a href="#二叉查找树" class="headerlink" title="二叉查找树"></a><strong>二叉查找树</strong></h5></li>
-</ul>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard.png"></p>
-<p>图示：我们为 user 表（用户信息表）建立了一个二叉查找树的索引</p>
-<p>图中的圆为二叉查找树的节点，<strong>节点中存储了键（key）和数据（data）</strong>。键对应 user 表中的 id，数据对应 user 表中的行数据。</p>
-<p>二叉查找树的特点就是<strong>任何节点的左子节点的键值都小于当前节点的键值</strong>，<strong>右子节点的键值都大于当前节点的键值</strong>。<strong>顶端的节点我们称为根节点，没有子节点的节点我们称之为叶节点</strong>。</p>
-<p>如果我们需要查找 id=12 的用户信息，利用我们创建的二叉查找树索引，查找流程如下：</p>
-<p>将根节点作为当前节点，把 12 与当前节点的键值 10 比较，12 大于 10，接下来我们把当前节点&gt;的右子节点作为当前节点。</p>
-<p>继续把 12 和当前节点的键值 13 比较，发现 12 小于 13，把当前节点的左子节点作为当前节点。</p>
-<p>把 12 和当前节点的键值 12 对比，12 等于 12，满足条件，我们从当前节点中取出 data，即 id=12，name=xm。</p>
-<p>利用二叉查找树我们只需要 3 次即可找到匹配的数据。如果在表中一条条的查找的话，我们需要 6 次才能找到</p>
-<ul>
-<li><h5 id="平衡二叉树"><a href="#平衡二叉树" class="headerlink" title="平衡二叉树"></a><strong>平衡二叉树</strong></h5><p>假如二叉查找树是这样的构造的：</p>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard2.png"></p>
-</li>
-</ul>
-<p><strong>二叉查找树变成了一个链表</strong>。如果我们需要查找 id=17 的用户信息，我们需要查找 7 次，也就相当于<strong>全表扫描</strong>了。 </p>
-<p>原因：二叉查找树变得不平衡了，也就是<strong>高度太高</strong>了，从而导致<strong>查找效率的不稳定</strong>。</p>
-<p>解决：保证二叉查找树一直保持平衡，就需要用到<strong>平衡二叉树</strong>。平衡二叉树又称 <strong>AVL 树</strong>，<strong>在满足二叉查找树特性的基础上，要求每个节点的左右子树的高度差不能超过 1。</strong></p>
-<p>平衡二叉树和非平衡二叉树的对比：</p>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard3.png"></p>
-<p>平衡二叉树保证了树的构造是平衡的，当我们<strong>插入或删除数据</strong>导致不满足平衡二叉树不平衡时，平衡二叉树会进行<strong>调整树上的节点来保持平衡</strong></p>
-<p>平衡二叉树相比于二叉查找树来说，<strong>查找效率更稳定，总体的查找速度也更快</strong></p>
-<ul>
-<li><h5 id="B-树"><a href="#B-树" class="headerlink" title="B 树"></a><strong>B 树</strong></h5><p>因为<strong>内存的易失性</strong>，我们都会选择将 user 表中的<strong>数据和索引存储在磁盘</strong>这种外围设备中。</p>
-<p>和内存相比，<strong>从磁盘中读取数据的速度会慢上百倍千倍甚至万倍</strong>，应当<strong>尽量减少从磁盘中读取数据的次数</strong></p>
-<p>从磁盘中读取数据时，都是按照<strong>磁盘块来读取的</strong>，并不是一条一条的读</p>
-<p>如果我们能<strong>把尽量多的数据放进磁盘块</strong>中，那<strong>一次磁盘读取操作就会读取更多数据</strong>，那我们<strong>查找数据的时间也会大幅度降低</strong>。</p>
-<p>如果我们用树这种数据结构作为索引的数据结构，那我们每查找一次数据就需要从磁盘中读取一个节点，也就是我们说的一个磁盘块。</p>
-<p>我们都知道<strong>平衡二叉树可是每个节点只存储一个键值和数据的</strong>。那说明什么？说明每个磁盘块仅仅存储一个键值和数据！那如果我们<strong>要存储海量的数据</strong>呢？</p>
-<p>可以想象到二叉树的节点将会非常多，高度也会极其高，我们查找数据时也会进行很多次磁盘 IO，我们查找数据的效率将会极低！</p>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard4.png"></p>
-</li>
-</ul>
-<p>为了解决平衡二叉树的这个弊端，我们应该<strong>寻找一种单个节点可以存储多个键值和数据的平衡树</strong>。也就是我们接下来要说的 B 树。</p>
-<p><strong>B 树（Balance Tree）即为平衡树的意思</strong>，下图即是一棵 B 树：</p>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard5.png"></p>
-<p>图中的 <strong>p 节点为指向子节点的指针</strong></p>
-<p>图中的<strong>每个节点称为页</strong>，页就是我们上面说的<strong>磁盘块</strong>，在 MySQL 中数据读取的基本单位都是页，所以我们这里叫做页更符合 MySQL 中索引的底层数据结构。</p>
-<p>从上图可以看出，B 树相对于平衡二叉树，<strong>每个节点存储了更多的键值（key）和数据（data）</strong>，并且<strong>每个节点拥有更多的子节点</strong>，子节点的个数一般称为阶，上述图中的 B 树为 3 阶 B 树，<strong>高度也会很低。</strong></p>
-<p>基于这个特性，<strong>B 树查找数据读取磁盘的次数将会很少</strong>，<strong>数据的查找效率也会比平衡二叉树高很多</strong>。</p>
-<p>假如我们要查找 id=28 的用户信息，那么我们在上图 B 树中查找的流程如下：</p>
-<p>先找到根节点也就是页 1，判断 28 在键值 17 和 35 之间，那么根据页 1 中的指针 p2 找到页 3。</p>
-<p>将 28 和页 3 中的键值相比较，28 在 26 和 30 之间，我们根据页 3 中的指针 p2 找到页 8。</p>
-<p>将 28 和页 8 中的键值相比较，发现有匹配的键值 28，键值 28 对应的用户信息为（28，bv）。</p>
-<ul>
-<li><h5 id="B-树-1"><a href="#B-树-1" class="headerlink" title="B+ 树"></a><strong>B+ 树</strong></h5><p><strong>B+ 树是对 B 树的进一步优化</strong>。让我们先来看下 B+ 树的结构图：（<strong>聚集索引的实现方式</strong>）</p>
-</li>
-</ul>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard6.png"></p>
-<p>根据上图我们来看下 B+ 树和 B 树有什么不同：</p>
-<ul>
-<li><strong>B+ 树非叶子节点上是不存储数据的，仅存储键值</strong>，而 <strong>B 树节点中不仅存储键值，也会存储数据</strong>。</li>
-</ul>
-<p>之所以这么做是因为在<strong>数据库中页的大小是固定的，InnoDB 中页的默认大小是 16KB</strong>。</p>
-<p>如果<strong>不存储数据</strong>，那么就会<strong>存储更多的键值</strong>，相应的<strong>树的阶数</strong>（节点的子节点树）就会<strong>更大</strong>，树就会<strong>更矮更胖</strong>，如此一来我们<strong>查找数据进行磁盘的 IO 次数又会再次减少</strong>，数据查询的效率也会更快。</p>
-<p>另外，B+ 树的阶数是等于键值的数量的，如果我们的 B+ 树一个节点可以存储 1000 个键值，那么 3 层 B+ 树可以存储 1000×1000×1000=10 亿个数据。</p>
-<p>一般<strong>根节点是常驻内存</strong>的，所以一般我们查找 10 亿数据，只需要 2 次磁盘 IO。</p>
-<ul>
-<li>因为 <strong>B+ 树索引的所有数据均存储在叶子节点</strong>，而且<strong>数据是按照顺序排列</strong>的。</li>
-</ul>
-<p>那么 B+ 树使得<strong>范围查找，排序查找，分组查找以及去重查找</strong>变得异常简单。而 B 树因为数据分散在各个节点，要实现这一点是很不容易的。</p>
-<p>通过上图可以看到，在 InnoDB 中，我们通过<strong>数据页之间通过双向链表连接</strong>以及<strong>叶子节点中数据之间通过单向链表连接</strong>的方式可以找到表中所有的数据。</p>
-<h4 id="MyISAM-中，B-树索引"><a href="#MyISAM-中，B-树索引" class="headerlink" title="MyISAM 中，B+ 树索引"></a>MyISAM 中，B+ 树索引</h4><p>MyISAM 中的 B+ 树索引实现与 InnoDB 中的略有不同。<strong>在 MyISAM 中，B+ 树索引的叶子节点并不存储数据，而是存储数据的文件地址。</strong></p>
-<h4 id="聚集索引-VS-非聚集索引"><a href="#聚集索引-VS-非聚集索引" class="headerlink" title="聚集索引 VS 非聚集索引"></a><strong>聚集索引 VS 非聚集索引</strong></h4><p>在 MySQL 中，B+ 树索引按照存储方式的不同分为聚集索引和非聚集索引</p>
-<p> InnoDB 中的聚集索引和非聚集索引：</p>
-<ul>
-<li><strong>聚集索引（聚簇索引）</strong>：以 InnoDB 作为存储引擎的表，表中的数据都会有一个主键，即使你不创建主键，<strong>系统也会帮你创建一个隐式的主键</strong>。</li>
-</ul>
-<p>自增ID，防止页分裂</p>
-<p>这是因为 InnoDB 是把数据存放在 B+ 树中的，而 B+ 树的键值就是主键，在 B+ 树的叶子节点中，存储了表中所有的数据。</p>
-<p>这种<strong>以主键作为 B+ 树索引的键值而构建的 B+ 树索引</strong>，我们称之为聚集索引。</p>
-<ul>
-<li><strong>非聚集索引（非聚簇索引）</strong>：<strong>以主键以外的列值作为键值构建的 B+ 树索引</strong>，我们称之为非聚集索引。</li>
-</ul>
-<p>非聚集索引与聚集索引的区别在于<strong>非聚集索引的叶子节点不存储表中的数据</strong>，而是<strong>存储该列对应的主键</strong>，想要查找数据我们<strong>还需要根据主键再去聚集索引中进行查找</strong>，这个再根据聚集索引查找数据的过程，我们称为<strong>回表</strong>。</p>
-<p>利用聚集索引查找数据：</p>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard7.png"></p>
-<p>假设我们要查找 id&gt;=18 并且 id&lt;40 的用户数据。对应的 sql 语句为：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from user where id&gt;=18 and id &lt;40</span><br></pre></td></tr></table></figure>
-
-<p>其中 id 为主键，具体的查找过程如下：</p>
-<p>①一般根节点都是常驻内存的，也就是说页 1 已经在内存中了，此时不需要到磁盘中读取数据，直接从内存中读取即可。</p>
-<p>从内存中读取到页 1，要查找这个 id&gt;=18 and id &lt;40 或者范围值，我们首先需要找到 id=18 的键值。</p>
-<p>从页 1 中我们可以找到键值 18，此时我们需要根据指针 p2，定位到页 3。</p>
-<p>②要从页 3 中查找数据，我们就需要拿着 p2 指针去磁盘中进行读取页 3。</p>
-<p>从磁盘中读取页 3 后将页 3 放入内存中，然后进行查找，我们可以找到键值 18，然后再拿到页 3 中的指针 p1，定位到页 8。</p>
-<p>③同样的页 8 页不在内存中，我们需要再去磁盘中将页 8 读取到内存中。</p>
-<p>将页 8 读取到内存中后。因为页中的数据是链表进行连接的，而且键值是按照顺序存放的，此时可以根据二分查找法定位到键值 18。</p>
-<p>此时因为已经到数据页了，此时我们已经找到一条满足条件的数据了，就是键值 18 对应的数据。</p>
-<p>因为是范围查找，而且此时所有的数据又都存在叶子节点，并且是有序排列的，那么我们就可以对页 8 中的键值依次进行遍历查找并匹配满足条件的数据。</p>
-<p>我们可以一直找到键值为 22 的数据，然后页 8 中就没有数据了，此时我们需要拿着页 8 中的 p 指针去读取页 9 中的数据。</p>
-<p>④因为页 9 不在内存中，就又会加载页 9 到内存中，并通过和页 8 中一样的方式进行数据的查找，直到将页 12 加载到内存中，发现 41 大于 40，此时不满足条件。那么查找到此终止。</p>
-<p>最终我们找到满足条件的所有数据，总共 12 条记录：</p>
-<p>(18,kl), (19,kl), (22,hj), (24,io), (25,vg) , (29,jk), (31,jk) , (33,rt) , (34,ty) , (35,yu) , (37,rt) , (39,rt) 。</p>
-<p>下面看下具体的查找流程图：</p>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard8.png"></p>
-<p>利用非聚集索引查找数据:</p>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard9.png"></p>
-<p>首先，这个非聚集索引表示的是用户幸运数字的索引（为什么是幸运数字？一时兴起想起来的:-)），此时表结构是这样的。</p>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard12.png"></p>
-<p>在叶子节点中，不再存储所有的数据了，存储的是键值和主键。对于叶子节点中的 x-y，比如 1-1。左边的 1 表示的是索引的键值，右边的 1 表示的是主键值。</p>
-<p>如果我们要找到幸运数字为 33 的用户信息，对应的 sql 语句为：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from user where luckNum=33</span><br></pre></td></tr></table></figure>
-
-<p>查找的流程跟聚集索引一样，这里就不详细介绍了。我们最终会找到主键值 47，找到主键后我们需要再到聚集索引中查找具体对应的数据信息，此时又回到了聚集索引的查找流程。</p>
-<p>下面看下具体的查找流程图：</p>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard10.png"></p>
-<p><strong>数据即索引，索引即数据</strong></p>
-<p><strong>聚集索引和非聚集索引区别：</strong></p>
-<p>聚集索引和非聚集索引的根本区别是<strong>表记录的排列顺序和与索引的排列顺序是否一致</strong>。</p>
-<p>聚集索引： <strong>聚集索引表记录的排列顺序和索引的排列顺序一致</strong>，所以查询效率快，<strong>只要找到第一个索引值记录，其余就连续性的记录在物理也一样连续存放</strong>。聚集索引对应的<strong>缺点就是修改慢</strong>，因为<strong>为了保证表中记录的物理和索引顺序一致</strong>，在<strong>记录插入</strong>的时候，会对<strong>数据页重新排序</strong>。</p>
-<p>非聚集索引：<strong>非聚集索引制定了表中记录的逻辑顺序，但是记录的物理和索引不一定一致</strong>，两种索引都采用B+树结构，非聚集索引的叶子层并不和实际数据页相重叠，而<strong>采用叶子层包含一个指向表中的记录在数据页中的指针方式</strong>。非聚集索引层次多，不会造成数据重排。</p>
-<p>例子对比两种索引：</p>
-<p>聚集索引就类似新华字典中的<strong>拼音排序索引</strong>，都是按<strong>顺序</strong>进行，<strong>例如找到字典中的“爱”，就里面顺序执行找到“癌”</strong>。而非聚集索引则类似于<strong>笔画排序</strong>，<strong>索引顺序和物理顺序并不是按顺序存放</strong>的。</p>
-<h4 id="什么是覆盖索引？"><a href="#什么是覆盖索引？" class="headerlink" title="什么是覆盖索引？"></a><strong>什么是覆盖索引？</strong></h4><p>如果一个<strong>索引包含（或者说覆盖）所有需要查询的字段的值</strong>，我们就称之为“覆盖索引”</p>
-<p>InnoDB存储引擎中，如果不是主键索引，叶子节点存储的是主键+列值。最终还是要“<strong>回表</strong>”，也就是要通过主键再查找一次。这样就会比较慢<strong>覆盖索引就是把要查询出的列和索引是对应的，不做回表操作！</strong></p>
-<p>覆盖索引使用实例：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">//创建了索引(username,age)</span><br><span class="line">select username , age from user where username = &#x27;Java&#x27; and age = 22</span><br></pre></td></tr></table></figure>
-
-<p>在查询数据的时候：要<strong>查询出的列在叶子节点都存在</strong>！所以，就不用回表</p>
-<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard11.png"></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">SELECT age FROM student WHERE name = &#x27;小李&#x27;；</span><br><span class="line">流程为：</span><br><span class="line">在name,age联合索引树上找到名称为小李的节点</span><br><span class="line">此时节点索引里包含信息age 直接返回 12</span><br></pre></td></tr></table></figure>
-
-<h4 id="最左前缀原则-最左优先"><a href="#最左前缀原则-最左优先" class="headerlink" title="最左前缀原则  最左优先"></a><strong>最左前缀原则  最左优先</strong></h4><p>MySQL中的索<strong>引可以以一定顺序引用多列</strong>，这种索引叫作<strong>联合索引</strong></p>
-<p>如User表的name和city加联合索引就是(name,city)，而最左前缀原则指的是，如果查询的时候查询条件精确匹配索引的左边连续一列或几列，则此列就可以被用到。如下：</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from user where name=xx and city=xx ; //可以命中索引</span><br><span class="line">select * from user where name=xx ; // 可以命中索引</span><br><span class="line">select * from user where city=xx ; // 无法命中索引</span><br></pre></td></tr></table></figure>
-
-<p>查询的时候如果两个条件都用上了，但是顺序不同，如 city= xx and name ＝xx，那么现在的查询引擎会自动优化为匹配联合索引的顺序，这样是能够命中索引的。</p>
-<p>注：在创建多列索引时，要根据业务需求，<strong>where子句中使用最频繁的一列放在最左边</strong>。</p>
-<p>如果表中只有id,a,b,c四个字段</p>
-<p><strong>主键id,组合索引(a,b,c)</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from table where b=1 and c=1;</span><br><span class="line">select * from table where  c=1;</span><br></pre></td></tr></table></figure>
-
-<p>都会用到索引，因为索引(a,b,c)包含除了主键的所有字段，会用到覆盖索引</p>
-<h4 id="Mysql如何为表字段添加索引"><a href="#Mysql如何为表字段添加索引" class="headerlink" title="Mysql如何为表字段添加索引?"></a><strong>Mysql如何为表字段添加索引?</strong></h4><p>添加PRIMARY KEY（主键索引）</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD PRIMARY KEY ( `column` ) </span><br></pre></td></tr></table></figure>
-
-<p>添加UNIQUE(唯一索引)</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD UNIQUE ( `column` ) </span><br></pre></td></tr></table></figure>
-
-<p>添加INDEX(普通索引)</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD INDEX index_name ( `column` )</span><br></pre></td></tr></table></figure>
-
-<p>添加FULLTEXT(全文索引)</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD FULLTEXT ( `column`) </span><br></pre></td></tr></table></figure>
-
-<p>添加多列索引</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD INDEX index_name ( `column1`, `column2`, `column3` )</span><br></pre></td></tr></table></figure>
-
-<p>CREATE 创建索引</p>
-<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">CREATE INDEX indexName ON table_name (column_name)</span><br></pre></td></tr></table></figure>
-
-<h4 id="Hash索引和-B-树索引优劣分析"><a href="#Hash索引和-B-树索引优劣分析" class="headerlink" title="Hash索引和 B+树索引优劣分析"></a><strong>Hash索引和 B+树索引优劣分析</strong></h4><ul>
-<li><p><strong>Hash索引定位快</strong>：Hash索引指的就是<strong>Hash表</strong>，最大的优点就是能够在很短的时间内，<strong>根据Hash函数定位到数据所在的位置</strong>，这是B+树所不能比的</p>
-</li>
-<li><p><strong>Hash冲突问题</strong></p>
-</li>
-<li><p><strong>Hash索引不支持顺序和范围查询</strong>(Hash索引不支持顺序和范围查询是它最大的缺点)。</p>
-</li>
-</ul>
-<h4 id="Mysql的覆盖索引和联合索引的区别"><a href="#Mysql的覆盖索引和联合索引的区别" class="headerlink" title="Mysql的覆盖索引和联合索引的区别"></a>Mysql的<strong>覆盖索引和联合索引</strong>的区别</h4><p><strong>覆盖索引</strong>指的是<strong>索引中已包含需要查询的数据，执行查询时无需回表</strong>，扫描一次B+数索引即可</p>
-<p><strong>联合索引，在多个属性，建立为一个索引，加快多条件查询</strong></p>
-<p><strong>索引覆盖是联合索引查询时的最优情况，不要回表</strong></p>
-<h4 id="索引最为常见的扫描方式"><a href="#索引最为常见的扫描方式" class="headerlink" title="索引最为常见的扫描方式"></a>索引最为常见的扫描方式</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">system：系统表，少量数据，往往不需要进行磁盘IO；</span><br><span class="line">const：常量连接；命中主键(primary key)或者唯一(unique)索引</span><br><span class="line">eq_ref：主键索引(primary key)或者非空唯一索引(unique not null)等值扫描；</span><br><span class="line">ref：非主键非唯一索引等值扫描；</span><br><span class="line">range：范围扫描；</span><br><span class="line">index：索引树扫描；</span><br><span class="line">ALL：全表扫描(full table scan)</span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>数据库</category>
-        <category>MySQL</category>
-      </categories>
-      <tags>
-        <tag>MySQL</tag>
       </tags>
   </entry>
   <entry>
@@ -1892,6 +1995,187 @@
 <li><strong>时间戳：数据的可读性太差</strong></li>
 </ul>
 <p><img src="/2022/07/19/MySQL%E5%9F%BA%E6%9C%AC%E7%9F%A5%E8%AF%86%E7%82%B9/clipboard5.png"></p>
+]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>MySQL</category>
+      </categories>
+      <tags>
+        <tag>MySQL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>MySQL索引</title>
+    <url>/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/</url>
+    <content><![CDATA[<h4 id="索引"><a href="#索引" class="headerlink" title="索引"></a>索引</h4><p>索引是一种<strong>数据结构</strong>，用于帮助我们<strong>在大量数据中快速定位到我们想要查找的数据</strong>。<br>索引最形象的比喻就是图书的目录了。注意这里的大量，数据量大了索引才显得有意义。</p>
+<h4 id="InnoDB-存储引擎中的-B-树索引"><a href="#InnoDB-存储引擎中的-B-树索引" class="headerlink" title="InnoDB 存储引擎中的 B+ 树索引"></a>InnoDB 存储引擎中的 B+ 树索引</h4><p>要介绍 B+ 树索引，就不得不提<strong>二叉查找树，平衡二叉树和 B 树</strong>这三种数据结构。B+ 树就是从他们仨<strong>演化来的</strong>。</p>
+<ul>
+<li><h5 id="二叉查找树"><a href="#二叉查找树" class="headerlink" title="二叉查找树"></a><strong>二叉查找树</strong></h5></li>
+</ul>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard.png"></p>
+<p>图示：我们为 user 表（用户信息表）建立了一个二叉查找树的索引</p>
+<p>图中的圆为二叉查找树的节点，<strong>节点中存储了键（key）和数据（data）</strong>。键对应 user 表中的 id，数据对应 user 表中的行数据。</p>
+<p>二叉查找树的特点就是<strong>任何节点的左子节点的键值都小于当前节点的键值</strong>，<strong>右子节点的键值都大于当前节点的键值</strong>。<strong>顶端的节点我们称为根节点，没有子节点的节点我们称之为叶节点</strong>。</p>
+<p>如果我们需要查找 id=12 的用户信息，利用我们创建的二叉查找树索引，查找流程如下：</p>
+<p>将根节点作为当前节点，把 12 与当前节点的键值 10 比较，12 大于 10，接下来我们把当前节点&gt;的右子节点作为当前节点。</p>
+<p>继续把 12 和当前节点的键值 13 比较，发现 12 小于 13，把当前节点的左子节点作为当前节点。</p>
+<p>把 12 和当前节点的键值 12 对比，12 等于 12，满足条件，我们从当前节点中取出 data，即 id=12，name=xm。</p>
+<p>利用二叉查找树我们只需要 3 次即可找到匹配的数据。如果在表中一条条的查找的话，我们需要 6 次才能找到</p>
+<ul>
+<li><h5 id="平衡二叉树"><a href="#平衡二叉树" class="headerlink" title="平衡二叉树"></a><strong>平衡二叉树</strong></h5><p>假如二叉查找树是这样的构造的：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard2.png"></p>
+</li>
+</ul>
+<p><strong>二叉查找树变成了一个链表</strong>。如果我们需要查找 id=17 的用户信息，我们需要查找 7 次，也就相当于<strong>全表扫描</strong>了。 </p>
+<p>原因：二叉查找树变得不平衡了，也就是<strong>高度太高</strong>了，从而导致<strong>查找效率的不稳定</strong>。</p>
+<p>解决：保证二叉查找树一直保持平衡，就需要用到<strong>平衡二叉树</strong>。平衡二叉树又称 <strong>AVL 树</strong>，<strong>在满足二叉查找树特性的基础上，要求每个节点的左右子树的高度差不能超过 1。</strong></p>
+<p>平衡二叉树和非平衡二叉树的对比：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard3.png"></p>
+<p>平衡二叉树保证了树的构造是平衡的，当我们<strong>插入或删除数据</strong>导致不满足平衡二叉树不平衡时，平衡二叉树会进行<strong>调整树上的节点来保持平衡</strong></p>
+<p>平衡二叉树相比于二叉查找树来说，<strong>查找效率更稳定，总体的查找速度也更快</strong></p>
+<ul>
+<li><h5 id="B-树"><a href="#B-树" class="headerlink" title="B 树"></a><strong>B 树</strong></h5><p>因为<strong>内存的易失性</strong>，我们都会选择将 user 表中的<strong>数据和索引存储在磁盘</strong>这种外围设备中。</p>
+<p>和内存相比，<strong>从磁盘中读取数据的速度会慢上百倍千倍甚至万倍</strong>，应当<strong>尽量减少从磁盘中读取数据的次数</strong></p>
+<p>从磁盘中读取数据时，都是按照<strong>磁盘块来读取的</strong>，并不是一条一条的读</p>
+<p>如果我们能<strong>把尽量多的数据放进磁盘块</strong>中，那<strong>一次磁盘读取操作就会读取更多数据</strong>，那我们<strong>查找数据的时间也会大幅度降低</strong>。</p>
+<p>如果我们用树这种数据结构作为索引的数据结构，那我们每查找一次数据就需要从磁盘中读取一个节点，也就是我们说的一个磁盘块。</p>
+<p>我们都知道<strong>平衡二叉树可是每个节点只存储一个键值和数据的</strong>。那说明什么？说明每个磁盘块仅仅存储一个键值和数据！那如果我们<strong>要存储海量的数据</strong>呢？</p>
+<p>可以想象到二叉树的节点将会非常多，高度也会极其高，我们查找数据时也会进行很多次磁盘 IO，我们查找数据的效率将会极低！</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard4.png"></p>
+</li>
+</ul>
+<p>为了解决平衡二叉树的这个弊端，我们应该<strong>寻找一种单个节点可以存储多个键值和数据的平衡树</strong>。也就是我们接下来要说的 B 树。</p>
+<p><strong>B 树（Balance Tree）即为平衡树的意思</strong>，下图即是一棵 B 树：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard5.png"></p>
+<p>图中的 <strong>p 节点为指向子节点的指针</strong></p>
+<p>图中的<strong>每个节点称为页</strong>，页就是我们上面说的<strong>磁盘块</strong>，在 MySQL 中数据读取的基本单位都是页，所以我们这里叫做页更符合 MySQL 中索引的底层数据结构。</p>
+<p>从上图可以看出，B 树相对于平衡二叉树，<strong>每个节点存储了更多的键值（key）和数据（data）</strong>，并且<strong>每个节点拥有更多的子节点</strong>，子节点的个数一般称为阶，上述图中的 B 树为 3 阶 B 树，<strong>高度也会很低。</strong></p>
+<p>基于这个特性，<strong>B 树查找数据读取磁盘的次数将会很少</strong>，<strong>数据的查找效率也会比平衡二叉树高很多</strong>。</p>
+<p>假如我们要查找 id=28 的用户信息，那么我们在上图 B 树中查找的流程如下：</p>
+<p>先找到根节点也就是页 1，判断 28 在键值 17 和 35 之间，那么根据页 1 中的指针 p2 找到页 3。</p>
+<p>将 28 和页 3 中的键值相比较，28 在 26 和 30 之间，我们根据页 3 中的指针 p2 找到页 8。</p>
+<p>将 28 和页 8 中的键值相比较，发现有匹配的键值 28，键值 28 对应的用户信息为（28，bv）。</p>
+<ul>
+<li><h5 id="B-树-1"><a href="#B-树-1" class="headerlink" title="B+ 树"></a><strong>B+ 树</strong></h5><p><strong>B+ 树是对 B 树的进一步优化</strong>。让我们先来看下 B+ 树的结构图：（<strong>聚集索引的实现方式</strong>）</p>
+</li>
+</ul>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard6.png"></p>
+<p>根据上图我们来看下 B+ 树和 B 树有什么不同：</p>
+<ul>
+<li><strong>B+ 树非叶子节点上是不存储数据的，仅存储键值</strong>，而 <strong>B 树节点中不仅存储键值，也会存储数据</strong>。</li>
+</ul>
+<p>之所以这么做是因为在<strong>数据库中页的大小是固定的，InnoDB 中页的默认大小是 16KB</strong>。</p>
+<p>如果<strong>不存储数据</strong>，那么就会<strong>存储更多的键值</strong>，相应的<strong>树的阶数</strong>（节点的子节点树）就会<strong>更大</strong>，树就会<strong>更矮更胖</strong>，如此一来我们<strong>查找数据进行磁盘的 IO 次数又会再次减少</strong>，数据查询的效率也会更快。</p>
+<p>另外，B+ 树的阶数是等于键值的数量的，如果我们的 B+ 树一个节点可以存储 1000 个键值，那么 3 层 B+ 树可以存储 1000×1000×1000=10 亿个数据。</p>
+<p>一般<strong>根节点是常驻内存</strong>的，所以一般我们查找 10 亿数据，只需要 2 次磁盘 IO。</p>
+<ul>
+<li>因为 <strong>B+ 树索引的所有数据均存储在叶子节点</strong>，而且<strong>数据是按照顺序排列</strong>的。</li>
+</ul>
+<p>那么 B+ 树使得<strong>范围查找，排序查找，分组查找以及去重查找</strong>变得异常简单。而 B 树因为数据分散在各个节点，要实现这一点是很不容易的。</p>
+<p>通过上图可以看到，在 InnoDB 中，我们通过<strong>数据页之间通过双向链表连接</strong>以及<strong>叶子节点中数据之间通过单向链表连接</strong>的方式可以找到表中所有的数据。</p>
+<h4 id="MyISAM-中，B-树索引"><a href="#MyISAM-中，B-树索引" class="headerlink" title="MyISAM 中，B+ 树索引"></a>MyISAM 中，B+ 树索引</h4><p>MyISAM 中的 B+ 树索引实现与 InnoDB 中的略有不同。<strong>在 MyISAM 中，B+ 树索引的叶子节点并不存储数据，而是存储数据的文件地址。</strong></p>
+<h4 id="聚集索引-VS-非聚集索引"><a href="#聚集索引-VS-非聚集索引" class="headerlink" title="聚集索引 VS 非聚集索引"></a><strong>聚集索引 VS 非聚集索引</strong></h4><p>在 MySQL 中，B+ 树索引按照存储方式的不同分为聚集索引和非聚集索引</p>
+<p> InnoDB 中的聚集索引和非聚集索引：</p>
+<ul>
+<li><strong>聚集索引（聚簇索引）</strong>：以 InnoDB 作为存储引擎的表，表中的数据都会有一个主键，即使你不创建主键，<strong>系统也会帮你创建一个隐式的主键</strong>。</li>
+</ul>
+<p>自增ID，防止页分裂</p>
+<p>这是因为 InnoDB 是把数据存放在 B+ 树中的，而 B+ 树的键值就是主键，在 B+ 树的叶子节点中，存储了表中所有的数据。</p>
+<p>这种<strong>以主键作为 B+ 树索引的键值而构建的 B+ 树索引</strong>，我们称之为聚集索引。</p>
+<ul>
+<li><strong>非聚集索引（非聚簇索引）</strong>：<strong>以主键以外的列值作为键值构建的 B+ 树索引</strong>，我们称之为非聚集索引。</li>
+</ul>
+<p>非聚集索引与聚集索引的区别在于<strong>非聚集索引的叶子节点不存储表中的数据</strong>，而是<strong>存储该列对应的主键</strong>，想要查找数据我们<strong>还需要根据主键再去聚集索引中进行查找</strong>，这个再根据聚集索引查找数据的过程，我们称为<strong>回表</strong>。</p>
+<p>利用聚集索引查找数据：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard7.png"></p>
+<p>假设我们要查找 id&gt;=18 并且 id&lt;40 的用户数据。对应的 sql 语句为：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from user where id&gt;=18 and id &lt;40</span><br></pre></td></tr></table></figure>
+
+<p>其中 id 为主键，具体的查找过程如下：</p>
+<p>①一般根节点都是常驻内存的，也就是说页 1 已经在内存中了，此时不需要到磁盘中读取数据，直接从内存中读取即可。</p>
+<p>从内存中读取到页 1，要查找这个 id&gt;=18 and id &lt;40 或者范围值，我们首先需要找到 id=18 的键值。</p>
+<p>从页 1 中我们可以找到键值 18，此时我们需要根据指针 p2，定位到页 3。</p>
+<p>②要从页 3 中查找数据，我们就需要拿着 p2 指针去磁盘中进行读取页 3。</p>
+<p>从磁盘中读取页 3 后将页 3 放入内存中，然后进行查找，我们可以找到键值 18，然后再拿到页 3 中的指针 p1，定位到页 8。</p>
+<p>③同样的页 8 页不在内存中，我们需要再去磁盘中将页 8 读取到内存中。</p>
+<p>将页 8 读取到内存中后。因为页中的数据是链表进行连接的，而且键值是按照顺序存放的，此时可以根据二分查找法定位到键值 18。</p>
+<p>此时因为已经到数据页了，此时我们已经找到一条满足条件的数据了，就是键值 18 对应的数据。</p>
+<p>因为是范围查找，而且此时所有的数据又都存在叶子节点，并且是有序排列的，那么我们就可以对页 8 中的键值依次进行遍历查找并匹配满足条件的数据。</p>
+<p>我们可以一直找到键值为 22 的数据，然后页 8 中就没有数据了，此时我们需要拿着页 8 中的 p 指针去读取页 9 中的数据。</p>
+<p>④因为页 9 不在内存中，就又会加载页 9 到内存中，并通过和页 8 中一样的方式进行数据的查找，直到将页 12 加载到内存中，发现 41 大于 40，此时不满足条件。那么查找到此终止。</p>
+<p>最终我们找到满足条件的所有数据，总共 12 条记录：</p>
+<p>(18,kl), (19,kl), (22,hj), (24,io), (25,vg) , (29,jk), (31,jk) , (33,rt) , (34,ty) , (35,yu) , (37,rt) , (39,rt) 。</p>
+<p>下面看下具体的查找流程图：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard8.png"></p>
+<p>利用非聚集索引查找数据:</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard9.png"></p>
+<p>首先，这个非聚集索引表示的是用户幸运数字的索引（为什么是幸运数字？一时兴起想起来的:-)），此时表结构是这样的。</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard12.png"></p>
+<p>在叶子节点中，不再存储所有的数据了，存储的是键值和主键。对于叶子节点中的 x-y，比如 1-1。左边的 1 表示的是索引的键值，右边的 1 表示的是主键值。</p>
+<p>如果我们要找到幸运数字为 33 的用户信息，对应的 sql 语句为：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from user where luckNum=33</span><br></pre></td></tr></table></figure>
+
+<p>查找的流程跟聚集索引一样，这里就不详细介绍了。我们最终会找到主键值 47，找到主键后我们需要再到聚集索引中查找具体对应的数据信息，此时又回到了聚集索引的查找流程。</p>
+<p>下面看下具体的查找流程图：</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard10.png"></p>
+<p><strong>数据即索引，索引即数据</strong></p>
+<p><strong>聚集索引和非聚集索引区别：</strong></p>
+<p>聚集索引和非聚集索引的根本区别是<strong>表记录的排列顺序和与索引的排列顺序是否一致</strong>。</p>
+<p>聚集索引： <strong>聚集索引表记录的排列顺序和索引的排列顺序一致</strong>，所以查询效率快，<strong>只要找到第一个索引值记录，其余就连续性的记录在物理也一样连续存放</strong>。聚集索引对应的<strong>缺点就是修改慢</strong>，因为<strong>为了保证表中记录的物理和索引顺序一致</strong>，在<strong>记录插入</strong>的时候，会对<strong>数据页重新排序</strong>。</p>
+<p>非聚集索引：<strong>非聚集索引制定了表中记录的逻辑顺序，但是记录的物理和索引不一定一致</strong>，两种索引都采用B+树结构，非聚集索引的叶子层并不和实际数据页相重叠，而<strong>采用叶子层包含一个指向表中的记录在数据页中的指针方式</strong>。非聚集索引层次多，不会造成数据重排。</p>
+<p>例子对比两种索引：</p>
+<p>聚集索引就类似新华字典中的<strong>拼音排序索引</strong>，都是按<strong>顺序</strong>进行，<strong>例如找到字典中的“爱”，就里面顺序执行找到“癌”</strong>。而非聚集索引则类似于<strong>笔画排序</strong>，<strong>索引顺序和物理顺序并不是按顺序存放</strong>的。</p>
+<h4 id="什么是覆盖索引？"><a href="#什么是覆盖索引？" class="headerlink" title="什么是覆盖索引？"></a><strong>什么是覆盖索引？</strong></h4><p>如果一个<strong>索引包含（或者说覆盖）所有需要查询的字段的值</strong>，我们就称之为“覆盖索引”</p>
+<p>InnoDB存储引擎中，如果不是主键索引，叶子节点存储的是主键+列值。最终还是要“<strong>回表</strong>”，也就是要通过主键再查找一次。这样就会比较慢<strong>覆盖索引就是把要查询出的列和索引是对应的，不做回表操作！</strong></p>
+<p>覆盖索引使用实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">//创建了索引(username,age)</span><br><span class="line">select username , age from user where username = &#x27;Java&#x27; and age = 22</span><br></pre></td></tr></table></figure>
+
+<p>在查询数据的时候：要<strong>查询出的列在叶子节点都存在</strong>！所以，就不用回表</p>
+<p><img src="/2022/07/12/MySQL%E7%B4%A2%E5%BC%95/clipboard11.png"></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">SELECT age FROM student WHERE name = &#x27;小李&#x27;；</span><br><span class="line">流程为：</span><br><span class="line">在name,age联合索引树上找到名称为小李的节点</span><br><span class="line">此时节点索引里包含信息age 直接返回 12</span><br></pre></td></tr></table></figure>
+
+<h4 id="最左前缀原则-最左优先"><a href="#最左前缀原则-最左优先" class="headerlink" title="最左前缀原则  最左优先"></a><strong>最左前缀原则  最左优先</strong></h4><p>MySQL中的索<strong>引可以以一定顺序引用多列</strong>，这种索引叫作<strong>联合索引</strong></p>
+<p>如User表的name和city加联合索引就是(name,city)，而最左前缀原则指的是，如果查询的时候查询条件精确匹配索引的左边连续一列或几列，则此列就可以被用到。如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from user where name=xx and city=xx ; //可以命中索引</span><br><span class="line">select * from user where name=xx ; // 可以命中索引</span><br><span class="line">select * from user where city=xx ; // 无法命中索引</span><br></pre></td></tr></table></figure>
+
+<p>查询的时候如果两个条件都用上了，但是顺序不同，如 city= xx and name ＝xx，那么现在的查询引擎会自动优化为匹配联合索引的顺序，这样是能够命中索引的。</p>
+<p>注：在创建多列索引时，要根据业务需求，<strong>where子句中使用最频繁的一列放在最左边</strong>。</p>
+<p>如果表中只有id,a,b,c四个字段</p>
+<p><strong>主键id,组合索引(a,b,c)</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">select * from table where b=1 and c=1;</span><br><span class="line">select * from table where  c=1;</span><br></pre></td></tr></table></figure>
+
+<p>都会用到索引，因为索引(a,b,c)包含除了主键的所有字段，会用到覆盖索引</p>
+<h4 id="Mysql如何为表字段添加索引"><a href="#Mysql如何为表字段添加索引" class="headerlink" title="Mysql如何为表字段添加索引?"></a><strong>Mysql如何为表字段添加索引?</strong></h4><p>添加PRIMARY KEY（主键索引）</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD PRIMARY KEY ( `column` ) </span><br></pre></td></tr></table></figure>
+
+<p>添加UNIQUE(唯一索引)</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD UNIQUE ( `column` ) </span><br></pre></td></tr></table></figure>
+
+<p>添加INDEX(普通索引)</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD INDEX index_name ( `column` )</span><br></pre></td></tr></table></figure>
+
+<p>添加FULLTEXT(全文索引)</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD FULLTEXT ( `column`) </span><br></pre></td></tr></table></figure>
+
+<p>添加多列索引</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ALTER TABLE `table_name` ADD INDEX index_name ( `column1`, `column2`, `column3` )</span><br></pre></td></tr></table></figure>
+
+<p>CREATE 创建索引</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">CREATE INDEX indexName ON table_name (column_name)</span><br></pre></td></tr></table></figure>
+
+<h4 id="Hash索引和-B-树索引优劣分析"><a href="#Hash索引和-B-树索引优劣分析" class="headerlink" title="Hash索引和 B+树索引优劣分析"></a><strong>Hash索引和 B+树索引优劣分析</strong></h4><ul>
+<li><p><strong>Hash索引定位快</strong>：Hash索引指的就是<strong>Hash表</strong>，最大的优点就是能够在很短的时间内，<strong>根据Hash函数定位到数据所在的位置</strong>，这是B+树所不能比的</p>
+</li>
+<li><p><strong>Hash冲突问题</strong></p>
+</li>
+<li><p><strong>Hash索引不支持顺序和范围查询</strong>(Hash索引不支持顺序和范围查询是它最大的缺点)。</p>
+</li>
+</ul>
+<h4 id="Mysql的覆盖索引和联合索引的区别"><a href="#Mysql的覆盖索引和联合索引的区别" class="headerlink" title="Mysql的覆盖索引和联合索引的区别"></a>Mysql的<strong>覆盖索引和联合索引</strong>的区别</h4><p><strong>覆盖索引</strong>指的是<strong>索引中已包含需要查询的数据，执行查询时无需回表</strong>，扫描一次B+数索引即可</p>
+<p><strong>联合索引，在多个属性，建立为一个索引，加快多条件查询</strong></p>
+<p><strong>索引覆盖是联合索引查询时的最优情况，不要回表</strong></p>
+<h4 id="索引最为常见的扫描方式"><a href="#索引最为常见的扫描方式" class="headerlink" title="索引最为常见的扫描方式"></a>索引最为常见的扫描方式</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">system：系统表，少量数据，往往不需要进行磁盘IO；</span><br><span class="line">const：常量连接；命中主键(primary key)或者唯一(unique)索引</span><br><span class="line">eq_ref：主键索引(primary key)或者非空唯一索引(unique not null)等值扫描；</span><br><span class="line">ref：非主键非唯一索引等值扫描；</span><br><span class="line">range：范围扫描；</span><br><span class="line">index：索引树扫描；</span><br><span class="line">ALL：全表扫描(full table scan)</span><br></pre></td></tr></table></figure>
+
 ]]></content>
       <categories>
         <category>数据库</category>

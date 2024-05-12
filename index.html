@@ -155,6 +155,413 @@
     
     
     <article
+  id="post-count-和-count-1-有什么区别？"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/"
+    >count(*) 和 count(1) 有什么区别？</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/" class="article-date">
+  <time datetime="2024-05-12T10:11:29.000Z" itemprop="datePublished">2024-05-12</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/MySQL/">MySQL</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h1 id="count-和-count-1-有什么区别？哪个性能最好？"><a href="#count-和-count-1-有什么区别？哪个性能最好？" class="headerlink" title="count(*) 和 count(1) 有什么区别？哪个性能最好？"></a>count(*) 和 count(1) 有什么区别？哪个性能最好？</h1><p>当我们对一张数据表中的记录进行统计的时候，习惯都会使用 count 函数来统计，但是 count 函数传入的参数有很多种，比如 count(1)、count(<code>*</code>)、count(字段) 等。</p>
+<p>到底哪种效率是最好的呢？是不是 count(<code>*</code>) 效率最差？</p>
+<p>我曾经以为 count(<code>*</code>) 是效率最差的，因为认知上 <code>selete * from t</code> 会读取所有表中的字段，所以凡事带有 <code>*</code> 字符的就觉得会读取表中所有的字段，当时网上有很多博客也这么说。</p>
+<p>但是，当我深入 count 函数的原理后，被啪啪啪的打脸了！</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/d9b9817e92f805e9a16faf31a2c10d9a.png" alt="图片"></p>
+<h2 id="哪种-count-性能最好？"><a href="#哪种-count-性能最好？" class="headerlink" title="哪种 count 性能最好？"></a>哪种 count 性能最好？</h2><p>我先直接说结论：</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/af711033aa3423330d3a4bc6baeb9532.png" alt="图片"></p>
+<p>要弄明白这个，我们得要深入 count 的原理，以下内容基于常用的 innodb 存储引擎来说明。</p>
+<h3 id="count-是什么？"><a href="#count-是什么？" class="headerlink" title="#count() 是什么？"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/mysql/index/count.html#count-%E6%98%AF%E4%BB%80%E4%B9%88">#</a>count() 是什么？</h3><p>count() 是一个聚合函数，函数的参数不仅可以是字段名，也可以是其他任意表达式，该函数作用是<strong>统计符合查询条件的记录中，函数指定的参数不为 NULL 的记录有多少个</strong>。</p>
+<p>假设 count() 函数的参数是字段名，如下：</p>
+<p><code>select count(name) from t_order;</code></p>
+<p>这条语句是统计「 t_order 表中，name 字段不为 NULL 的记录」有多少个。也就是说，如果某一条记录中的 name 字段的值为 NULL，则就不会被统计进去。</p>
+<p>再来假设 count() 函数的参数是数字 1 这个表达式，如下：</p>
+<p><code>select count(1) from t_order;</code></p>
+<p>这条语句是统计「 t_order 表中，1 这个表达式不为 NULL 的记录」有多少个。</p>
+<p>1 这个表达式就是单纯数字，它永远都不是 NULL，所以上面这条语句，其实是在统计 t_order 表中有多少个记录</p>
+<h3 id="count-主键字段-执行过程是怎样的？"><a href="#count-主键字段-执行过程是怎样的？" class="headerlink" title="count(主键字段) 执行过程是怎样的？"></a>count(主键字段) 执行过程是怎样的？</h3><p>在通过 count 函数统计有多少个记录时，MySQL 的 server 层会维护一个名叫 count 的变量。</p>
+<p>server 层会循环向 InnoDB 读取一条记录，如果 count 函数指定的参数不为 NULL，那么就会将变量 count 加 1，直到符合查询的全部记录被读完，就退出循环。最后将 count 变量的值发送给客户端。</p>
+<p>InnoDB 是通过 B+ 树来保存记录的，根据索引的类型又分为聚簇索引和二级索引，它们区别在于，聚簇索引的叶子节点存放的是实际数据，而二级索引的叶子节点存放的是主键值，而不是实际数据。</p>
+<p>用下面这条语句作为例子：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span>id 为主键值</span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(id) <span class="keyword">from</span> t_order;</span><br></pre></td></tr></table></figure>
+
+<p>如果表里只有主键索引，没有二级索引时，那么，InnoDB 循环遍历聚簇索引，将读取到的记录返回给 server 层，然后读取记录中的 id 值，就会 id 值判断是否为 NULL，如果不为 NULL，就将 count 变量加 1。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/9bb4f32ac843467684a2664d4db61ae3.png" alt="图片"></p>
+<p>但是，如果表里有二级索引时，InnoDB 循环遍历的对象就不是聚簇索引，而是二级索引。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/aac550602ef1022e0b45020dbe0f716a.png" alt="图片"></p>
+<p>这是因为相同数量的二级索引记录可以比聚簇索引记录占用更少的存储空间，所以二级索引树比聚簇索引树小，这样遍历二级索引的 I/O 成本比遍历聚簇索引的 I/O 成本小，因此「优化器」优先选择的是二级索引。</p>
+<h3 id="count-1-执行过程是怎样的？"><a href="#count-1-执行过程是怎样的？" class="headerlink" title="count(1) 执行过程是怎样的？"></a>count(1) 执行过程是怎样的？</h3><p>用下面这条语句作为例子：</p>
+<p><code>select count(1) from t_order;</code></p>
+<p>如果表里只有主键索引，没有二级索引时。</p>
+<p>那么，InnoDB 循环遍历聚簇索引（主键索引），将读取到的记录返回给 server 层，<strong>但是不会读取记录中的任何字段的值</strong>，因为 count 函数的参数是 1，不是字段，所以不需要读取记录中的字段值。参数 1 很明显并不是 NULL，因此 server 层每从 InnoDB 读取到一条记录，就将 count 变量加 1。</p>
+<p>可以看到，count(1) 相比 count(主键字段) 少一个步骤，就是不需要读取记录中的字段值，所以通常会说 count(1) 执行效率会比 count(主键字段) 高一点。</p>
+<p>但是，如果表里有二级索引时，InnoDB 循环遍历的对象就二级索引了。</p>
+<h3 id="count-执行过程是怎样的？"><a href="#count-执行过程是怎样的？" class="headerlink" title="count(*) 执行过程是怎样的？"></a>count(*) 执行过程是怎样的？</h3><p>看到 <code>*</code> 这个字符的时候，是不是大家觉得是读取记录中的所有字段值？</p>
+<p>对于 <code>selete *</code> 这条语句来说是这个意思，但是在 count(*) 中并不是这个意思。</p>
+<p>**count(<code>\*</code>) 其实等于 count(<code>0</code>)**，也就是说，当你使用 count(<code>*</code>) 时，MySQL 会将 <code>*</code> 参数转化为参数 0 来处理。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/27b229f049b27898f3a86c7da7e26114.png" alt="图片"></p>
+<p>所以，<strong>count(*) 执行过程跟 count(1) 执行过程基本一样的</strong>，性能没有什么差异。</p>
+<p>在 MySQL 5.7 的官方手册中有这么一句话：</p>
+<p><em>InnoDB handles SELECT COUNT(<code>\*</code>) and SELECT COUNT(<code>1</code>) operations in the same way. There is no performance difference.</em></p>
+<p><em>翻译：InnoDB以相同的方式处理SELECT COUNT（<code>\*</code>）和SELECT COUNT（<code>1</code>）操作，没有性能差异。</em></p>
+<p>而且 MySQL 会对 count(*) 和 count(1) 有个优化，如果有多个二级索引的时候，优化器会使用key_len 最小的二级索引进行扫描。</p>
+<p>只有当没有二级索引的时候，才会采用主键索引来进行统计。</p>
+<h3 id="count-字段-执行过程是怎样的？"><a href="#count-字段-执行过程是怎样的？" class="headerlink" title="count(字段) 执行过程是怎样的？"></a>count(字段) 执行过程是怎样的？</h3><p>count(字段) 的执行效率相比前面的 count(1)、 count(*)、 count(主键字段) 执行效率是最差的。</p>
+<p>用下面这条语句作为例子：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="operator">/</span><span class="operator">/</span> name不是索引，普通字段</span><br><span class="line"><span class="keyword">select</span> <span class="built_in">count</span>(name) <span class="keyword">from</span> t_order;</span><br></pre></td></tr></table></figure>
+
+<p>对于这个查询来说，会采用全表扫描的方式来计数，所以它的执行效率是比较差的。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/f24dfeb85e2cfce0e4dc3a17b893b3f5.png" alt="图片"></p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>count(1)、 count(*)、 count(主键字段)在执行的时候，如果表里存在二级索引，优化器就会选择二级索引进行扫描。</p>
+<p>所以，如果要执行 count(1)、 count(*)、 count(主键字段) 时，尽量在数据表上建立二级索引，这样优化器会自动采用 key_len 最小的二级索引进行扫描，相比于扫描主键索引效率会高一些。</p>
+<p>再来，就是不要使用 count(字段) 来统计记录个数，因为它的效率是最差的，会采用全表扫描的方式来统计。如果你非要统计表中该字段不为 NULL 的记录个数，建议给这个字段建立一个二级索引。</p>
+<h2 id="为什么要通过遍历的方式来计数？"><a href="#为什么要通过遍历的方式来计数？" class="headerlink" title="为什么要通过遍历的方式来计数？"></a>为什么要通过遍历的方式来计数？</h2><p>你可能会好奇，为什么 count 函数需要通过遍历的方式来统计记录个数？</p>
+<p>我前面将的案例都是基于 Innodb 存储引擎来说明的，但是在 MyISAM 存储引擎里，执行 count 函数的方式是不一样的，通常在没有任何查询条件下的 count(*)，MyISAM 的查询速度要明显快于 InnoDB。</p>
+<p>使用 MyISAM 引擎时，执行 count 函数只需要 O(1 )复杂度，这是因为每张 MyISAM 的数据表都有一个 meta 信息有存储了row_count值，由表级锁保证一致性，所以直接读取 row_count 值就是 count 函数的执行结果。</p>
+<p>而 InnoDB 存储引擎是支持事务的，同一个时刻的多个查询，由于多版本并发控制（MVCC）的原因，InnoDB 表“应该返回多少行”也是不确定的，所以无法像 MyISAM一样，只维护一个 row_count 变量。</p>
+<p>举个例子，假设表 t_order 有 100 条记录，现在有两个会话并行以下语句：</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/04d714293f5c687810562e984b67d2e7.png" alt="图片"></p>
+<p>在会话 A 和会话 B的最后一个时刻，同时查表 t_order 的记录总个数，可以发现，显示的结果是不一样的。所以，在使用 InnoDB 存储引擎时，就需要扫描表来统计具体的记录。</p>
+<p>而当带上 where 条件语句之后，MyISAM 跟 InnoDB 就没有区别了，它们都需要扫描表来进行记录个数的统计。</p>
+<h2 id="如何优化-count-？"><a href="#如何优化-count-？" class="headerlink" title="如何优化 count(*)？"></a>如何优化 count(*)？</h2><p>如果对一张大表经常用 count(*) 来做统计，其实是很不好的。</p>
+<p>比如下面我这个案例，表 t_order 共有 1200+ 万条记录，我也创建了二级索引，但是执行一次 <code>select count(*) from t_order</code> 要花费差不多 5 秒！</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/74a4359b58dc6ed41a241e425f43764d.png" alt="图片"></p>
+<p>面对大表的记录统计，我们有没有什么其他更好的办法呢？</p>
+<h3 id="第一种，近似值"><a href="#第一种，近似值" class="headerlink" title="#第一种，近似值"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/mysql/index/count.html#%E7%AC%AC%E4%B8%80%E7%A7%8D-%E8%BF%91%E4%BC%BC%E5%80%BC">#</a>第一种，近似值</h3><p>如果你的业务对于统计个数不需要很精确，比如搜索引擎在搜索关键词的时候，给出的搜索结果条数是一个大概值。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/cd18879de0c0b37660f53a5f1af3d172.png" alt="图片"></p>
+<p>这时，我们就可以使用 show table status 或者 explain 命令来表进行估算。</p>
+<p>执行 explain 命令效率是很高的，因为它并不会真正的去查询，下图中的 rows 字段值就是 explain 命令对表 t_order 记录的估算值。</p>
+<p><img src="/2024/05/12/count-%E5%92%8C-count-1-%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%EF%BC%9F/7590623443e8f225e5652109e6d9e3d2.png" alt="图片"></p>
+<h3 id="第二种，额外表保存计数值"><a href="#第二种，额外表保存计数值" class="headerlink" title="第二种，额外表保存计数值"></a>第二种，额外表保存计数值</h3><p>如果是想精确的获取表的记录总数，我们可以将这个计数值保存到单独的一张计数表中。</p>
+<p>当我们在数据表插入一条记录的同时，将计数表中的计数字段 + 1。也就是说，在新增和删除操作时，我们需要额外维护这个计数表。</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-Redis-线程模型"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/"
+    >Redis 线程模型</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/" class="article-date">
+  <time datetime="2023-01-15T12:52:06.000Z" itemprop="datePublished">2023-01-15</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="Redis-线程模型"><a href="#Redis-线程模型" class="headerlink" title="Redis 线程模型"></a>Redis 线程模型</h2><h3 id="Redis-是单线程吗？"><a href="#Redis-是单线程吗？" class="headerlink" title="#Redis 是单线程吗？"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/redis/base/redis_interview.html#redis-%E6%98%AF%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%90%97">#</a>Redis 是单线程吗？</h3><p><strong>Redis 单线程指的是「接收客户端请求-&gt;解析请求 -&gt;进行数据读写等操作-&gt;发送数据给客户端」这个过程是由一个线程（主线程）来完成的</strong>，这也是我们常说 Redis 是单线程的原因。</p>
+<p>但是，<strong>Redis 程序并不是单线程的</strong>，Redis 在启动的时候，是会<strong>启动后台线程</strong>（BIO）的：</p>
+<ul>
+<li><strong>Redis 在 2.6 版本</strong>，会启动 2 个后台线程，分别处理关闭文件、AOF 刷盘这两个任务；</li>
+<li><strong>Redis 在 4.0 版本之后</strong>，新增了一个新的后台线程，用来异步释放 Redis 内存，也就是 lazyfree 线程。例如执行 unlink key / flushdb async / flushall async 等命令，会把这些删除操作交给后台线程来执行，好处是不会导致 Redis 主线程卡顿。因此，当我们要删除一个大 key 的时候，不要使用 del 命令删除，因为 del 是在主线程处理的，这样会导致 Redis 主线程卡顿，因此我们应该使用 unlink 命令来异步删除大key。</li>
+</ul>
+<p>之所以 Redis 为「关闭文件、AOF 刷盘、释放内存」这些任务创建单独的线程来处理，是因为这些任务的操作都是很耗时的，如果把这些任务都放在主线程来处理，那么 Redis 主线程就很容易发生阻塞，这样就无法处理后续的请求了。</p>
+<p>后台线程相当于一个消费者，生产者把耗时任务丢到任务队列中，消费者（BIO）不停轮询这个队列，拿出任务就去执行对应的方法即可。</p>
+<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/%E5%90%8E%E5%8F%B0%E7%BA%BF%E7%A8%8B.jpg" alt="img"></p>
+<p>关闭文件、AOF 刷盘、释放内存这三个任务都有各自的任务队列：</p>
+<ul>
+<li>BIO_CLOSE_FILE，关闭文件任务队列：当队列有任务后，后台线程会调用 close(fd) ，将文件关闭；</li>
+<li>BIO_AOF_FSYNC，AOF刷盘任务队列：当 AOF 日志配置成 everysec 选项后，主线程会把 AOF 写日志操作封装成一个任务，也放到队列中。当发现队列有任务后，后台线程会调用 fsync(fd)，将 AOF 文件刷盘，</li>
+<li>BIO_LAZY_FREE，lazy free 任务队列：当队列有任务后，后台线程会 free(obj) 释放对象 / free(dict) 删除数据库所有对象 / free(skiplist) 释放跳表对象；</li>
+</ul>
+<h3 id="Redis-单线程模式是怎样的？"><a href="#Redis-单线程模式是怎样的？" class="headerlink" title="Redis 单线程模式是怎样的？"></a>Redis 单线程模式是怎样的？</h3><p>Redis 6.0 版本之前的单线模式如下图：</p>
+<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/redis%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B.drawio.png" alt="img"></p>
+<p>图中的蓝色部分是一个事件循环，是由主线程负责的，可以看到网络 I/O 和命令处理都是单线程。 Redis 初始化的时候，会做下面这几件事情：</p>
+<ul>
+<li>首先，调用 epoll_create() 创建一个 epoll 对象和调用 socket() 创建一个服务端 socket</li>
+<li>然后，调用 bind() 绑定端口和调用 listen() 监听该 socket；</li>
+<li>然后，将调用 epoll_ctl() 将 listen socket 加入到 epoll，同时注册「连接事件」处理函数。</li>
+</ul>
+<p>初始化完后，主线程就进入到一个<strong>事件循环函数</strong>，主要会做以下事情：</p>
+<ul>
+<li><p>首先，先调用<strong>处理发送队列函数</strong>，看是发送队列里是否有任务，如果有发送任务，则通过 write 函数将客户端发送缓存区里的数据发送出去，如果这一轮数据没有发送完，就会注册写事件处理函数，等待 epoll_wait 发现可写后再处理 。</p>
+</li>
+<li><p>接着，调用 epoll_wait 函数等待事件的到来：</p>
+<ul>
+<li><p>如果是<strong>连接事件</strong>到来，则会调用<strong>连接事件处理函数</strong>，该函数会做这些事情：调用 accpet 获取已连接的 socket -&gt; 调用 epoll_ctl 将已连接的 socket 加入到 epoll -&gt; 注册「读事件」处理函数；</p>
+</li>
+<li><p>如果是<strong>读事件</strong>到来，则会调用<strong>读事件处理函数</strong>，该函数会做这些事情：调用 read 获取客户端发送的数据 -&gt; 解析命令 -&gt; 处理命令 -&gt; 将客户端对象添加到发送队列 -&gt; 将执行结果写到发送缓存区等待发送；</p>
+</li>
+<li><p>如果是<strong>写事件</strong>到来，则会调用<strong>写事件处理函数</strong>，该函数会做这些事情：通过 write 函数将客户端发送缓存区里的数据发送出去，如果这一轮数据没有发送完，就会继续注册写事件处理函数，等待 epoll_wait 发现可写后再处理 。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>（另外版本：</p>
+<p>redis 内部使⽤<strong>⽂件事件处理器</strong> file event handler ，这个<strong>⽂件事件处理器是单线程的</strong>，所 以 redis 才叫做单线程的模型。它<strong>采⽤ IO 多路复⽤机制同时监听多个 socket</strong>，<strong>将产⽣事件的 socket 压⼊内存队列中，事件分派器根据 socket 上的事件类型来选择对应的事件处理器进⾏处 理</strong>。</p>
+<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/image-20240512180058421.png" alt="image-20240512180058421">)</p>
+<h3 id="Redis-采用单线程为什么还这么快？"><a href="#Redis-采用单线程为什么还这么快？" class="headerlink" title="Redis 采用单线程为什么还这么快？"></a>Redis 采用单线程为什么还这么快？</h3><p>官方使用基准测试的结果是，<strong>单线程的 Redis 吞吐量可以达到 10W/每秒</strong></p>
+<p>之所以 Redis 采用单线程（网络 I/O 和执行命令）那么快，有如下几个原因：</p>
+<ul>
+<li>Redis 的大部分操作<strong>都在内存中完成</strong>，并且采用了高效的数据结构，因此 Redis 瓶颈可能是机器的内存或者网络带宽，而并非 CPU，既然 CPU 不是瓶颈，那么自然就采用单线程的解决方案了；</li>
+<li>Redis 采用单线程模型可以<strong>避免了多线程之间的竞争</strong>，省去了多线程切换带来的时间和性能上的开销，而且也不会导致死锁问题。</li>
+<li>Redis 采用了 <strong>I/O 多路复用机制</strong>处理大量的客户端 Socket 请求，IO 多路复用机制是指一个线程处理多个 IO 流，就是我们经常听到的 select/epoll 机制。简单来说，在 Redis 只运行单线程的情况下，该机制允许内核中，同时存在多个监听 Socket 和已连接 Socket。内核会一直监听这些 Socket 上的连接请求或数据请求。一旦有请求到达，就会交给 Redis 线程处理，这就实现了一个 Redis 线程处理多个 IO 流的效果。</li>
+</ul>
+<h3 id="Redis-6-0-之前为什么使用单线程？"><a href="#Redis-6-0-之前为什么使用单线程？" class="headerlink" title="Redis 6.0 之前为什么使用单线程？"></a>Redis 6.0 之前为什么使用单线程？</h3><p>我们都知道单线程的程序是无法利用服务器的多核 CPU 的，那么早期 Redis 版本的主要工作（网络 I/O 和执行命令）为什么还要使用单线程呢？我们不妨先看一下Redis官方给出的<a href="https://link.juejin.cn/?target=https://redis.io/topics/faq">FAQ</a></p>
+<p><img src="/2023/01/15/Redis-%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B/redis%E5%AE%98%E6%96%B9%E5%8D%95%E7%BA%BF%E7%A8%8B%E5%9B%9E%E7%AD%94.png" alt="img"></p>
+<p>核心意思是：<strong>CPU 并不是制约 Redis 性能表现的瓶颈所在</strong>，更多情况下是受到内存大小和网络I/O的限制，所以 Redis 核心网络模型使用单线程并没有什么问题，如果你想要使用服务的多核CPU，可以在一台服务器上启动多个节点或者采用分片集群的方式。</p>
+<p>除了上面的官方回答，选择单线程的原因也有下面的考虑。</p>
+<p>使用了单线程后，可维护性高，多线程模型虽然在某些方面表现优异，但是它却引入了程序执行顺序的不确定性，带来了并发读写的一系列问题，<strong>增加了系统复杂度、同时可能存在线程切换、甚至加锁解锁、死锁造成的性能损耗</strong>。</p>
+<h3 id="Redis-6-0-之后为什么引入了多线程？"><a href="#Redis-6-0-之后为什么引入了多线程？" class="headerlink" title="#Redis 6.0 之后为什么引入了多线程？"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/redis/base/redis_interview.html#redis-6-0-%E4%B9%8B%E5%90%8E%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BC%95%E5%85%A5%E4%BA%86%E5%A4%9A%E7%BA%BF%E7%A8%8B">#</a>Redis 6.0 之后为什么引入了多线程？</h3><p>虽然 Redis 的主要工作（网络 I/O 和执行命令）一直是单线程模型，但是<strong>在 Redis 6.0 版本之后，也采用了多个 I/O 线程来处理网络请求</strong>，<strong>这是因为随着网络硬件的性能提升，Redis 的性能瓶颈有时会出现在网络 I/O 的处理上</strong>。</p>
+<p>所以为了提高网络 I/O 的并行度，Redis 6.0 对于网络 I/O 采用多线程来处理。**但是对于命令的执行，Redis 仍然使用单线程来处理，*<em>所以大家*<em>不要误解</em></em> Redis 有多线程同时执行命令。</p>
+<p>Redis 官方表示，<strong>Redis 6.0 版本引入的多线程 I/O 特性对性能提升至少是一倍以上</strong>。</p>
+<p>Redis 6.0 版本支持的 I/O 多线程特性，默认情况下 I/O 多线程只针对发送响应数据（write client socket），并不会以多线程的方式处理读请求（read client socket）。要想开启多线程处理客户端读请求，就需要把 Redis.conf 配置文件中的 io-threads-do-reads 配置项设为 yes。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//读请求也使用io多线程</span></span><br><span class="line">io-threads-<span class="keyword">do</span>-reads yes </span><br></pre></td></tr></table></figure>
+
+<p>同时， Redis.conf 配置文件中提供了 IO 多线程个数的配置项。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// io-threads N，表示启用 N-1 个 I/O 多线程（主线程也算一个 I/O 线程）</span></span><br><span class="line">io-threads <span class="number">4</span></span><br></pre></td></tr></table></figure>
+
+<p>关于线程数的设置，官方的建议是如果为 4 核的 CPU，建议线程数设置为 2 或 3，如果为 8 核 CPU 建议线程数设置为 6，线程数一定要小于机器核数，线程数并不是越大越好。</p>
+<p>因此， Redis 6.0 版本之后，Redis 在启动的时候，默认情况下会<strong>额外创建 6 个线程</strong>（<em>这里的线程数不包括主线程</em>）：</p>
+<ul>
+<li>Redis-server ： Redis的主线程，主要负责执行命令；</li>
+<li>bio_close_file、bio_aof_fsync、bio_lazy_free：三个后台线程，分别异步处理关闭文件任务、AOF刷盘任务、释放内存任务；</li>
+<li>io_thd_1、io_thd_2、io_thd_3：三个 I/O 线程，io-threads 默认是 4 ，所以会启动 3（4-1）个 I/O 多线程，用来分担 Redis 网络 I/O 的压力。</li>
+</ul>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
+  id="post-数据库和缓存如何保持一致性"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h2 itemprop="name">
+  <a class="article-title" href="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/"
+    >数据库和缓存如何保持一致性</a> 
+</h2>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/" class="article-date">
+  <time datetime="2022-12-12T11:24:45.000Z" itemprop="datePublished">2022-12-12</time>
+</a> 
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a> / <a class="article-category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/Redis/">Redis</a>
+  </div>
+   
+    </div>
+      
+    <div class="article-entry" itemprop="articleBody">
+       
+  <h2 id="数据库和缓存如何保证一致性？"><a href="#数据库和缓存如何保证一致性？" class="headerlink" title="数据库和缓存如何保证一致性？"></a>数据库和缓存如何保证一致性？</h2><h3 id="先更新数据库，还是先更新缓存？"><a href="#先更新数据库，还是先更新缓存？" class="headerlink" title="先更新数据库，还是先更新缓存？"></a>先更新数据库，还是先更新缓存？</h3><p><strong>由于引入了缓存，那么在数据更新时，不仅要更新数据库，而且要更新缓存，这两个更新操作存在前后的问题</strong>：</p>
+<ul>
+<li><p>先更新数据库，再更新缓存；</p>
+</li>
+<li><p>先更新缓存，再更新数据库；</p>
+</li>
+</ul>
+<h4 id="先更新数据库，再更新缓存"><a href="#先更新数据库，再更新缓存" class="headerlink" title="先更新数据库，再更新缓存"></a>先更新数据库，再更新缓存</h4><p>举个例子，比如「请求 A 」和「请求 B 」两个请求，同时更新「同一条」数据，则可能出现这样的顺序：</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/8febac10b14bed16cb96d1d944cd08da.png" alt="图片"></p>
+<p>A 请求先将数据库的数据更新为 1，然后在更新缓存前，请求 B 将数据库的数据更新为 2，紧接着也把缓存更新为 2，然后 A 请求更新缓存为 1。</p>
+<p>此时，数据库中的数据是 2，而缓存中的数据却是 1，<strong>出现了缓存和数据库中的数据不一致的现象</strong>。</p>
+<h4 id="先更新缓存，再更新数据库"><a href="#先更新缓存，再更新数据库" class="headerlink" title="先更新缓存，再更新数据库"></a>先更新缓存，再更新数据库</h4><p>那换成「<strong>先更新缓存，再更新数据库</strong>」这个方案，还会有问题吗？</p>
+<p>依然还是存在并发的问题，分析思路也是一样。</p>
+<p>假设「请求 A 」和「请求 B 」两个请求，同时更新「同一条」数据，则可能出现这样的顺序：</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/454a8228a6549176ad7e0484fba3c92b.png" alt="图片"></p>
+<p>A 请求先将缓存的数据更新为 1，然后在更新数据库前，B 请求来了， 将缓存的数据更新为 2，紧接着把数据库更新为 2，然后 A 请求将数据库的数据更新为 1。</p>
+<p>此时，数据库中的数据是 1，而缓存中的数据却是 2，<strong>出现了缓存和数据库中的数据不一致的现象</strong>。</p>
+<p>所以，<strong>无论是「先更新数据库，再更新缓存」，还是「先更新缓存，再更新数据库」，这两个方案都存在并发问题，当两个请求并发更新同一条数据的时候，可能会出现缓存和数据库中的数据不一致的现象</strong>。</p>
+<h3 id="先更新数据库，还是先删除缓存？"><a href="#先更新数据库，还是先删除缓存？" class="headerlink" title="先更新数据库，还是先删除缓存？"></a>先更新数据库，还是先删除缓存？</h3><p>思考了一番后，决定在更新数据时，<strong>不更新缓存，而是删除缓存中的数据。然后，到读取数据时，发现缓存中没了数据之后，再从数据库中读取数据，更新到缓存中。</strong></p>
+<p>个策略是有名字的，是叫 <strong>Cache Aside 策略</strong>，中文是叫旁路缓存策略。</p>
+<p>该策略又可以细分为「读策略」和「写策略」。</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/6e3db3ba2f829ddc14237f5c7c00e7ce.png" alt="图片"></p>
+<p><strong>写策略的步骤：</strong></p>
+<ul>
+<li>更新数据库中的数据；</li>
+<li>删除缓存中的数据。</li>
+</ul>
+<p><strong>读策略的步骤：</strong></p>
+<ul>
+<li>如果读取的数据命中了缓存，则直接返回数据；</li>
+<li>如果读取的数据没有命中缓存，则从数据库中读取数据，然后将数据写入到缓存，并且返回给用户。</li>
+</ul>
+<p>「写策略」的时候，又陷入更深层次的思考，到底该选择哪种顺序呢？</p>
+<ul>
+<li>先删除缓存，再更新数据库；</li>
+<li>先更新数据库，再删除缓存。</li>
+</ul>
+<p>用并发的角度来分析，看看这两种方案哪个可以保证数据库与缓存的数据一致性。</p>
+<h4 id="先删除缓存，再更新数据库"><a href="#先删除缓存，再更新数据库" class="headerlink" title="先删除缓存，再更新数据库"></a>先删除缓存，再更新数据库</h4><p>以用户表的场景来分析。</p>
+<p>假设某个用户的年龄是 20，请求 A 要更新用户年龄为 21，所以它会删除缓存中的内容。这时，另一个请求 B 要读取这个用户的年龄，它查询缓存发现未命中后，会从数据库中读取到年龄为 20，并且写入到缓存中，然后请求 A 继续更改数据库，将用户的年龄更新为 21。</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/cc208c2931b4e889d1a58cb655537767.png" alt="图片"></p>
+<p>最终，该用户年龄在缓存中是 20（旧值），在数据库中是 21（新值），缓存和数据库的数据不一致。</p>
+<p>可以看到，<strong>先删除缓存，再更新数据库，在「读 + 写」并发的时候，还是会出现缓存和数据库的数据不一致的问题</strong></p>
+<h4 id="先更新数据库，再删除缓存"><a href="#先更新数据库，再删除缓存" class="headerlink" title="先更新数据库，再删除缓存"></a>先更新数据库，再删除缓存</h4><p>继续用「读 + 写」请求的并发的场景来分析。</p>
+<p>假如某个用户数据在缓存中不存在，请求 A 读取数据时从数据库中查询到年龄为 20，在未写入缓存中时另一个请求 B 更新数据。它更新数据库中的年龄为 21，并且清空缓存。这时请求 A 把从数据库中读到的年龄为 20 的数据写入到缓存中。</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/1cc7401143e79383ead96582ac11b615.png" alt="图片"></p>
+<p>最终，该用户年龄在缓存中是 20（旧值），在数据库中是 21（新值），缓存和数据库数据不一致。</p>
+<p>从上面的理论上分析，先更新数据库，再删除缓存也是会出现数据不一致性的问题，<strong>但是在实际中，这个问题出现的概率并不高</strong>。</p>
+<p><strong>因为缓存的写入通常要远远快于数据库的写入</strong>，所以在实际中很难出现请求 B 已经更新了数据库并且删除了缓存，请求 A 才更新完缓存的情况。</p>
+<p>而一旦请求 A 早于请求 B 删除缓存之前更新了缓存，那么接下来的请求就会因为缓存不命中而从数据库中重新读取数据，所以不会出现这种不一致的情况。</p>
+<p>所以，<strong>「先更新数据库 + 再删除缓存」的方案，是可以保证数据一致性的</strong>。</p>
+<p>而且为了确保万无一失，还给缓存数据加上了「<strong>过期时间</strong>」，就算在这期间存在缓存数据不一致，有过期时间来兜底，这样也能达到最终一致。</p>
+<p>但是「先更新数据库， 再删除缓存」其实是两个操作，前面的所有分析都是建立在这两个操作都能同时执行成功，存在问题，<strong>在删除缓存（第二个操作）的时候失败了，会导致缓存中的数据是旧值</strong>。</p>
+<p>好在之前给缓存加上了过期时间，所以过一段时间才更新生效的现象，假设如果没有这个过期时间的兜底，那后续的请求读到的就会一直是缓存中的旧数据，这样问题就更大了。</p>
+<p>所以新的问题来了，<strong>如何保证「先更新数据库 ，再删除缓存」这两个操作能执行成功？</strong></p>
+<h3 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h3><p>我们继续说点其他。</p>
+<p>「先更新数据库，再删除缓存」的方案虽然保证了数据库与缓存的数据一致性，但是每次更新数据的时候，缓存的数据都会被删除，这样会对缓存的命中率带来影响。</p>
+<p>所以，<strong>如果我们的业务对缓存命中率有很高的要求，我们可以采用「更新数据库 + 更新缓存」的方案，因为更新缓存并不会出现缓存未命中的情况</strong>。</p>
+<p>但是这个方案前面我们也分析过，在两个更新请求并发执行的时候，会出现数据不一致的问题，因为更新数据库和更新缓存这两个操作是独立的，而我们又没有对操作做任何并发控制，那么当两个线程并发更新它们的话，就会因为写入顺序的不同造成数据的不一致。</p>
+<p>所以我们得增加一些手段来解决这个问题，这里提供两种做法：</p>
+<ul>
+<li>在更新缓存前先加个<strong>分布式锁</strong>，保证同一时间只运行一个请求更新缓存，就会不会产生并发问题了，当然引入了锁后，对于写入的性能就会带来影响。</li>
+<li>在更新完缓存时，给缓存加上较短的<strong>过期时间</strong>，这样即时出现缓存不一致的情况，缓存的数据也会很快过期，对业务还是能接受的。</li>
+</ul>
+<p>对了，针对「先删除缓存，再更新数据库」方案在「读 + 写」并发请求而造成缓存不一致的解决办法是「<strong>延迟双删</strong>」。</p>
+<p>延迟双删实现的伪代码如下：</p>
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">#删除缓存</span><br><span class="line">redis.delKey(X)</span><br><span class="line">#更新数据库</span><br><span class="line">db.update(X)</span><br><span class="line">#睡眠</span><br><span class="line">Thread.sleep(N)</span><br><span class="line">#再删除缓存</span><br><span class="line">redis.delKey(X)</span><br></pre></td></tr></table></figure>
+
+<p>加了个睡眠时间，主要是为了确保请求 A 在睡眠的时候，请求 B 能够在这这一段时间完成「从数据库读取数据，再把缺失的缓存写入缓存」的操作，然后请求 A 睡眠完，再删除缓存。</p>
+<p>所以，请求 A 的睡眠时间就需要大于请求 B 「从数据库读取数据 + 写入缓存」的时间。</p>
+<p>但是具体睡眠多久其实是个<strong>玄学</strong>，很难评估出来，所以这个方案也只是<strong>尽可能</strong>保证一致性而已，极端情况下，依然也会出现缓存不一致的现象。</p>
+<p>因此，还是比较建议用「先更新数据库，再删除缓存」的方案。</p>
+<h3 id="前情回顾"><a href="#前情回顾" class="headerlink" title="前情回顾"></a>前情回顾</h3><p>为了提升数据访问的性能，引入 Redis 作为 MySQL 缓存层，但是这件事情并不是那么简单，因为还要考虑 Redis 和 MySQL 双写一致性的问题。</p>
+<p>经过一番周折，最终选用了「<strong>先更新数据库，再删缓存</strong>」的策略，原因是这个策略即使在并发读写时，也能最大程度保证数据一致性。</p>
+<p>还搞了个兜底的方案，就是给缓存加上了过期时间。</p>
+<p>本以为就这样不会在出现数据一致性的问题，结果将功能上线后，还是收到用户的投诉「说自己明明更新了数据，但是数据要过一段时间才生效」，客户接受不了。</p>
+<p>立马就登录服务器去排查问题，查看日志后得知了原因。</p>
+<p>「先更新数据库， 再删除缓存」其实是两个操作，这次客户投诉的问题就在于，<strong>在删除缓存（第二个操作）的时候失败了，导致缓存中的数据是旧值，而数据库是最新值</strong>。</p>
+<p>好在之前给缓存加上了过期时间，所以才会出现客户说的过一段时间才更新生效的现象，假设如果没有这个过期时间的兜底，那后续的请求读到的就会一直是缓存中的旧数据，这样问题就更大了。</p>
+<p>所以新的问题来了，<strong>如何保证「先更新数据库 ，再删除缓存」这两个操作能执行成功？</strong></p>
+<h3 id="如何保证两个操作都能执行成功？"><a href="#如何保证两个操作都能执行成功？" class="headerlink" title="如何保证两个操作都能执行成功？"></a>如何保证两个操作都能执行成功？</h3><p>这次用户的投诉是因为在删除缓存（第二个操作）的时候失败了，导致缓存还是旧值，而数据库是最新值，造成数据库和缓存数据不一致的问题，会对敏感业务造成影响。</p>
+<p>举个例子，来说明下。</p>
+<p>应用要把数据 X 的值从 1 更新为 2，先成功更新了数据库，然后在 Redis 缓存中删除 X 的缓存，但是这个操作却失败了，这个时候数据库中 X 的新值为 2，Redis 中的 X 的缓存值为 1，出现了数据库和缓存数据不一致的问题。</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/2a2ea2854bbc3ae8ae86d7da45fa32ee.png" alt="图片"></p>
+<p>那么，后续有访问数据 X 的请求，会先在 Redis 中查询，因为缓存并没有 诶删除，所以会缓存命中，但是读到的却是旧值 1。</p>
+<p>其实不管是先操作数据库，还是先操作缓存，只要第二个操作失败都会出现数据部一致的问题。</p>
+<p>问题原因知道了，该怎么解决呢？有两种方法：</p>
+<ul>
+<li>重试机制。</li>
+<li>订阅 MySQL binlog，再操作缓存。</li>
+</ul>
+<p>先来说第一种。</p>
+<h5 id="重试机制"><a href="#重试机制" class="headerlink" title="#重试机制"></a><a target="_blank" rel="noopener" href="https://www.xiaolincoding.com/redis/architecture/mysql_redis_consistency.html#%E9%87%8D%E8%AF%95%E6%9C%BA%E5%88%B6">#</a>重试机制</h5><p>我们可以引入<strong>消息队列</strong>，将第二个操作（删除缓存）要操作的数据加入到消息队列，由消费者来操作数据。</p>
+<ul>
+<li>如果应用<strong>删除缓存失败</strong>，可以从消息队列中重新读取数据，然后再次删除缓存，这个就是<strong>重试机制</strong>。当然，如果重试超过的一定次数，还是没有成功，我们就需要向业务层发送报错信息了。</li>
+<li>如果<strong>删除缓存成功</strong>，就要把数据从消息队列中移除，避免重复操作，否则就继续重试。</li>
+</ul>
+<p>举个例子，来说明重试机制的过程。</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/a4440f0d572612e0832b903e4a62bd2b.png" alt="图片"></p>
+<h5 id="订阅-MySQL-binlog，再操作缓存"><a href="#订阅-MySQL-binlog，再操作缓存" class="headerlink" title="订阅 MySQL binlog，再操作缓存"></a>订阅 MySQL binlog，再操作缓存</h5><p>「<strong>先更新数据库，再删缓存</strong>」的策略的第一步是更新数据库，那么更新数据库成功，就会产生一条变更日志，记录在 binlog 里。</p>
+<p>于是我们就可以通过订阅 binlog 日志，拿到具体要操作的数据，然后再执行缓存删除，阿里巴巴开源的 Canal 中间件就是基于这个实现的。</p>
+<p>Canal 模拟 MySQL 主从复制的交互协议，把自己伪装成一个 MySQL 的从节点，向 MySQL 主节点发送 dump 请求，MySQL 收到请求后，就会开始推送 Binlog 给 Canal，Canal 解析 Binlog 字节流之后，转换为便于读取的结构化数据，供下游程序订阅使用。</p>
+<p>下图是 Canal 的工作原理：</p>
+<p><img src="/2022/12/12/%E6%95%B0%E6%8D%AE%E5%BA%93%E5%92%8C%E7%BC%93%E5%AD%98%E5%A6%82%E4%BD%95%E4%BF%9D%E6%8C%81%E4%B8%80%E8%87%B4%E6%80%A7/2ee2280e9f59b6b4879ebdec6eb0cf52.png" alt="图片"></p>
+<p>所以，<strong>如果要想保证「先更新数据库，再删缓存」策略第二个操作能执行成功，我们可以使用「消息队列来重试缓存的删除」，或者「订阅 MySQL binlog 再操作缓存」，这两种方法有一个共同的特点，都是采用异步操作缓存。</strong></p>
+<h2 id="为什么是删除缓存，而不是更新缓存呢？"><a href="#为什么是删除缓存，而不是更新缓存呢？" class="headerlink" title="为什么是删除缓存，而不是更新缓存呢？"></a>为什么是删除缓存，而不是更新缓存呢？</h2><p>删除一个数据，相比更新一个数据更加轻量级，出问题的概率更小。在实际业务中，缓存的数据可能不是直接来自数据库表，也许来自多张底层数据表的聚合。</p>
+<p>比如商品详情信息，在底层可能会关联商品表、价格表、库存表等，如果更新了一个价格字段，那么就要更新整个数据库，还要关联的去查询和汇总各个周边业务系统的数据，这个操作会非常耗时。 从另外一个角度，不是所有的缓存数据都是频繁访问的，更新后的缓存可能会长时间不被访问，所以说，从计算资源和整体性能的考虑，更新的时候删除缓存，等到下次查询命中再填充缓存，是一个更好的方案。</p>
+<p>系统设计中有一个思想叫 Lazy Loading，适用于那些加载代价大的操作，删除缓存而不是更新缓存，就是懒加载思想的一个应用。</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <footer class="article-footer">
+       
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
+
+    </footer>
+  </div>
+
+    
+ 
+    
+</article>
+
+    
+    <article
   id="post-什么是缓存雪崩、击穿、穿透？"
   class="article article-type-post"
   itemscope
@@ -805,217 +1212,6 @@
 <p><strong>String常量池、数据库连接池、缓冲池</strong>等等都是享元模式的应用，所以说享元模式是池技术的重要实现方式</p>
 <p>比如我们每次创建字符串对象时，都需要创建一个新的字符串对象的话，内存开销会很大，所以如果第一次创建了字符串对象“adam“，下次再创建相同的字符串”adam“时，只是把它的引用指向”adam“，这样就实现了”adam“字符串再内存中的共享</p>
 <p><strong>用HashMap/HashTable存储</strong> </p>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-外观模式"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/09/01/%E5%A4%96%E8%A7%82%E6%A8%A1%E5%BC%8F/"
-    >外观模式</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/09/01/%E5%A4%96%E8%A7%82%E6%A8%A1%E5%BC%8F/" class="article-date">
-  <time datetime="2022-09-01T08:00:32.000Z" itemprop="datePublished">2022-09-01</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="外观模式"><a href="#外观模式" class="headerlink" title="外观模式"></a>外观模式</h4><p>定义： <strong>隐藏了系统的复杂性，并向客户端提供了一个可以访问系统的接口</strong></p>
-<p>简单来说，该模式就是把一些复杂的流程封装成一个接口供给外部用户更简单的使用</p>
-<p>优点：</p>
-<p><strong>松散耦合</strong>：使得客户端和子系统之间解耦，让子系统内部的模块功能更容易扩展和维护；</p>
-<p><strong>简单易用</strong>：客户端根本不需要知道子系统内部的实现，或者根本不需要知道子系统内部的构成，它只需要<strong>跟Facade类（门面）交互</strong>即可</p>
-<p><img src><img src="/2022/09/01/%E5%A4%96%E8%A7%82%E6%A8%A1%E5%BC%8F/image-20230318160214913.png" alt="image-20230318160214913"></p>
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-责任链模式"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/08/18/%E8%B4%A3%E4%BB%BB%E9%93%BE%E6%A8%A1%E5%BC%8F/"
-    >责任链模式</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/08/18/%E8%B4%A3%E4%BB%BB%E9%93%BE%E6%A8%A1%E5%BC%8F/" class="article-date">
-  <time datetime="2022-08-18T07:45:51.000Z" itemprop="datePublished">2022-08-18</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="责任链模式"><a href="#责任链模式" class="headerlink" title="责任链模式"></a>责任链模式</h4><p>过滤器和拦截器</p>
-<p>责任链（Chain of Responsibility）模式的定义：为了避免请求发送者与多个请求处理者耦合在一起，于是将所有请求的处理者通过<strong>前一对象记住其下一个对象的引用而连成一条链</strong>；当有请求发生时，可将请求沿着这条链传递，直到有对象处理它为止。</p>
-<p>在责任链模式中，客户只需要将请求发送到责任链上即可，无须关心请求的处理细节和请求的传递过程，请求会自动进行传递。所以责任链将请求的发送者和请求的处理者解耦了。</p>
-<p>职责链模式主要包含以下角色：</p>
-<ul>
-<li>抽象处理者（Handler）角色：定义一个处理请求的接口，包含抽象处理方法和一个后继连接。</li>
-<li>具体处理者（Concrete Handler）角色：实现抽象处理者的处理方法，判断能否处理本次请求，如果可以处理请求则处理，否则将该请求转给它的后继者。</li>
-<li>客户类（Client）角色：创建处理链，并向链头的具体处理者对象提交请求，它不关心处理细节和请求的传递过程。</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">//组装责任链</span></span><br><span class="line">        Handler handlerA=<span class="keyword">new</span> <span class="title class_">ConcreteHandlerA</span>();</span><br><span class="line">        Handler handlerB=<span class="keyword">new</span> <span class="title class_">ConcreteHandlerB</span>();</span><br><span class="line">        handlerA.setNext(handlerB);</span><br><span class="line">        <span class="comment">//提交请求</span></span><br><span class="line">        handlerA.handleRequest(<span class="string">&quot;B&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> *功能描述  抽象处理者角色</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">class</span>  <span class="title class_">Handler</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> Handler next;</span><br><span class="line">    <span class="keyword">public</span> Handler <span class="title function_">getNext</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setNext</span><span class="params">(Handler next)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.next = next;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//处理请求的方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">abstract</span> <span class="keyword">void</span> <span class="title function_">handleRequest</span><span class="params">(String requset)</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span>  具体处理者角色A</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ConcreteHandlerA</span> <span class="keyword">extends</span> <span class="title class_">Handler</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleRequest</span><span class="params">(String requset)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(requset.equals(<span class="string">&quot;A&quot;</span>))&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;具体处理者A负责处理该请求！&quot;</span>);</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="keyword">if</span>(getNext()!=<span class="literal">null</span>)&#123;</span><br><span class="line">                getNext().handleRequest(requset);</span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;没有人处理该请求！&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@description</span>  具体处理者角色B</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">ConcreteHandlerB</span> <span class="keyword">extends</span> <span class="title class_">Handler</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">handleRequest</span><span class="params">(String requset)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(requset.equals(<span class="string">&quot;B&quot;</span>))&#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;具体处理者B负责处理该请求！&quot;</span>);</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            <span class="keyword">if</span>(getNext()!=<span class="literal">null</span>)&#123;</span><br><span class="line">                getNext().handleRequest(requset);</span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;没有人处理该请求！&quot;</span>);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
- 
-      <!-- reward -->
-      
-    </div>
-    
-
-    <!-- copyright -->
-    
-    <footer class="article-footer">
-       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" rel="tag">设计模式</a></li></ul>
-
-    </footer>
-  </div>
-
-    
- 
-    
-</article>
-
-    
-    <article
-  id="post-代理模式"
-  class="article article-type-post"
-  itemscope
-  itemprop="blogPost"
-  data-scroll-reveal
->
-  <div class="article-inner">
-    
-    <header class="article-header">
-       
-<h2 itemprop="name">
-  <a class="article-title" href="/2022/08/12/%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8F/"
-    >代理模式</a> 
-</h2>
- 
-
-      
-    </header>
-     
-    <div class="article-meta">
-      <a href="/2022/08/12/%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8F/" class="article-date">
-  <time datetime="2022-08-12T07:34:28.000Z" itemprop="datePublished">2022-08-12</time>
-</a> 
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a>
-  </div>
-   
-    </div>
-      
-    <div class="article-entry" itemprop="articleBody">
-       
-  <h4 id="代理模式"><a href="#代理模式" class="headerlink" title="代理模式"></a>代理模式</h4><p>通过代理控制对象的访问，可以在这个<strong>对象调用方法之前、调用方法之后去处理/添加新的功能</strong></p>
-<p>代理在<strong>原有代码乃至原业务流程都不修改的情况</strong>下，直接在业务流程中<strong>切入新代码，增加新功能</strong></p>
-<p>如：<strong>Spring AOP、日志打印、异常处理、事务控制、权限控制</strong>等</p>
-<p><strong>Subject抽象主题角色</strong></p>
-<p>抽象主题类可以是抽象类也可以是接口，是一个最普通的业务类型定义，无特殊要求。</p>
-<p><strong>RealSubject具体主题角色</strong></p>
-<p>也叫做被委托角色、被代理角色。是业务逻辑的具体执行者。</p>
-<p><strong>Proxy代理主题角色</strong></p>
-<p>把所有抽象主题类定义的方法限制委托给真实主题角色实现，并且在真实主题角色处理完毕前后做预处理和善后处理工作，Proxy和具体主题都是去实现抽象主题。</p>
-<h5 id="静态代理"><a href="#静态代理" class="headerlink" title="静态代理"></a><strong>静态代理</strong></h5><p>所谓静态也就是<strong>在程序运行前就已经存在代理类的字节码文件，代理类和委托类的关系在运行前就确定了</strong></p>
-<p>缺点：每个需要代理的对象都需要自己重复编写代理，很不舒服，</p>
-<p>优点：但是可以面相实际对象或者是接口的方式实现代理</p>
-<p>如何能在不修改UserDao接口类的情况下开事务和关闭事务呢</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainRun</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        UserDao userDao=<span class="keyword">new</span> <span class="title class_">UserDao</span>();</span><br><span class="line">        <span class="type">UserDaoProxy</span> <span class="variable">userDaoProxy</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">UserDaoProxy</span>(userDao);</span><br><span class="line">        userDaoProxy.save();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserDao</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">save</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;这是保存数据方法&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserDaoProxy</span> <span class="keyword">extends</span> <span class="title class_">UserDao</span>&#123;</span><br><span class="line">    <span class="keyword">private</span> UserDao userDao;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">UserDaoProxy</span><span class="params">(UserDao userDao)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.userDao = userDao;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">save</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;开启事务&quot;</span>);</span><br><span class="line">        userDao.save();</span><br><span class="line">        System.out.println(<span class="string">&quot;关闭事务&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h5 id="动态代理"><a href="#动态代理" class="headerlink" title="动态代理"></a>动态代理</h5><p><img src="C:/Users/helq/AppData/Roaming/Typora/typora-user-images/image-20230318154047794.png" alt="image-20230318154047794"></p>
-<p>动态代理也叫做，<strong>JDK代理、接口代理</strong>。</p>
-<p>动态代理的对象，是利用JDK的API，<strong>动态的在内存中构建代理对象</strong>（是<strong>根据被代理的接口来动态</strong></p>
-<p><strong>生成代理类的class文件</strong>，并加载运行的过程），这就叫动态代理</p>
-<p>在程序运行时，运用<strong>反射机制动态创建而成</strong></p>
-<p>缺点：必须是面向接口，目标业务类必须实现接口</p>
-<p>优点：不用关心代理类，只需要在运行阶段才指定代理哪一个对象</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainRun</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">//被代理的对象</span></span><br><span class="line">        UserDao userDaoImpl=<span class="keyword">new</span> <span class="title class_">UserDaoImpl</span>();</span><br><span class="line">        <span class="comment">//代理对象的类加载器</span></span><br><span class="line">        <span class="type">ClassLoader</span> <span class="variable">classLoader</span> <span class="operator">=</span> userDaoImpl.getClass().getClassLoader();</span><br><span class="line">        <span class="comment">// interfaces 所有你需要代理的方法的接口</span></span><br><span class="line">        Class&lt;?&gt;[] interfaces = userDaoImpl.getClass().getInterfaces();</span><br><span class="line">        <span class="comment">//代理类 动态代理方法在执行时，会调用h里面的invoke方法去执行</span></span><br><span class="line">        <span class="type">InvocaionHandlerImpl</span> <span class="variable">invocaionHandler</span> <span class="operator">=</span> <span class="keyword">new</span>                       <span class="title class_">InvocaionHandlerImpl</span>(userDaoImpl);</span><br><span class="line">        </span><br><span class="line">        <span class="type">UserDao</span> <span class="variable">userDaoProxy</span> <span class="operator">=</span> (UserDao) Proxy.newProxyInstance(classLoader, interfaces, invocaionHandler);</span><br><span class="line">        userDaoProxy.save();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">UserDao</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">save</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">UserDaoImpl</span> <span class="keyword">implements</span> <span class="title class_">UserDao</span>&#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">save</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;这是保存数据的方法&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">InvocaionHandlerImpl</span> <span class="keyword">implements</span> <span class="title class_">InvocationHandler</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//业务实现类对象，用来调用具体的业务方法</span></span><br><span class="line">    <span class="keyword">private</span> Object target;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 通过构造函数传入目标对象</span></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">InvocaionHandlerImpl</span><span class="params">(Object target)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.target = target;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">//动态代理实际运行的代理方法</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">invoke</span><span class="params">(Object proxy, Method method, Object[] args)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line"></span><br><span class="line">        System.out.println(<span class="string">&quot;开始事务&quot;</span>);</span><br><span class="line">        System.out.println(<span class="string">&quot;打印日志&quot;</span>);</span><br><span class="line">        <span class="comment">//下面invoke()方法是以反射的方式来创建对象，第一个参数是要创建的对象，</span></span><br><span class="line">        <span class="comment">// 第二个是构成方法的参数，由第二个参数来决定创建对象使用哪个构造方法</span></span><br><span class="line">        <span class="type">Object</span> <span class="variable">invoke</span> <span class="operator">=</span> method.invoke(target, args);</span><br><span class="line">        System.out.println(<span class="string">&quot;关闭事务&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> invoke;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h5 id="CGLIB动态代理"><a href="#CGLIB动态代理" class="headerlink" title="CGLIB动态代理"></a><strong>CGLIB动态代理</strong></h5><p>利用<strong>asm开源包</strong>，对代理对象类的class文件加载进来，<strong>通过修改其字节码生成子类来处理</strong></p>
-<p>什么是CGLIB动态代理</p>
-<p>CGLIB动态代理和jdk代理一样，使用反射完成代理，不同的是他可以直接代理类（jdk动态代理不</p>
-<p>行，他必须目标业务类必须实现接口），CGLIB动态代理底层使用字节码技术，CGLIB动态代理不</p>
-<p>能对 final类进行继承。（CGLIB动态代理需要导入jar包）</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MainRun</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        CglibProxy cglibProxy=<span class="keyword">new</span> <span class="title class_">CglibProxy</span>();</span><br><span class="line">        <span class="type">UserDao</span> <span class="variable">userDao</span> <span class="operator">=</span> (UserDao)cglibProxy.getProxyInstance(<span class="keyword">new</span> <span class="title class_">UserDaoImpl</span>());</span><br><span class="line">        userDao.save();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">CglibProxy</span> <span class="keyword">implements</span> <span class="title class_">MethodInterceptor</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> Object targetObject;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//给目标对象创建一个代理对象</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">getProxyInstance</span><span class="params">(Object targetObject)</span>&#123;</span><br><span class="line">        <span class="built_in">this</span>.targetObject=targetObject;</span><br><span class="line">        <span class="comment">// 设置需要创建子类的类</span></span><br><span class="line">        <span class="comment">//1.工具类</span></span><br><span class="line">        Enhancer en=<span class="keyword">new</span> <span class="title class_">Enhancer</span>();</span><br><span class="line">        <span class="comment">//2.设置父类</span></span><br><span class="line">        en.setSuperclass(targetObject.getClass());</span><br><span class="line">        <span class="comment">//3.设置回调调用intercept方法</span></span><br><span class="line">        en.setCallback(<span class="built_in">this</span>);</span><br><span class="line">        <span class="comment">//4.创建子类(代理对象)</span></span><br><span class="line">        <span class="keyword">return</span> en.create();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 拦截所有目标类方法的调用</span></span><br><span class="line"><span class="comment">     * obj  目标类的实例</span></span><br><span class="line"><span class="comment">     * m   目标方法的反射对象</span></span><br><span class="line"><span class="comment">     * args  方法的参数</span></span><br><span class="line"><span class="comment">     * proxy代理类的实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> Object <span class="title function_">intercept</span><span class="params">(Object o, Method method, Object[] args, MethodProxy methodProxy)</span> <span class="keyword">throws</span> Throwable &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;开启事务&quot;</span>);</span><br><span class="line">        <span class="type">Object</span> <span class="variable">invoke</span> <span class="operator">=</span> methodProxy.invoke(targetObject, args);</span><br><span class="line">        System.out.println(<span class="string">&quot;关闭事务&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> invoke;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
  
       <!-- reward -->
       
