@@ -1,20 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>IntelliJ IDEA常用快捷键</title>
-    <url>/2022/07/15/IntelliJ-IDEA%E5%B8%B8%E7%94%A8%E5%BF%AB%E6%8D%B7%E9%94%AE/</url>
-    <content><![CDATA[<figure class="highlight css"><table><tr><td class="code"><pre><span class="line">双击Shift：查找所有</span><br><span class="line">Ctrl+Shift+R：全局搜索</span><br><span class="line">ALT+INSERT: 生成代码(如GET,SET方法,构造函数等)</span><br><span class="line">Ctrl + Shift + v: 自动补全对象返回类型</span><br><span class="line">Ctrl+I: 实现方法</span><br><span class="line">Ctrl+O: 重写方法    </span><br><span class="line">Ctrl + Alt + B：跳转到实现方法  </span><br><span class="line">Ctrl + G: 跳至指定行、列</span><br><span class="line">Ctrl + Shift + U：大小写转换</span><br><span class="line">    </span><br><span class="line">Alt + Enter：显示建议操作</span><br><span class="line">Ctrl + Alt + L：格式化代码</span><br><span class="line">Ctrl + P：参数信息提醒</span><br><span class="line">Alt + <span class="number">7</span>：显示结构窗口</span><br><span class="line">Ctrl + Alt + l: 自动对齐代码    </span><br><span class="line">Ctrl + Tab：切换活动文件</span><br><span class="line">Ctrl + E：最近的文件</span><br><span class="line">Ctrl + Shift + Backspace：返回上次编辑位置    </span><br><span class="line">Ctrl + Alt + Left：后退</span><br><span class="line">Ctrl + Alt + Right：前进</span><br><span class="line">    </span><br><span class="line">Ctrl + /：添加行注释</span><br><span class="line">Ctrl + Shift + /：添加块注释</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>工具</category>
-        <category>IDEA</category>
-      </categories>
-      <tags>
-        <tag>IDEA</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Hexo使用</title>
     <url>/2022/07/10/Hexo%E4%BD%BF%E7%94%A8/</url>
     <content><![CDATA[<h4 id="Hexo-官网-https-hexo-io-zh-cn"><a href="#Hexo-官网-https-hexo-io-zh-cn" class="headerlink" title="Hexo 官网 https://hexo.io/zh-cn/"></a>Hexo 官网 <a href="https://hexo.io/zh-cn/">https://hexo.io/zh-cn/</a></h4><h5 id="安装相关工具"><a href="#安装相关工具" class="headerlink" title="安装相关工具"></a>安装相关工具</h5><ul>
@@ -118,6 +104,74 @@
       </tags>
   </entry>
   <entry>
+    <title>IntelliJ IDEA常用快捷键</title>
+    <url>/2022/07/15/IntelliJ-IDEA%E5%B8%B8%E7%94%A8%E5%BF%AB%E6%8D%B7%E9%94%AE/</url>
+    <content><![CDATA[<figure class="highlight css"><table><tr><td class="code"><pre><span class="line">双击Shift：查找所有</span><br><span class="line">Ctrl+Shift+R：全局搜索</span><br><span class="line">ALT+INSERT: 生成代码(如GET,SET方法,构造函数等)</span><br><span class="line">Ctrl + Shift + v: 自动补全对象返回类型</span><br><span class="line">Ctrl+I: 实现方法</span><br><span class="line">Ctrl+O: 重写方法    </span><br><span class="line">Ctrl + Alt + B：跳转到实现方法  </span><br><span class="line">Ctrl + G: 跳至指定行、列</span><br><span class="line">Ctrl + Shift + U：大小写转换</span><br><span class="line">    </span><br><span class="line">Alt + Enter：显示建议操作</span><br><span class="line">Ctrl + Alt + L：格式化代码</span><br><span class="line">Ctrl + P：参数信息提醒</span><br><span class="line">Alt + <span class="number">7</span>：显示结构窗口</span><br><span class="line">Ctrl + Alt + l: 自动对齐代码    </span><br><span class="line">Ctrl + Tab：切换活动文件</span><br><span class="line">Ctrl + E：最近的文件</span><br><span class="line">Ctrl + Shift + Backspace：返回上次编辑位置    </span><br><span class="line">Ctrl + Alt + Left：后退</span><br><span class="line">Ctrl + Alt + Right：前进</span><br><span class="line">    </span><br><span class="line">Ctrl + /：添加行注释</span><br><span class="line">Ctrl + Shift + /：添加块注释</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>工具</category>
+        <category>IDEA</category>
+      </categories>
+      <tags>
+        <tag>IDEA</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>Java定时器</title>
+    <url>/2022/07/19/Java%E5%AE%9A%E6%97%B6%E5%99%A8/</url>
+    <content><![CDATA[<h4 id="Java定时器任务"><a href="#Java定时器任务" class="headerlink" title="Java定时器任务"></a>Java定时器任务</h4><h5 id="Timer"><a href="#Timer" class="headerlink" title="Timer"></a><strong>Timer</strong></h5><p><strong>JDK 自带的定时任务执行类</strong>，无论任何项目都可以直接使用 Timer 来实现定时任务，所以 Timer 的优点就是使用方便</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义一个任务</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>缺点分析</p>
+<p><strong>①任务执行时间长影响其他任务</strong></p>
+<p>当一个任务的执行时间过长时，会影响其他任务的调度，如下代码所示：</p>
+<p>当任务 1 运行时间超过设定的间隔时间时，任务 2 也会延迟执行。 原本任务 1 和任务 2 的执行时间间隔都是 3s，但因为任务 1 执行了 5s，因此任务 2 的执行时间间隔也变成了 10s（和原定时间不符）</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义任务 1</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;进入 timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="comment">// 休眠 5 秒</span></span><br><span class="line">                    TimeUnit.SECONDS.sleep(<span class="number">5</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 定义任务 2</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 2：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">        timer.schedule(timerTask2, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:08 CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span>  Run timerTask <span class="number">2</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">18</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">18</span> CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span>  Run timerTask <span class="number">2</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>②任务异常影响其他任务</strong></p>
+<p>使用 Timer 类实现定时任务时，当一个任务抛出异常，其他任务也会终止运行，如下代码所示：</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义任务 1</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;进入 timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                <span class="comment">// 模拟异常</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">8</span> / <span class="number">0</span>;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 定义任务 2</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 2：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">        timer.schedule(timerTask2, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>Timer 小结</p>
+<p><strong>Timer 类实现定时任务的优点是方便，因为它是 JDK 自定的定时任务，但缺点是任务如果执行时间太长或者是任务执行异常，会影响其他任务调度</strong>，所以在生产环境下建议谨慎使用</p>
+<h5 id="ScheduledExecutorService"><a href="#ScheduledExecutorService" class="headerlink" title="ScheduledExecutorService"></a><strong>ScheduledExecutorService</strong></h5><p><strong>ScheduledExecutorService 也是 JDK 1.5 自带的 API</strong>，我们可以使用它来实现定时任务的功能，也就是说 ScheduledExecutorService <strong>可以实现 Timer 类具备的所有功能，并且它可以解决了 Timer 类存在的所有问题。</strong></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyScheduledExecutorService</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建任务队列</span></span><br><span class="line">        <span class="type">ScheduledExecutorService</span> <span class="variable">scheduledExecutorService</span> <span class="operator">=</span></span><br><span class="line">                Executors.newScheduledThreadPool(<span class="number">10</span>); <span class="comment">// 10 为线程数量</span></span><br><span class="line">  		<span class="comment">// 执行任务</span></span><br><span class="line">        scheduledExecutorService.scheduleAtFixedRate(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;Run Schedule：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">        &#125;, <span class="number">1</span>, <span class="number">3</span>, TimeUnit.SECONDS); <span class="comment">// 1s 后开始执行，每 3s 执行一次</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>ScheduledExecutorService 小结</p>
+<p><strong>在单机生产环境下建议使用 ScheduledExecutorService 来执行定时任务</strong>，它是 JDK 1.5 之后自带的 API，因此使用起来也比较方便，并且使用 ScheduledExecutorService 来执行任务，不会造成任务间的相互影响。</p>
+<h5 id="Spring-Task"><a href="#Spring-Task" class="headerlink" title="Spring Task"></a><strong>Spring Task</strong></h5><p>如果使用的是 <strong>Spring 或 Spring Boot 框架</strong>，可以直接使用 Spring Framework 自带的定时任务，使用上面两种定时任务的实现方式，很难实现设定了<strong>具体时间的定时任务</strong>，比如当我们需要每周五来执行某项任务时，但如果使用 Spring Task 就可轻松的实现此需求。</p>
+<p>以 Spring Boot 为例，实现定时任务只需两步：</p>
+<ul>
+<li>开启定时任务</li>
+<li>添加定时任务</li>
+</ul>
+<p>① 开启定时任务</p>
+<p>开启定时任务只需要在 Spring Boot 的启动类上声明 <strong>@EnableScheduling</strong> 即可</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="meta">@EnableScheduling</span> <span class="comment">// 开启定时任务</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DemoApplication</span> &#123;</span><br><span class="line">    <span class="comment">// do someing</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>② 添加定时任务</p>
+<p>定时任务的添加只需要使用 <strong>@Scheduled 注解标注</strong>即可，如果有多个定时任务可以创建多个 @Scheduled 注解标注的方法</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span> <span class="comment">// 把此类托管给 Spring，不能省略</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TaskUtils</span> &#123;</span><br><span class="line">    <span class="comment">// 添加定时任务</span></span><br><span class="line">    <span class="meta">@Scheduled(cron = &quot;59 59 23 0 0 5&quot;)</span> <span class="comment">// cron 表达式，每周五 23:59:59 执行</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">doTask</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;我是定时任务~&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>Spring Task 的实现需要使用 cron 表达式来声明执行的频率和规则</p>
+<p><img src="/2022/07/19/Java%E5%AE%9A%E6%97%B6%E5%99%A8/42E5476AD7944654AD48B290D4FE0629.jpg"></p>
+<ul>
+<li><p>缺点：<strong>jvm启动之后会记录系统时间，然后jvm根据CPU ticks自己来算时间</strong>，此时<strong>获取的是定时任务的基准时间</strong>。如果此时将<strong>系统时间进行了修改</strong>，当Spring将之前获取的基准时间与当下获取的系统时间进行比对时，就会造成<strong>Spring内部定时任务失效</strong>。因为此时系统时间发生变化了，不会触发定时任务。</p>
+</li>
+<li><p>方案：为了避免使用@Scheduled注解，在修改服务器时间导致定时任务不执行情况的发生。在项目中需要使用定时任务场景的情况下，使<strong>ScheduledThreadPoolExecutor进行替代</strong>，它任务的调度是<strong>基于相对时间的</strong>，原因是它在任务的内部 存储了该任务距离下次调度还需要的时间（使用的是基于 System.nanoTime实现的相对时间 ，不会因为系统时间改变而改变，如距离下次执行还有10秒，不会因为将系统时间调前6秒而变成4秒后执行）</p>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>分布式</category>
+        <category>定时器</category>
+      </categories>
+      <tags>
+        <tag>定时器</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>JAVA线上故障排查全套解决方案</title>
     <url>/2022/10/10/JAVA%E7%BA%BF%E4%B8%8A%E6%95%85%E9%9A%9C%E6%8E%92%E6%9F%A5%E5%85%A8%E5%A5%97%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88/</url>
     <content><![CDATA[<h4 id="JAVA线上故障排查全套解决方案"><a href="#JAVA线上故障排查全套解决方案" class="headerlink" title="JAVA线上故障排查全套解决方案"></a>JAVA线上故障排查全套解决方案</h4><p>线上故障主要会包括<strong>cpu、磁盘、内存以及网络</strong>问题，而大多数故障可能会包含不止一个层面的问题，所以进行排查时候尽量四个方面依次排查一遍。同时例如<strong>jstack、jmap</strong>等工具也是不囿于一个方面的问题的，基本上出问题就是<strong>df、free、top</strong> 三连，然后依次jstack、jmap伺候，具体问题具体分析即可</p>
@@ -198,57 +252,6 @@
       </categories>
       <tags>
         <tag>线上故障</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>JVM运行时数据区</title>
-    <url>/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/</url>
-    <content><![CDATA[<h4 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h4><p>VM(Java Virtual Machine/Java 虚拟机)在执行 Java 程序的过程中会把它所管理的<strong>内存划分为若干个不同的数据区域</strong>。这些区域有各自的用途，以及创建和销毁的时间，有的区域随着虚拟机<a href="https://www.jianshu.com/p/94b7c2ab84ac">进程</a>的启动而一直存在，有的区域则是依赖用户线程的启动和结束而建立和销毁</p>
-<p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/CA1BB924A33442FC9CFC3BC482E62ABB.jpg"></p>
-<h4 id="运行时数据区"><a href="#运行时数据区" class="headerlink" title="运行时数据区"></a><strong>运行时数据区</strong></h4><h5 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a><strong>程序计数器</strong></h5><p>保存当前线程所正在执行的字节码指令的地址(行号)<strong>，为了</strong>线程切换后能恢复到正确的执行位置**，每条线程都有一个独立的程序计数器，各个线程之间计数器互不影响，独立存储</p>
-<p><strong>为什么要线程计数器？因为线程是不具备记忆功能</strong></p>
-<h5 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a><strong>虚拟机栈</strong></h5><p><strong>线程私有</strong>的，它的<strong>生命周期和线程相同</strong></p>
-<p>虚拟机栈描述的是Java方法执行的内存模型： 每个方法在执行的同时 都会创建一个<strong>栈帧</strong>（StackFrame）用于<strong>存储局部变量表、操作数栈、动态链接、方法出口</strong>等信息。</p>
-<p>虚拟机栈中是有单位的，单位就是栈帧，<strong>一个方法一个栈帧</strong>。一个栈帧中他又要存储，局部变量，操作数栈，动态链接，出口等。</p>
-<p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/0F361B626063436CA773F219E67AC2AC.jpg"></p>
-<p>解析栈帧：</p>
-<ul>
-<li> <strong>局部变量表</strong>：是用来<strong>存储我们临时8个基本数据类型、对象引用地址、returnAddress类型</strong>。</li>
-</ul>
-<p>  （returnAddress中保存的是return后要执行的字节码的指令地址。）</p>
-<ul>
-<li> <strong>操作数栈</strong>：操作数栈就是用来操作的，例如代码中有个 i = 6*6，他在一开始的时候就会进行操</li>
-</ul>
-<p>  作，读取我们的代码，<strong>进行计算后再放入局部变量表</strong>中去</p>
-<ul>
-<li><p><strong>动态链接</strong>：假如我方法中，有个 service.add()方法，要链接到别的方法中去，这就是动态链接，</p>
-<p>存储链接的地方。</p>
-</li>
-<li><p><strong>出口</strong>：出口是什呢，出口正常的话就是return 不正常的话就是抛出异常落</p>
-</li>
-</ul>
-<h5 id="堆"><a href="#堆" class="headerlink" title="堆"></a><strong>堆</strong></h5><p>被<strong>所有线程共享的一块内存区</strong>，<strong>存放对象实例</strong>，所有的对象实例以及数组都要在堆上分配</p>
-<h5 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a><strong>本地方法栈</strong></h5><p>栈很像，只不过方法上带了 <strong>native 关键字的栈字</strong>，且native关键字修饰的大部分源码都是C和C++的代码</p>
-<h5 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a><strong>方法区</strong></h5><p>所有<strong>线程共享的内存区域</strong>，它用于存储已<strong>被Java虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码</strong>等数据，别命叫Non-Heap（非堆）</p>
-<h4 id="JVM运行流程"><a href="#JVM运行流程" class="headerlink" title="JVM运行流程"></a>JVM运行流程</h4><p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/D3E84FA2772A4286B75ED4870D0CFB1D.jpg"></p>
-<p>JVM包含两个子系统和两个组件: 两个子系统为Class loader(类装载)、Execution engine(执行引擎)； 两个组件为Runtime data area(运行时数据区)、Native Interface(本地接口)。</p>
-<ul>
-<li><p>Class loader(类装载)：根据给定的全限定名类名(如：java.lang.Object)来装载class文件到Runtime data area中的method area。</p>
-</li>
-<li><p>Execution engine（执行引擎）：执行classes中的指令。</p>
-</li>
-<li><p>Native Interface(本地接口)：与native libraries交互，是其它编程语言交互的接口。</p>
-</li>
-<li><p>Runtime data area(运行时数据区域)：这就是我们常说的JVM的内存。</p>
-</li>
-</ul>
-<p>流程 ：首先通过<strong>编译器把 Java 代码转换成字节码</strong>，<strong>类加载器（ClassLoader）再把字节码加载到内存中，将其放在运行时数据区（Runtime data area）的方法区内</strong>，而<strong>字节码文件</strong>只是 JVM 的一套指令集规范，<strong>并不能直接交给底层操作系统去执行</strong>，因此<strong>需要特定的命令解析器执行引擎</strong>（Execution Engine），<strong>将字节码翻译成底层系统指令，</strong>再交由 CPU 去执行，而这个过程中需要<strong>调用其他语言的本地库接口</strong>（Native Interface）来实现整个程序的功能。</p>
-]]></content>
-      <categories>
-        <category>JVM</category>
-      </categories>
-      <tags>
-        <tag>JVM</tag>
       </tags>
   </entry>
   <entry>
@@ -355,60 +358,6 @@
       </tags>
   </entry>
   <entry>
-    <title>Java定时器</title>
-    <url>/2022/07/19/Java%E5%AE%9A%E6%97%B6%E5%99%A8/</url>
-    <content><![CDATA[<h4 id="Java定时器任务"><a href="#Java定时器任务" class="headerlink" title="Java定时器任务"></a>Java定时器任务</h4><h5 id="Timer"><a href="#Timer" class="headerlink" title="Timer"></a><strong>Timer</strong></h5><p><strong>JDK 自带的定时任务执行类</strong>，无论任何项目都可以直接使用 Timer 来实现定时任务，所以 Timer 的优点就是使用方便</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义一个任务</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>缺点分析</p>
-<p><strong>①任务执行时间长影响其他任务</strong></p>
-<p>当一个任务的执行时间过长时，会影响其他任务的调度，如下代码所示：</p>
-<p>当任务 1 运行时间超过设定的间隔时间时，任务 2 也会延迟执行。 原本任务 1 和任务 2 的执行时间间隔都是 3s，但因为任务 1 执行了 5s，因此任务 2 的执行时间间隔也变成了 10s（和原定时间不符）</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义任务 1</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;进入 timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                <span class="keyword">try</span> &#123;</span><br><span class="line">                    <span class="comment">// 休眠 5 秒</span></span><br><span class="line">                    TimeUnit.SECONDS.sleep(<span class="number">5</span>);</span><br><span class="line">                &#125; <span class="keyword">catch</span> (InterruptedException e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 定义任务 2</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 2：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">        timer.schedule(timerTask2, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:08 CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span>  Run timerTask <span class="number">2</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">13</span> CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">18</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">18</span> CST <span class="number">2020</span></span><br><span class="line">Run timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span>  Run timerTask <span class="number">2</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span></span><br><span class="line">进入 timerTask <span class="number">1</span>：Mon Aug <span class="number">17</span> <span class="number">21</span>:<span class="number">44</span>:<span class="number">23</span> CST <span class="number">2020</span></span><br></pre></td></tr></table></figure>
-
-<p><strong>②任务异常影响其他任务</strong></p>
-<p>使用 Timer 类实现定时任务时，当一个任务抛出异常，其他任务也会终止运行，如下代码所示：</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyTimerTask</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 定义任务 1</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;进入 timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">                <span class="comment">// 模拟异常</span></span><br><span class="line">                <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">8</span> / <span class="number">0</span>;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 1：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 定义任务 2</span></span><br><span class="line">        <span class="type">TimerTask</span> <span class="variable">timerTask2</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line">                System.out.println(<span class="string">&quot;Run timerTask 2：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="comment">// 计时器</span></span><br><span class="line">        <span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line">        <span class="comment">// 添加执行任务（延迟 1s 执行，每 3s 执行一次）</span></span><br><span class="line">        timer.schedule(timerTask, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">        timer.schedule(timerTask2, <span class="number">1000</span>, <span class="number">3000</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p>Timer 小结</p>
-<p><strong>Timer 类实现定时任务的优点是方便，因为它是 JDK 自定的定时任务，但缺点是任务如果执行时间太长或者是任务执行异常，会影响其他任务调度</strong>，所以在生产环境下建议谨慎使用</p>
-<h5 id="ScheduledExecutorService"><a href="#ScheduledExecutorService" class="headerlink" title="ScheduledExecutorService"></a><strong>ScheduledExecutorService</strong></h5><p><strong>ScheduledExecutorService 也是 JDK 1.5 自带的 API</strong>，我们可以使用它来实现定时任务的功能，也就是说 ScheduledExecutorService <strong>可以实现 Timer 类具备的所有功能，并且它可以解决了 Timer 类存在的所有问题。</strong></p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyScheduledExecutorService</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建任务队列</span></span><br><span class="line">        <span class="type">ScheduledExecutorService</span> <span class="variable">scheduledExecutorService</span> <span class="operator">=</span></span><br><span class="line">                Executors.newScheduledThreadPool(<span class="number">10</span>); <span class="comment">// 10 为线程数量</span></span><br><span class="line">  		<span class="comment">// 执行任务</span></span><br><span class="line">        scheduledExecutorService.scheduleAtFixedRate(() -&gt; &#123;</span><br><span class="line">            System.out.println(<span class="string">&quot;Run Schedule：&quot;</span> + <span class="keyword">new</span> <span class="title class_">Date</span>());</span><br><span class="line">        &#125;, <span class="number">1</span>, <span class="number">3</span>, TimeUnit.SECONDS); <span class="comment">// 1s 后开始执行，每 3s 执行一次</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>ScheduledExecutorService 小结</p>
-<p><strong>在单机生产环境下建议使用 ScheduledExecutorService 来执行定时任务</strong>，它是 JDK 1.5 之后自带的 API，因此使用起来也比较方便，并且使用 ScheduledExecutorService 来执行任务，不会造成任务间的相互影响。</p>
-<h5 id="Spring-Task"><a href="#Spring-Task" class="headerlink" title="Spring Task"></a><strong>Spring Task</strong></h5><p>如果使用的是 <strong>Spring 或 Spring Boot 框架</strong>，可以直接使用 Spring Framework 自带的定时任务，使用上面两种定时任务的实现方式，很难实现设定了<strong>具体时间的定时任务</strong>，比如当我们需要每周五来执行某项任务时，但如果使用 Spring Task 就可轻松的实现此需求。</p>
-<p>以 Spring Boot 为例，实现定时任务只需两步：</p>
-<ul>
-<li>开启定时任务</li>
-<li>添加定时任务</li>
-</ul>
-<p>① 开启定时任务</p>
-<p>开启定时任务只需要在 Spring Boot 的启动类上声明 <strong>@EnableScheduling</strong> 即可</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="meta">@EnableScheduling</span> <span class="comment">// 开启定时任务</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DemoApplication</span> &#123;</span><br><span class="line">    <span class="comment">// do someing</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>② 添加定时任务</p>
-<p>定时任务的添加只需要使用 <strong>@Scheduled 注解标注</strong>即可，如果有多个定时任务可以创建多个 @Scheduled 注解标注的方法</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Component</span> <span class="comment">// 把此类托管给 Spring，不能省略</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TaskUtils</span> &#123;</span><br><span class="line">    <span class="comment">// 添加定时任务</span></span><br><span class="line">    <span class="meta">@Scheduled(cron = &quot;59 59 23 0 0 5&quot;)</span> <span class="comment">// cron 表达式，每周五 23:59:59 执行</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">doTask</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;我是定时任务~&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>Spring Task 的实现需要使用 cron 表达式来声明执行的频率和规则</p>
-<p><img src="/2022/07/19/Java%E5%AE%9A%E6%97%B6%E5%99%A8/42E5476AD7944654AD48B290D4FE0629.jpg"></p>
-<ul>
-<li><p>缺点：<strong>jvm启动之后会记录系统时间，然后jvm根据CPU ticks自己来算时间</strong>，此时<strong>获取的是定时任务的基准时间</strong>。如果此时将<strong>系统时间进行了修改</strong>，当Spring将之前获取的基准时间与当下获取的系统时间进行比对时，就会造成<strong>Spring内部定时任务失效</strong>。因为此时系统时间发生变化了，不会触发定时任务。</p>
-</li>
-<li><p>方案：为了避免使用@Scheduled注解，在修改服务器时间导致定时任务不执行情况的发生。在项目中需要使用定时任务场景的情况下，使<strong>ScheduledThreadPoolExecutor进行替代</strong>，它任务的调度是<strong>基于相对时间的</strong>，原因是它在任务的内部 存储了该任务距离下次调度还需要的时间（使用的是基于 System.nanoTime实现的相对时间 ，不会因为系统时间改变而改变，如距离下次执行还有10秒，不会因为将系统时间调前6秒而变成4秒后执行）</p>
-</li>
-</ul>
-]]></content>
-      <categories>
-        <category>分布式</category>
-        <category>定时器</category>
-      </categories>
-      <tags>
-        <tag>定时器</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>MySQL日志的作用</title>
     <url>/2023/09/08/MySQL%E6%97%A5%E5%BF%97%E7%9A%84%E4%BD%9C%E7%94%A8/</url>
     <content><![CDATA[<h1 id="MySQL-日志：undo-log、redo-log、binlog-有什么用？"><a href="#MySQL-日志：undo-log、redo-log、binlog-有什么用？" class="headerlink" title="MySQL 日志：undo log、redo log、binlog 有什么用？"></a>MySQL 日志：undo log、redo log、binlog 有什么用？</h1><p><strong>执行一条 update 语句，期间发生了什么？</strong>，比如这一条 update 语句：</p>
@@ -437,6 +386,57 @@
       </categories>
       <tags>
         <tag>MySQL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>JVM运行时数据区</title>
+    <url>/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/</url>
+    <content><![CDATA[<h4 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h4><p>VM(Java Virtual Machine/Java 虚拟机)在执行 Java 程序的过程中会把它所管理的<strong>内存划分为若干个不同的数据区域</strong>。这些区域有各自的用途，以及创建和销毁的时间，有的区域随着虚拟机<a href="https://www.jianshu.com/p/94b7c2ab84ac">进程</a>的启动而一直存在，有的区域则是依赖用户线程的启动和结束而建立和销毁</p>
+<p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/CA1BB924A33442FC9CFC3BC482E62ABB.jpg"></p>
+<h4 id="运行时数据区"><a href="#运行时数据区" class="headerlink" title="运行时数据区"></a><strong>运行时数据区</strong></h4><h5 id="程序计数器"><a href="#程序计数器" class="headerlink" title="程序计数器"></a><strong>程序计数器</strong></h5><p>保存当前线程所正在执行的字节码指令的地址(行号)<strong>，为了</strong>线程切换后能恢复到正确的执行位置**，每条线程都有一个独立的程序计数器，各个线程之间计数器互不影响，独立存储</p>
+<p><strong>为什么要线程计数器？因为线程是不具备记忆功能</strong></p>
+<h5 id="虚拟机栈"><a href="#虚拟机栈" class="headerlink" title="虚拟机栈"></a><strong>虚拟机栈</strong></h5><p><strong>线程私有</strong>的，它的<strong>生命周期和线程相同</strong></p>
+<p>虚拟机栈描述的是Java方法执行的内存模型： 每个方法在执行的同时 都会创建一个<strong>栈帧</strong>（StackFrame）用于<strong>存储局部变量表、操作数栈、动态链接、方法出口</strong>等信息。</p>
+<p>虚拟机栈中是有单位的，单位就是栈帧，<strong>一个方法一个栈帧</strong>。一个栈帧中他又要存储，局部变量，操作数栈，动态链接，出口等。</p>
+<p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/0F361B626063436CA773F219E67AC2AC.jpg"></p>
+<p>解析栈帧：</p>
+<ul>
+<li> <strong>局部变量表</strong>：是用来<strong>存储我们临时8个基本数据类型、对象引用地址、returnAddress类型</strong>。</li>
+</ul>
+<p>  （returnAddress中保存的是return后要执行的字节码的指令地址。）</p>
+<ul>
+<li> <strong>操作数栈</strong>：操作数栈就是用来操作的，例如代码中有个 i = 6*6，他在一开始的时候就会进行操</li>
+</ul>
+<p>  作，读取我们的代码，<strong>进行计算后再放入局部变量表</strong>中去</p>
+<ul>
+<li><p><strong>动态链接</strong>：假如我方法中，有个 service.add()方法，要链接到别的方法中去，这就是动态链接，</p>
+<p>存储链接的地方。</p>
+</li>
+<li><p><strong>出口</strong>：出口是什呢，出口正常的话就是return 不正常的话就是抛出异常落</p>
+</li>
+</ul>
+<h5 id="堆"><a href="#堆" class="headerlink" title="堆"></a><strong>堆</strong></h5><p>被<strong>所有线程共享的一块内存区</strong>，<strong>存放对象实例</strong>，所有的对象实例以及数组都要在堆上分配</p>
+<h5 id="本地方法栈"><a href="#本地方法栈" class="headerlink" title="本地方法栈"></a><strong>本地方法栈</strong></h5><p>栈很像，只不过方法上带了 <strong>native 关键字的栈字</strong>，且native关键字修饰的大部分源码都是C和C++的代码</p>
+<h5 id="方法区"><a href="#方法区" class="headerlink" title="方法区"></a><strong>方法区</strong></h5><p>所有<strong>线程共享的内存区域</strong>，它用于存储已<strong>被Java虚拟机加载的类信息、常量、静态变量、即时编译器编译后的代码</strong>等数据，别命叫Non-Heap（非堆）</p>
+<h4 id="JVM运行流程"><a href="#JVM运行流程" class="headerlink" title="JVM运行流程"></a>JVM运行流程</h4><p><img src="/2022/07/25/JVM%E8%BF%90%E8%A1%8C%E6%97%B6%E6%95%B0%E6%8D%AE%E5%8C%BA/D3E84FA2772A4286B75ED4870D0CFB1D.jpg"></p>
+<p>JVM包含两个子系统和两个组件: 两个子系统为Class loader(类装载)、Execution engine(执行引擎)； 两个组件为Runtime data area(运行时数据区)、Native Interface(本地接口)。</p>
+<ul>
+<li><p>Class loader(类装载)：根据给定的全限定名类名(如：java.lang.Object)来装载class文件到Runtime data area中的method area。</p>
+</li>
+<li><p>Execution engine（执行引擎）：执行classes中的指令。</p>
+</li>
+<li><p>Native Interface(本地接口)：与native libraries交互，是其它编程语言交互的接口。</p>
+</li>
+<li><p>Runtime data area(运行时数据区域)：这就是我们常说的JVM的内存。</p>
+</li>
+</ul>
+<p>流程 ：首先通过<strong>编译器把 Java 代码转换成字节码</strong>，<strong>类加载器（ClassLoader）再把字节码加载到内存中，将其放在运行时数据区（Runtime data area）的方法区内</strong>，而<strong>字节码文件</strong>只是 JVM 的一套指令集规范，<strong>并不能直接交给底层操作系统去执行</strong>，因此<strong>需要特定的命令解析器执行引擎</strong>（Execution Engine），<strong>将字节码翻译成底层系统指令，</strong>再交由 CPU 去执行，而这个过程中需要<strong>调用其他语言的本地库接口</strong>（Native Interface）来实现整个程序的功能。</p>
+]]></content>
+      <categories>
+        <category>JVM</category>
+      </categories>
+      <tags>
+        <tag>JVM</tag>
       </tags>
   </entry>
   <entry>
@@ -503,65 +503,6 @@
       </categories>
       <tags>
         <tag>MVCC</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>Redis value过大问题</title>
-    <url>/2022/07/22/Redis-value%E8%BF%87%E5%A4%A7%E9%97%AE%E9%A2%98/</url>
-    <content><![CDATA[<h4 id="多大的-key-算大？"><a href="#多大的-key-算大？" class="headerlink" title="多大的 key 算大？"></a><strong>多大的 key 算大？</strong></h4><p>阿里云Redis 最佳实践中提到 合理的 <strong>Key 中 Value 的字节大小，推荐小于10 KB</strong>。过大的 Value 会引发<strong>数据倾斜、热点Key、实例流量或 CPU 性能被占满</strong>等问题，应从设计源头上避免此类问题带来的性能影响。那么 value Bytes &gt;10kb 可以作为判断 大 key 的一个参考值</p>
-<h4 id="怎么发现大-Key-？"><a href="#怎么发现大-Key-？" class="headerlink" title="怎么发现大 Key ？"></a><strong>怎么发现大 Key ？</strong></h4><figure class="highlight java"><table><tr><td class="code"><pre><span class="line">--bigkeys 命令</span><br></pre></td></tr></table></figure>
-
-<p>–bigkeys 是 redis 自带的命令，<strong>对整个 Key 进行扫描</strong>，统计 string，list，set，zset，hash 这几个常见数据类型中每种类型里的 最大的 key。<strong>string 类型统计的是 value 的字节数</strong>；<strong>另外 4 种复杂结构的类型统计的是 元素个数，不能直观的看出 value 占用字节数</strong>，所以 –bigkeys 对分析 string 类型的大 key 是有用的，而复杂结构的类型还需要一些第三方工具。（ 元素个数少，不一定 value 不大；元素个数多，也不一定 value 就大）</p>
-<p>root@vm1:~# redis-cli -h 127.0.0.1 -p 6379 -a “password” –bigkeys #　<strong>–bigkeys　是以 scan 延迟计算的方式扫描所有 key，因此执行过程中不会阻塞 redis，但实例存在 大量的 keys 时，命令执行的时间会很长</strong>，这种情况建议在 slave 上扫描。</p>
-<p>–-bigkeys 统计能直观的看出 string 类型 value 的大小，非 string 类型通常有以下两种方式统计：</p>
-<ul>
-<li>Redis 4.0 以后的版本：支持 了 <strong>memory 命令查看 key 的大小</strong></li>
-<li><strong>Rdbtools 工具包</strong>： Rdbtools 是 python写的 一个第三方开源工具，用来<strong>解析 Redis 快照文件</strong>。除了解析 rdb 文件，还提供了 <strong>统计单个 key 大小的工具</strong>。</li>
-</ul>
-<h4 id="如何优雅的删除-大-key-？"><a href="#如何优雅的删除-大-key-？" class="headerlink" title="如何优雅的删除 大 key ？"></a><strong>如何优雅的删除 大 key ？</strong></h4><h5 id="del-命令"><a href="#del-命令" class="headerlink" title="del 命令"></a>del 命令</h5><p>del 命令删除单个很大的 key 和 del 批量删除 大 key。</p>
-<p><strong>直接 del 命令 粗暴的 删大 key 容易造成 redis 线程阻塞</strong>。<strong>4.0 以前要优雅的删除就是针对不同的类型 写脚本，拆分链表，hash 表，分批删除</strong>。</p>
-<h5 id="UNLINK-命令"><a href="#UNLINK-命令" class="headerlink" title="UNLINK 命令"></a><strong>UNLINK</strong> 命令</h5><p><strong>4.0 版本以后</strong>官方对 删 大key 有了特别优化，<strong>支持了 lazy free 功能</strong>， 通常不需要开发脚本就可以删    </p>
-<p><strong>UNLINK mykey</strong> </p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; UNLINK mykey </span><br><span class="line">unlink 命令是  del 的异步版本，由 Lazyfree 机制实现。</span><br><span class="line">Lazyfree 机制的原理是在删除的时候只进行逻辑删除，</span><br><span class="line">把 key 释放操作放在 bio (Background I/O)单独的子线程中惰性处理，</span><br><span class="line">减少删除大 key 对 redis 主线程的阻塞，有效地避免因删除大key带来的性能问题。</span><br><span class="line">unlink 即使在批量删除 大 key 时，也不会对阻塞造成阻塞。</span><br></pre></td></tr></table></figure>
-
-
-
-<h5 id="被动删除大-key"><a href="#被动删除大-key" class="headerlink" title="被动删除大 key"></a><strong>被动删除大 key</strong></h5><p>被动删除是指 Redis 自身的 key 清除策略</p>
-<ul>
-<li>Redis 内存不够时 key 的淘汰策略 ，即超过了 maxmemory 的配置</li>
-<li>惰性删除：（建议开启惰性清除策略 ）</li>
-<li>定时删除：( redis 默认策略 )</li>
-</ul>
-<h4 id="Redis的-bigkey-有哪些影响"><a href="#Redis的-bigkey-有哪些影响" class="headerlink" title="Redis的 bigkey 有哪些影响"></a><strong>Redis的 bigkey 有哪些影响</strong></h4><ul>
-<li><strong>影响性能</strong></li>
-</ul>
-<p>因为 Redis <strong>单线程</strong>的工作机制，主线程处理所有key的增删改查。<strong>对bigkey的操作耗时增加将阻塞主线程处理其他业务请求，进而影响整体吞吐量</strong>。</p>
-<ul>
-<li><strong>影响带宽</strong></li>
-</ul>
-<p>前面的案例即是一个例子，单个key 7MB ，如果每秒100次查询，则带来700MB 的带宽，虽然现在大部分是万兆网卡<strong>，业务请求量再大一些，网卡也有被打满的风险</strong>。</p>
-<ul>
-<li><strong>数据倾斜</strong></li>
-</ul>
-<p><strong>对于分片的redis集群，存在bigkey 会导致单个分片数据量远大于其他节点，整体不均衡</strong>。<strong>如果一个分片空间容量满了，对系统造成不可访问</strong>，而且也不能随意扩容，因为不拆分key的情况下扩容，单个分片还是存在数据倾斜。更惨的是，<strong>数据量比较大，那么访问就增加，容易形成热点</strong>。热点不都是因为数据倾斜导致，数据倾斜会大概率导致热点。</p>
-<ul>
-<li><strong>影响主从同步</strong></li>
-</ul>
-<p>Redis Server 的输出大小通常是不可控制的。存在bigkey的时候，就会产生体积庞大的返回数据。另外也有可能因为执行了太多命令，导致产生返回数据的速率超过了往客户端发送的速率，导致服务器堆积大量消息，从而<strong>导致输出缓冲区越来越大，占用过多内存，甚至导致系统崩溃</strong>。Redis 通过设置client-output-buffer-limit 来保护系统安全。</p>
-<h4 id="如何解决大key？"><a href="#如何解决大key？" class="headerlink" title="如何解决大key？"></a><strong>如何解决大key？</strong></h4><p>其实就是一个字 “拆”。</p>
-<ul>
-<li><p>对于字符串类型的key，我们通常要在业务层面将value的大小控制在10KB左右，如果value确实很大，可以考虑<strong>采用序列化算法和压缩算法来处理</strong>，推荐常用的几种序列化算法:Protostuff、Kryo或者Fst。</p>
-</li>
-<li><p>对于集合类型的key，我们通常要通过控制集合内元素数量来避免bigKey，通常的做法是将<strong>一个大的集合类型的key拆分成若干小集合类型的key来达到目的</strong>。</p>
-</li>
-</ul>
-]]></content>
-      <categories>
-        <category>数据库</category>
-        <category>Redis</category>
-      </categories>
-      <tags>
-        <tag>Redis</tag>
       </tags>
   </entry>
   <entry>
@@ -643,38 +584,6 @@
       </categories>
       <tags>
         <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>SpringMVC Controller并发安全问题</title>
-    <url>/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/</url>
-    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a><strong>背景</strong></h4><p>根据Tomcat官网中的介绍，<strong>对于一个浏览器请求，tomcat会指定一个处理线程</strong>，或是在线程池中选取空闲的，或者新建一个线程。</p>
-<p>在Tomcat容器中，每个servlet是单例的。<strong>在SpringMVC中，Controller 默认也是单例</strong>。 采用单例模式的最大好处，就是可以<strong>在高并发场景下极大地节省内存资源，提高服务抗压能力</strong>。</p>
-<p>单例模式容易出现的问题是：在Controller中定义的<strong>实例变量</strong>，在多个请求并发时会出现竞争访问，<strong>Controller中的实例变量不是线程安全的</strong>。</p>
-<h4 id="Controller不是线程安全的"><a href="#Controller不是线程安全的" class="headerlink" title="Controller不是线程安全的"></a><strong>Controller不是线程安全的</strong></h4><p>正因为Controller默认是单例，所以不是线程安全的。如果用SpringMVC 的 Controller时，尽量不在 Controller中使用实例变量，否则会出现线程不安全性的情况，导致数据逻辑混乱。</p>
-<p>举一个简单的例子，在一个Controller中定义一个非静态成员变量 num 。通过Controller成员方法来对 num 增加。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">首先访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是1</span></span><br><span class="line">再次访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是 2。</span></span><br><span class="line">两次访问得到的结果不同，num已经被修改，并不是我们希望的结果，接口的幂等性被破坏。</span><br></pre></td></tr></table></figure>
-
-<p>所有的请求访问同一个Controller实例，<strong>Controller的私有成员变量就是线程共用的</strong>。某个请求对应的线程如果修改了这个变量，那么在别的请求中也可以读到这个变量修改后的的值。</p>
-<h4 id="Controller并发安全的解决办法"><a href="#Controller并发安全的解决办法" class="headerlink" title="Controller并发安全的解决办法"></a><strong>Controller并发安全的解决办法</strong></h4><ul>
-<li><p>尽量不要在 Controller 中定义成员变量 ；</p>
-</li>
-<li><p>如果必须要定义一个非静态成员变量，那么可以通过注解 @Scope(“prototype”) ，将Controller设置为多例模式，容器在接受到该类型对象的请求时，每次都会重新生成一个新的对象给请求方。</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="meta">@Scope(value=&quot;prototype&quot;)</span><span class="comment">// 多例</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
-<li><p>Controller 中使用 ThreadLocal 变量。 每一个线程都有一个变量的副本</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ThreadLocal &lt;Integer&gt; uniqueNum =</span><br><span class="line">             <span class="keyword">new</span> <span class="title class_">ThreadLocal</span> &lt;Integer&gt; () &#123;</span><br><span class="line">                 <span class="meta">@Override</span> <span class="keyword">protected</span> Integer <span class="title function_">initialValue</span><span class="params">()</span> &#123;</span><br><span class="line">                     <span class="keyword">return</span> num;</span><br><span class="line">                 &#125;</span><br><span class="line">             &#125;;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">unum</span> <span class="operator">=</span> uniqueNum.get();</span><br><span class="line">       uniqueNum.set(++unum);</span><br><span class="line">       System.out.println(uniqueNum.get());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">以上代码运行以后，每次请求 http:<span class="comment">// localhost:8080 / addNum , 得到的结果都是1。</span></span><br><span class="line">更严格的做法是用AtomicInteger类型定义成员变量，对于成员变量的操作使用AtomicInteger的自增方法完成。</span><br></pre></td></tr></table></figure>
-
-
-
-</li>
-</ul>
-]]></content>
-      <categories>
-        <category>框架</category>
-        <category>SprigMVC</category>
-      </categories>
-      <tags>
-        <tag>SprigMVC</tag>
       </tags>
   </entry>
   <entry>
@@ -769,6 +678,38 @@
       </tags>
   </entry>
   <entry>
+    <title>SpringMVC Controller并发安全问题</title>
+    <url>/2022/07/21/SpringMVC-Controller%E5%B9%B6%E5%8F%91%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98/</url>
+    <content><![CDATA[<h4 id="背景"><a href="#背景" class="headerlink" title="背景"></a><strong>背景</strong></h4><p>根据Tomcat官网中的介绍，<strong>对于一个浏览器请求，tomcat会指定一个处理线程</strong>，或是在线程池中选取空闲的，或者新建一个线程。</p>
+<p>在Tomcat容器中，每个servlet是单例的。<strong>在SpringMVC中，Controller 默认也是单例</strong>。 采用单例模式的最大好处，就是可以<strong>在高并发场景下极大地节省内存资源，提高服务抗压能力</strong>。</p>
+<p>单例模式容易出现的问题是：在Controller中定义的<strong>实例变量</strong>，在多个请求并发时会出现竞争访问，<strong>Controller中的实例变量不是线程安全的</strong>。</p>
+<h4 id="Controller不是线程安全的"><a href="#Controller不是线程安全的" class="headerlink" title="Controller不是线程安全的"></a><strong>Controller不是线程安全的</strong></h4><p>正因为Controller默认是单例，所以不是线程安全的。如果用SpringMVC 的 Controller时，尽量不在 Controller中使用实例变量，否则会出现线程不安全性的情况，导致数据逻辑混乱。</p>
+<p>举一个简单的例子，在一个Controller中定义一个非静态成员变量 num 。通过Controller成员方法来对 num 增加。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">首先访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是1</span></span><br><span class="line">再次访问 http:<span class="comment">// localhost:8080 / addNum，得到的答案是 2。</span></span><br><span class="line">两次访问得到的结果不同，num已经被修改，并不是我们希望的结果，接口的幂等性被破坏。</span><br></pre></td></tr></table></figure>
+
+<p>所有的请求访问同一个Controller实例，<strong>Controller的私有成员变量就是线程共用的</strong>。某个请求对应的线程如果修改了这个变量，那么在别的请求中也可以读到这个变量修改后的的值。</p>
+<h4 id="Controller并发安全的解决办法"><a href="#Controller并发安全的解决办法" class="headerlink" title="Controller并发安全的解决办法"></a><strong>Controller并发安全的解决办法</strong></h4><ul>
+<li><p>尽量不要在 Controller 中定义成员变量 ；</p>
+</li>
+<li><p>如果必须要定义一个非静态成员变量，那么可以通过注解 @Scope(“prototype”) ，将Controller设置为多例模式，容器在接受到该类型对象的请求时，每次都会重新生成一个新的对象给请求方。</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="meta">@Controller</span></span><br><span class="line"><span class="meta">@Scope(value=&quot;prototype&quot;)</span><span class="comment">// 多例</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line"> </span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(++num);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>Controller 中使用 ThreadLocal 变量。 每一个线程都有一个变量的副本</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">TestController</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> <span class="variable">num</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> ThreadLocal &lt;Integer&gt; uniqueNum =</span><br><span class="line">             <span class="keyword">new</span> <span class="title class_">ThreadLocal</span> &lt;Integer&gt; () &#123;</span><br><span class="line">                 <span class="meta">@Override</span> <span class="keyword">protected</span> Integer <span class="title function_">initialValue</span><span class="params">()</span> &#123;</span><br><span class="line">                     <span class="keyword">return</span> num;</span><br><span class="line">                 &#125;</span><br><span class="line">             &#125;;</span><br><span class="line">    <span class="meta">@RequestMapping(&quot;/addNum&quot;)</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">addNum</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="type">int</span> <span class="variable">unum</span> <span class="operator">=</span> uniqueNum.get();</span><br><span class="line">       uniqueNum.set(++unum);</span><br><span class="line">       System.out.println(uniqueNum.get());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">以上代码运行以后，每次请求 http:<span class="comment">// localhost:8080 / addNum , 得到的结果都是1。</span></span><br><span class="line">更严格的做法是用AtomicInteger类型定义成员变量，对于成员变量的操作使用AtomicInteger的自增方法完成。</span><br></pre></td></tr></table></figure>
+
+
+
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>框架</category>
+        <category>SprigMVC</category>
+      </categories>
+      <tags>
+        <tag>SprigMVC</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Vue的生命周期</title>
     <url>/2022/07/12/Vue%E7%9A%84%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/</url>
     <content><![CDATA[<h4 id="Vue的优点"><a href="#Vue的优点" class="headerlink" title="Vue的优点"></a>Vue的优点</h4><ul>
@@ -817,22 +758,63 @@
       </tags>
   </entry>
   <entry>
-    <title>Hello World</title>
-    <url>/2022/07/01/hello-world/</url>
-    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
-<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+    <title>Redis value过大问题</title>
+    <url>/2022/07/22/Redis-value%E8%BF%87%E5%A4%A7%E9%97%AE%E9%A2%98/</url>
+    <content><![CDATA[<h4 id="多大的-key-算大？"><a href="#多大的-key-算大？" class="headerlink" title="多大的 key 算大？"></a><strong>多大的 key 算大？</strong></h4><p>阿里云Redis 最佳实践中提到 合理的 <strong>Key 中 Value 的字节大小，推荐小于10 KB</strong>。过大的 Value 会引发<strong>数据倾斜、热点Key、实例流量或 CPU 性能被占满</strong>等问题，应从设计源头上避免此类问题带来的性能影响。那么 value Bytes &gt;10kb 可以作为判断 大 key 的一个参考值</p>
+<h4 id="怎么发现大-Key-？"><a href="#怎么发现大-Key-？" class="headerlink" title="怎么发现大 Key ？"></a><strong>怎么发现大 Key ？</strong></h4><figure class="highlight java"><table><tr><td class="code"><pre><span class="line">--bigkeys 命令</span><br></pre></td></tr></table></figure>
 
-<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
-<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+<p>–bigkeys 是 redis 自带的命令，<strong>对整个 Key 进行扫描</strong>，统计 string，list，set，zset，hash 这几个常见数据类型中每种类型里的 最大的 key。<strong>string 类型统计的是 value 的字节数</strong>；<strong>另外 4 种复杂结构的类型统计的是 元素个数，不能直观的看出 value 占用字节数</strong>，所以 –bigkeys 对分析 string 类型的大 key 是有用的，而复杂结构的类型还需要一些第三方工具。（ 元素个数少，不一定 value 不大；元素个数多，也不一定 value 就大）</p>
+<p>root@vm1:~# redis-cli -h 127.0.0.1 -p 6379 -a “password” –bigkeys #　<strong>–bigkeys　是以 scan 延迟计算的方式扫描所有 key，因此执行过程中不会阻塞 redis，但实例存在 大量的 keys 时，命令执行的时间会很长</strong>，这种情况建议在 slave 上扫描。</p>
+<p>–-bigkeys 统计能直观的看出 string 类型 value 的大小，非 string 类型通常有以下两种方式统计：</p>
+<ul>
+<li>Redis 4.0 以后的版本：支持 了 <strong>memory 命令查看 key 的大小</strong></li>
+<li><strong>Rdbtools 工具包</strong>： Rdbtools 是 python写的 一个第三方开源工具，用来<strong>解析 Redis 快照文件</strong>。除了解析 rdb 文件，还提供了 <strong>统计单个 key 大小的工具</strong>。</li>
+</ul>
+<h4 id="如何优雅的删除-大-key-？"><a href="#如何优雅的删除-大-key-？" class="headerlink" title="如何优雅的删除 大 key ？"></a><strong>如何优雅的删除 大 key ？</strong></h4><h5 id="del-命令"><a href="#del-命令" class="headerlink" title="del 命令"></a>del 命令</h5><p>del 命令删除单个很大的 key 和 del 批量删除 大 key。</p>
+<p><strong>直接 del 命令 粗暴的 删大 key 容易造成 redis 线程阻塞</strong>。<strong>4.0 以前要优雅的删除就是针对不同的类型 写脚本，拆分链表，hash 表，分批删除</strong>。</p>
+<h5 id="UNLINK-命令"><a href="#UNLINK-命令" class="headerlink" title="UNLINK 命令"></a><strong>UNLINK</strong> 命令</h5><p><strong>4.0 版本以后</strong>官方对 删 大key 有了特别优化，<strong>支持了 lazy free 功能</strong>， 通常不需要开发脚本就可以删    </p>
+<p><strong>UNLINK mykey</strong> </p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="number">127.0</span><span class="number">.0</span><span class="number">.1</span>:<span class="number">6379</span>&gt; UNLINK mykey </span><br><span class="line">unlink 命令是  del 的异步版本，由 Lazyfree 机制实现。</span><br><span class="line">Lazyfree 机制的原理是在删除的时候只进行逻辑删除，</span><br><span class="line">把 key 释放操作放在 bio (Background I/O)单独的子线程中惰性处理，</span><br><span class="line">减少删除大 key 对 redis 主线程的阻塞，有效地避免因删除大key带来的性能问题。</span><br><span class="line">unlink 即使在批量删除 大 key 时，也不会对阻塞造成阻塞。</span><br></pre></td></tr></table></figure>
 
-<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
-<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
 
-<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
-<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
 
-<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+<h5 id="被动删除大-key"><a href="#被动删除大-key" class="headerlink" title="被动删除大 key"></a><strong>被动删除大 key</strong></h5><p>被动删除是指 Redis 自身的 key 清除策略</p>
+<ul>
+<li>Redis 内存不够时 key 的淘汰策略 ，即超过了 maxmemory 的配置</li>
+<li>惰性删除：（建议开启惰性清除策略 ）</li>
+<li>定时删除：( redis 默认策略 )</li>
+</ul>
+<h4 id="Redis的-bigkey-有哪些影响"><a href="#Redis的-bigkey-有哪些影响" class="headerlink" title="Redis的 bigkey 有哪些影响"></a><strong>Redis的 bigkey 有哪些影响</strong></h4><ul>
+<li><strong>影响性能</strong></li>
+</ul>
+<p>因为 Redis <strong>单线程</strong>的工作机制，主线程处理所有key的增删改查。<strong>对bigkey的操作耗时增加将阻塞主线程处理其他业务请求，进而影响整体吞吐量</strong>。</p>
+<ul>
+<li><strong>影响带宽</strong></li>
+</ul>
+<p>前面的案例即是一个例子，单个key 7MB ，如果每秒100次查询，则带来700MB 的带宽，虽然现在大部分是万兆网卡<strong>，业务请求量再大一些，网卡也有被打满的风险</strong>。</p>
+<ul>
+<li><strong>数据倾斜</strong></li>
+</ul>
+<p><strong>对于分片的redis集群，存在bigkey 会导致单个分片数据量远大于其他节点，整体不均衡</strong>。<strong>如果一个分片空间容量满了，对系统造成不可访问</strong>，而且也不能随意扩容，因为不拆分key的情况下扩容，单个分片还是存在数据倾斜。更惨的是，<strong>数据量比较大，那么访问就增加，容易形成热点</strong>。热点不都是因为数据倾斜导致，数据倾斜会大概率导致热点。</p>
+<ul>
+<li><strong>影响主从同步</strong></li>
+</ul>
+<p>Redis Server 的输出大小通常是不可控制的。存在bigkey的时候，就会产生体积庞大的返回数据。另外也有可能因为执行了太多命令，导致产生返回数据的速率超过了往客户端发送的速率，导致服务器堆积大量消息，从而<strong>导致输出缓冲区越来越大，占用过多内存，甚至导致系统崩溃</strong>。Redis 通过设置client-output-buffer-limit 来保护系统安全。</p>
+<h4 id="如何解决大key？"><a href="#如何解决大key？" class="headerlink" title="如何解决大key？"></a><strong>如何解决大key？</strong></h4><p>其实就是一个字 “拆”。</p>
+<ul>
+<li><p>对于字符串类型的key，我们通常要在业务层面将value的大小控制在10KB左右，如果value确实很大，可以考虑<strong>采用序列化算法和压缩算法来处理</strong>，推荐常用的几种序列化算法:Protostuff、Kryo或者Fst。</p>
+</li>
+<li><p>对于集合类型的key，我们通常要通过控制集合内元素数量来避免bigKey，通常的做法是将<strong>一个大的集合类型的key拆分成若干小集合类型的key来达到目的</strong>。</p>
+</li>
+</ul>
 ]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>Redis</category>
+      </categories>
+      <tags>
+        <tag>Redis</tag>
+      </tags>
   </entry>
   <entry>
     <title>count(*) 和 count(1) 有什么区别？</title>
@@ -916,6 +898,24 @@
       <tags>
         <tag>MySQL</tag>
       </tags>
+  </entry>
+  <entry>
+    <title>Hello World</title>
+    <url>/2022/07/01/hello-world/</url>
+    <content><![CDATA[<p>Welcome to <a href="https://hexo.io/">Hexo</a>! This is your very first post. Check <a href="https://hexo.io/docs/">documentation</a> for more info. If you get any problems when using Hexo, you can find the answer in <a href="https://hexo.io/docs/troubleshooting.html">troubleshooting</a> or you can ask me on <a href="https://github.com/hexojs/hexo/issues">GitHub</a>.</p>
+<h2 id="Quick-Start"><a href="#Quick-Start" class="headerlink" title="Quick Start"></a>Quick Start</h2><h3 id="Create-a-new-post"><a href="#Create-a-new-post" class="headerlink" title="Create a new post"></a>Create a new post</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo new <span class="string">&quot;My New Post&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/writing.html">Writing</a></p>
+<h3 id="Run-server"><a href="#Run-server" class="headerlink" title="Run server"></a>Run server</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo server</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/server.html">Server</a></p>
+<h3 id="Generate-static-files"><a href="#Generate-static-files" class="headerlink" title="Generate static files"></a>Generate static files</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo generate</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/generating.html">Generating</a></p>
+<h3 id="Deploy-to-remote-sites"><a href="#Deploy-to-remote-sites" class="headerlink" title="Deploy to remote sites"></a>Deploy to remote sites</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">$ hexo deploy</span><br></pre></td></tr></table></figure>
+
+<p>More info: <a href="https://hexo.io/docs/one-command-deployment.html">Deployment</a></p>
+]]></content>
   </entry>
   <entry>
     <title>openFeign介绍</title>
@@ -1050,6 +1050,21 @@
       </tags>
   </entry>
   <entry>
+    <title>享元模式</title>
+    <url>/2022/09/04/%E4%BA%AB%E5%85%83%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[<h4 id="享元模式"><a href="#享元模式" class="headerlink" title="享元模式"></a>享元模式</h4><p>享元模式（Flyweight Pattern）主要用于<strong>减少创建对象的数量，以减少内存占用和提高性能</strong></p>
+<p><strong>String常量池、数据库连接池、缓冲池</strong>等等都是享元模式的应用，所以说享元模式是池技术的重要实现方式</p>
+<p>比如我们每次创建字符串对象时，都需要创建一个新的字符串对象的话，内存开销会很大，所以如果第一次创建了字符串对象“adam“，下次再创建相同的字符串”adam“时，只是把它的引用指向”adam“，这样就实现了”adam“字符串再内存中的共享</p>
+<p><strong>用HashMap/HashTable存储</strong> </p>
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>什么是缓存雪崩、击穿、穿透？</title>
     <url>/2022/11/05/%E4%BB%80%E4%B9%88%E6%98%AF%E7%BC%93%E5%AD%98%E9%9B%AA%E5%B4%A9%E3%80%81%E5%87%BB%E7%A9%BF%E3%80%81%E7%A9%BF%E9%80%8F%EF%BC%9F/</url>
     <content><![CDATA[<h1 id="什么是缓存雪崩、击穿、穿透"><a href="#什么是缓存雪崩、击穿、穿透" class="headerlink" title="什么是缓存雪崩、击穿、穿透"></a>什么是缓存雪崩、击穿、穿透</h1><p>用户的数据一般都是存储于数据库，数据库的数据是落在磁盘上的，磁盘的读写速度可以说是计算机里最慢的硬件了。</p>
@@ -1129,21 +1144,6 @@
       </categories>
       <tags>
         <tag>Redis</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>享元模式</title>
-    <url>/2022/09/04/%E4%BA%AB%E5%85%83%E6%A8%A1%E5%BC%8F/</url>
-    <content><![CDATA[<h4 id="享元模式"><a href="#享元模式" class="headerlink" title="享元模式"></a>享元模式</h4><p>享元模式（Flyweight Pattern）主要用于<strong>减少创建对象的数量，以减少内存占用和提高性能</strong></p>
-<p><strong>String常量池、数据库连接池、缓冲池</strong>等等都是享元模式的应用，所以说享元模式是池技术的重要实现方式</p>
-<p>比如我们每次创建字符串对象时，都需要创建一个新的字符串对象的话，内存开销会很大，所以如果第一次创建了字符串对象“adam“，下次再创建相同的字符串”adam“时，只是把它的引用指向”adam“，这样就实现了”adam“字符串再内存中的共享</p>
-<p><strong>用HashMap/HashTable存储</strong> </p>
-]]></content>
-      <categories>
-        <category>设计模式</category>
-      </categories>
-      <tags>
-        <tag>设计模式</tag>
       </tags>
   </entry>
   <entry>
@@ -1303,6 +1303,52 @@
       </tags>
   </entry>
   <entry>
+    <title>如何避免死锁</title>
+    <url>/2023/05/12/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81/</url>
+    <content><![CDATA[<h2 id="如何避免死锁？"><a href="#如何避免死锁？" class="headerlink" title="如何避免死锁？"></a>如何避免死锁？</h2><p>死锁的四个必要条件：<strong>互斥、占有且等待、不可强占用、循环等待</strong>。只要系统发生死锁，这些条件必然成立，但是只要破坏任意一个条件就死锁就不会成立。</p>
+<p>死锁产生的条件</p>
+<ul>
+<li><strong>互斥使用</strong>，即当资源被一个线程占用时，别的线程不能使用</li>
+<li><strong>不可抢占</strong>，资源请求者不能强制从资源占有者手中抢夺资源，资源只能由占有者主动释放</li>
+<li><strong>请求和保持</strong>，当资源请求者在请求其他资源的同时保持对原因资源的占有</li>
+<li><strong>循环等待</strong>，多个线程存在环路的锁依赖关系而永远等待下去，例如T1占有T2的资源，T2占有T3的资源，T3占有T1的资源，这种情况可能会形成一个等待环路</li>
+</ul>
+<p>在数据库层面，有两种策略通过「打破循环等待条件」来解除死锁状态：</p>
+<ul>
+<li><p><strong>设置事务等待锁的超时时间</strong>。当一个事务的等待时间超过该值后，就对这个事务进行回滚，于是锁就释放了，另一个事务就可以继续执行了。在 InnoDB 中，参数 <code>innodb_lock_wait_timeout</code> 是用来设置超时时间的，默认值时 50 秒。</p>
+<p>当发生超时后，就出现下面这个提示：</p>
+<p><img src="/2023/05/12/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81/c296c1889f0101d335699311b4ef20a8.png" alt="图片"></p>
+</li>
+<li><p><strong>开启主动死锁检测</strong>。主动死锁检测在发现死锁后，主动回滚死锁链条中的某一个事务，让其他事务得以继续执行。将参数 <code>innodb_deadlock_detect</code> 设置为 on，表示开启这个逻辑，默认就开启。</p>
+<p>当检测到死锁后，就会出现下面这个提示：</p>
+<p><img src="/2023/05/12/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81/f380ef357d065498d8d54ad07f145e09.png" alt="图片"></p>
+<p>检测到死锁之后，选择插入更新或者删除的行数最少的事务回滚，基于 INFORMATION_SCHEMA.INNODB_TRX 表中的 trx_weight 字段来判断。如果插入更新或者删除的行数一样则回滚后面执行的那条事务。</p>
+</li>
+</ul>
+<p>避免死锁:</p>
+<p>有多种方法可以避免死锁，这里只介绍常见的三种：</p>
+<ol>
+<li>如果不同程序会并发存取多个表，<strong>尽量约定以相同的顺序访问表</strong>，可以大大降低死锁机会。</li>
+<li>在同一个事务中，<strong>尽可能做到一次锁定所需要的所有资源，减少死锁产生概率</strong>；</li>
+<li>对于非常容易产生死锁的业务部分，<strong>可以尝试使用升级锁粒度，通过表级锁定来减少死锁产生的概率</strong>；</li>
+<li><strong>尽可能的缩小锁的范围，防止锁住的资源过多引发阻塞和饥饿</strong></li>
+<li><strong>使用定时锁，比如Lock中的tryLock()</strong></li>
+<li><strong>为表添加合理的索引</strong>。如果不走索引将会为表的每一行记录添加上锁，死锁的概率大大增大</li>
+<li><strong>降低隔离级别</strong>，如果业务允许</li>
+<li><strong>按顺序申请锁</strong>，不会造成互相等待</li>
+<li>在同一个事务中，<strong>尽可能做到一次锁定所需要的所有资源</strong>，减少死锁概率。</li>
+</ol>
+]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>MySQL</category>
+        <category>死锁</category>
+      </categories>
+      <tags>
+        <tag>死锁</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>单例模式</title>
     <url>/2022/08/03/%E5%8D%95%E4%BE%8B%E6%A8%A1%E5%BC%8F/</url>
     <content><![CDATA[<h4 id="单例模式"><a href="#单例模式" class="headerlink" title="单例模式"></a>单例模式</h4><h5 id="适用场景"><a href="#适用场景" class="headerlink" title="适用场景"></a>适用场景</h5><ul>
@@ -1383,52 +1429,6 @@
       </tags>
   </entry>
   <entry>
-    <title>如何避免死锁</title>
-    <url>/2023/05/12/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81/</url>
-    <content><![CDATA[<h2 id="如何避免死锁？"><a href="#如何避免死锁？" class="headerlink" title="如何避免死锁？"></a>如何避免死锁？</h2><p>死锁的四个必要条件：<strong>互斥、占有且等待、不可强占用、循环等待</strong>。只要系统发生死锁，这些条件必然成立，但是只要破坏任意一个条件就死锁就不会成立。</p>
-<p>死锁产生的条件</p>
-<ul>
-<li><strong>互斥使用</strong>，即当资源被一个线程占用时，别的线程不能使用</li>
-<li><strong>不可抢占</strong>，资源请求者不能强制从资源占有者手中抢夺资源，资源只能由占有者主动释放</li>
-<li><strong>请求和保持</strong>，当资源请求者在请求其他资源的同时保持对原因资源的占有</li>
-<li><strong>循环等待</strong>，多个线程存在环路的锁依赖关系而永远等待下去，例如T1占有T2的资源，T2占有T3的资源，T3占有T1的资源，这种情况可能会形成一个等待环路</li>
-</ul>
-<p>在数据库层面，有两种策略通过「打破循环等待条件」来解除死锁状态：</p>
-<ul>
-<li><p><strong>设置事务等待锁的超时时间</strong>。当一个事务的等待时间超过该值后，就对这个事务进行回滚，于是锁就释放了，另一个事务就可以继续执行了。在 InnoDB 中，参数 <code>innodb_lock_wait_timeout</code> 是用来设置超时时间的，默认值时 50 秒。</p>
-<p>当发生超时后，就出现下面这个提示：</p>
-<p><img src="/2023/05/12/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81/c296c1889f0101d335699311b4ef20a8.png" alt="图片"></p>
-</li>
-<li><p><strong>开启主动死锁检测</strong>。主动死锁检测在发现死锁后，主动回滚死锁链条中的某一个事务，让其他事务得以继续执行。将参数 <code>innodb_deadlock_detect</code> 设置为 on，表示开启这个逻辑，默认就开启。</p>
-<p>当检测到死锁后，就会出现下面这个提示：</p>
-<p><img src="/2023/05/12/%E5%A6%82%E4%BD%95%E9%81%BF%E5%85%8D%E6%AD%BB%E9%94%81/f380ef357d065498d8d54ad07f145e09.png" alt="图片"></p>
-<p>检测到死锁之后，选择插入更新或者删除的行数最少的事务回滚，基于 INFORMATION_SCHEMA.INNODB_TRX 表中的 trx_weight 字段来判断。如果插入更新或者删除的行数一样则回滚后面执行的那条事务。</p>
-</li>
-</ul>
-<p>避免死锁:</p>
-<p>有多种方法可以避免死锁，这里只介绍常见的三种：</p>
-<ol>
-<li>如果不同程序会并发存取多个表，<strong>尽量约定以相同的顺序访问表</strong>，可以大大降低死锁机会。</li>
-<li>在同一个事务中，<strong>尽可能做到一次锁定所需要的所有资源，减少死锁产生概率</strong>；</li>
-<li>对于非常容易产生死锁的业务部分，<strong>可以尝试使用升级锁粒度，通过表级锁定来减少死锁产生的概率</strong>；</li>
-<li><strong>尽可能的缩小锁的范围，防止锁住的资源过多引发阻塞和饥饿</strong></li>
-<li><strong>使用定时锁，比如Lock中的tryLock()</strong></li>
-<li><strong>为表添加合理的索引</strong>。如果不走索引将会为表的每一行记录添加上锁，死锁的概率大大增大</li>
-<li><strong>降低隔离级别</strong>，如果业务允许</li>
-<li><strong>按顺序申请锁</strong>，不会造成互相等待</li>
-<li>在同一个事务中，<strong>尽可能做到一次锁定所需要的所有资源</strong>，减少死锁概率。</li>
-</ol>
-]]></content>
-      <categories>
-        <category>数据库</category>
-        <category>MySQL</category>
-        <category>死锁</category>
-      </categories>
-      <tags>
-        <tag>死锁</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>工厂模式</title>
     <url>/2022/09/18/%E5%B7%A5%E5%8E%82%E6%A8%A1%E5%BC%8F/</url>
     <content><![CDATA[<h4 id="工厂模式"><a href="#工厂模式" class="headerlink" title="工厂模式"></a>工厂模式</h4><h4 id="目的"><a href="#目的" class="headerlink" title="目的"></a>目的</h4><p>对上层的使用者<strong>隔离对象创建的过程</strong></p>
@@ -1482,6 +1482,31 @@
       </categories>
       <tags>
         <tag>设计模式</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>数据库范式</title>
+    <url>/2022/07/21/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%8C%83%E5%BC%8F/</url>
+    <content><![CDATA[<p>范式是关系数据库理论的基础，也是我们在设计数据库结构过程中所要遵循的规则和指导方法</p>
+<h4 id="第一范式（1NF）"><a href="#第一范式（1NF）" class="headerlink" title="第一范式（1NF）"></a>第一范式（1NF）</h4><p>数据表中的每一列（每个字段）必须是不可拆分的最小单元，也就是确保<strong>每一列的原子性   (值不可再分)</strong></p>
+<h4 id="第二范式（2NF）"><a href="#第二范式（2NF）" class="headerlink" title="第二范式（2NF）"></a>第二范式（2NF）</h4><p>满足1NF后，要求表中的<strong>所有列，都必须依赖于主键</strong>，而不能有任何一列与主键没有关系，也就是说<strong>一个表只描述一件事情</strong>；(<strong>消除了部份依赖</strong>)</p>
+<p>例如：订单表只描述订单相关的信息，所以所有字段都必须与订单id相关 产品表只描述产品相关的信息，所以所有字段都必须与产品id相 关；因此不能在一张表中同时出现订单信息与产品信息</p>
+<h4 id="第三范式（3NF）"><a href="#第三范式（3NF）" class="headerlink" title="第三范式（3NF）"></a>第三范式（3NF）</h4><p>必须先满足第二范式（2NF），要求：表中的<strong>每一列只与主键直接相关而不是间接相关</strong>，（表中的每一列只能依赖于主键）；(<strong>消除了传递依赖</strong>)</p>
+<p>订单表中需要有客户相关信息，在分离出客户表之后，订单表中只需要有一个用户id即可，而不能有其他的客户信息。因为其他的客户信息直接关联于用户id，而不是直接与订单id直接相关</p>
+<h4 id="数据库五大约束"><a href="#数据库五大约束" class="headerlink" title="数据库五大约束"></a>数据库五大约束</h4><ul>
+<li><strong>primary KEY</strong>:设置主键约束；</li>
+<li><strong>UNIQUE</strong>：设置唯一性约束，不能有重复值；</li>
+<li><strong>DEFAULT</strong> 默认值约束，height DOUBLE(3,2)DEFAULT 1.2 height不输入是默认为1,2</li>
+<li><strong>NOT NULL</strong>：设置非空约束，该字段不能为空；</li>
+<li><strong>FOREIGN key</strong> :设置外键约束</li>
+</ul>
+]]></content>
+      <categories>
+        <category>数据库</category>
+        <category>MySQL</category>
+      </categories>
+      <tags>
+        <tag>MySQL</tag>
       </tags>
   </entry>
   <entry>
@@ -1605,31 +1630,6 @@
       </tags>
   </entry>
   <entry>
-    <title>数据库范式</title>
-    <url>/2022/07/21/%E6%95%B0%E6%8D%AE%E5%BA%93%E8%8C%83%E5%BC%8F/</url>
-    <content><![CDATA[<p>范式是关系数据库理论的基础，也是我们在设计数据库结构过程中所要遵循的规则和指导方法</p>
-<h4 id="第一范式（1NF）"><a href="#第一范式（1NF）" class="headerlink" title="第一范式（1NF）"></a>第一范式（1NF）</h4><p>数据表中的每一列（每个字段）必须是不可拆分的最小单元，也就是确保<strong>每一列的原子性   (值不可再分)</strong></p>
-<h4 id="第二范式（2NF）"><a href="#第二范式（2NF）" class="headerlink" title="第二范式（2NF）"></a>第二范式（2NF）</h4><p>满足1NF后，要求表中的<strong>所有列，都必须依赖于主键</strong>，而不能有任何一列与主键没有关系，也就是说<strong>一个表只描述一件事情</strong>；(<strong>消除了部份依赖</strong>)</p>
-<p>例如：订单表只描述订单相关的信息，所以所有字段都必须与订单id相关 产品表只描述产品相关的信息，所以所有字段都必须与产品id相 关；因此不能在一张表中同时出现订单信息与产品信息</p>
-<h4 id="第三范式（3NF）"><a href="#第三范式（3NF）" class="headerlink" title="第三范式（3NF）"></a>第三范式（3NF）</h4><p>必须先满足第二范式（2NF），要求：表中的<strong>每一列只与主键直接相关而不是间接相关</strong>，（表中的每一列只能依赖于主键）；(<strong>消除了传递依赖</strong>)</p>
-<p>订单表中需要有客户相关信息，在分离出客户表之后，订单表中只需要有一个用户id即可，而不能有其他的客户信息。因为其他的客户信息直接关联于用户id，而不是直接与订单id直接相关</p>
-<h4 id="数据库五大约束"><a href="#数据库五大约束" class="headerlink" title="数据库五大约束"></a>数据库五大约束</h4><ul>
-<li><strong>primary KEY</strong>:设置主键约束；</li>
-<li><strong>UNIQUE</strong>：设置唯一性约束，不能有重复值；</li>
-<li><strong>DEFAULT</strong> 默认值约束，height DOUBLE(3,2)DEFAULT 1.2 height不输入是默认为1,2</li>
-<li><strong>NOT NULL</strong>：设置非空约束，该字段不能为空；</li>
-<li><strong>FOREIGN key</strong> :设置外键约束</li>
-</ul>
-]]></content>
-      <categories>
-        <category>数据库</category>
-        <category>MySQL</category>
-      </categories>
-      <tags>
-        <tag>MySQL</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>更新一条记录的流程</title>
     <url>/2023/07/21/%E6%9B%B4%E6%96%B0%E4%B8%80%E6%9D%A1%E8%AE%B0%E5%BD%95%E7%9A%84%E6%B5%81%E7%A8%8B/</url>
     <content><![CDATA[<h2 id="更新一条记录的流程"><a href="#更新一条记录的流程" class="headerlink" title="更新一条记录的流程"></a>更新一条记录的流程</h2><p>具体更新一条记录 <code>UPDATE t_user SET name = &#39;xiaolin&#39; WHERE id = 1;</code> 的流程如下:</p>
@@ -1667,6 +1667,33 @@
       </categories>
       <tags>
         <tag>MySQL</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>策略模式</title>
+    <url>/2022/09/15/%E7%AD%96%E7%95%A5%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[<h4 id="策略模式"><a href="#策略模式" class="headerlink" title="策略模式"></a>策略模式</h4><p>在策略模式（Strategy Pattern）中，<strong>一个类的行为或其算法可以在运行时更改</strong></p>
+<h5 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h5><p><strong>意图：定义一系列的算法,把它们一个个封装起来</strong>, 并且使它们可相互替换。</p>
+<p><strong>主要解决：</strong>在有多种算法相似的情况下，<strong>使用 if…else 所带来的复杂和难以维护</strong>。</p>
+<p><strong>何时使用：</strong>一个系统有许多许多类，而区分它们的只是他们直接的行为。</p>
+<p><strong>如何解决：将这些算法封装成一个一个的类，任意地替换</strong>。</p>
+<p><strong>关键代码：实现同一个接口</strong>。</p>
+<p><strong>应用实例：</strong> 1、诸葛亮的锦囊妙计，每一个锦囊就是一个策略。 2、旅行的出游方式，选择骑自行车、坐汽车，每一种旅行方式都是一个策略。 3、JAVA AWT 中的 LayoutManager。</p>
+<p><strong>优点：</strong> 1、<strong>算法可以自由切换</strong>。 2、<strong>避免使用多重条件判断</strong>。 3、<strong>扩展性良好</strong>。</p>
+<p><strong>缺点：</strong> 1、<strong>策略类会增多</strong>。 2、所有策略类都需要对外暴露。</p>
+<p><strong>使用场景：</strong> 1、如果在一个系统里面有许多类，它们之间的<strong>区别仅在于它们的行为</strong>，那么使用策略模式可以动态地让一个对象在许多行为中选择一种行为。 2、<strong>一个系统需要动态地在几种算法中选择一种</strong>。 3、如果一个对象有很多的行为，如果不用恰当的模式，这些行为就只好使用多重的条件选择语句来实现。</p>
+<p><strong>注意事项：</strong>如果一个系统的策略多于四个S就需要考虑使用混合模式，解决策略类膨胀的问题。</p>
+<h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>我们将创建一个定义活动的 <em>Strategy</em> 接口和实现了 <em>Strategy</em> 接口的实体策略类。<em>Context</em> 是一个使用了某种策略的类。</p>
+<p><em>StrategyPatternDemo</em>，我们的演示类使用 <em>Context</em> 和策略对象来演示 Context 在它所配置或使用的策略改变时的行为变化</p>
+<p><img src="https://www.runoob.com/wp-content/uploads/2014/08/strategy_pattern_uml_diagram.jpg" alt="策略模式的 UML 图"></p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建一个接口</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Strategy</span> &#123;</span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 创建实现接口的实体类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationAdd</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 + num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationSubtract</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 - num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationMultiply</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 * num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 创建 Context 类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Context</span> &#123;</span><br><span class="line">   <span class="keyword">private</span> Strategy strategy;</span><br><span class="line"> </span><br><span class="line">   <span class="keyword">public</span> <span class="title function_">Context</span><span class="params">(Strategy strategy)</span>&#123;</span><br><span class="line">      <span class="built_in">this</span>.strategy = strategy;</span><br><span class="line">   &#125;</span><br><span class="line"> </span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">executeStrategy</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span>&#123;</span><br><span class="line">      <span class="keyword">return</span> strategy.doOperation(num1, num2);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 使用 Context 来查看当它改变策略 Strategy 时的行为变化</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">StrategyPatternDemo</span> &#123;</span><br><span class="line">   <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">      <span class="type">Context</span> <span class="variable">context</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationAdd</span>());    </span><br><span class="line">      System.out.println(<span class="string">&quot;10 + 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line"> </span><br><span class="line">      context = <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationSubtract</span>());      </span><br><span class="line">      System.out.println(<span class="string">&quot;10 - 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line"> </span><br><span class="line">      context = <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationMultiply</span>());    </span><br><span class="line">      System.out.println(<span class="string">&quot;10 * 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 执行程序，输出结果</span></span><br><span class="line"><span class="number">10</span> + <span class="number">5</span> = <span class="number">15</span></span><br><span class="line"><span class="number">10</span> - <span class="number">5</span> = <span class="number">5</span></span><br><span class="line"><span class="number">10</span> * <span class="number">5</span> = <span class="number">50</span></span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
       </tags>
   </entry>
   <entry>
@@ -1725,66 +1752,6 @@
       </categories>
       <tags>
         <tag>JVM</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>策略模式</title>
-    <url>/2022/09/15/%E7%AD%96%E7%95%A5%E6%A8%A1%E5%BC%8F/</url>
-    <content><![CDATA[<h4 id="策略模式"><a href="#策略模式" class="headerlink" title="策略模式"></a>策略模式</h4><p>在策略模式（Strategy Pattern）中，<strong>一个类的行为或其算法可以在运行时更改</strong></p>
-<h5 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h5><p><strong>意图：定义一系列的算法,把它们一个个封装起来</strong>, 并且使它们可相互替换。</p>
-<p><strong>主要解决：</strong>在有多种算法相似的情况下，<strong>使用 if…else 所带来的复杂和难以维护</strong>。</p>
-<p><strong>何时使用：</strong>一个系统有许多许多类，而区分它们的只是他们直接的行为。</p>
-<p><strong>如何解决：将这些算法封装成一个一个的类，任意地替换</strong>。</p>
-<p><strong>关键代码：实现同一个接口</strong>。</p>
-<p><strong>应用实例：</strong> 1、诸葛亮的锦囊妙计，每一个锦囊就是一个策略。 2、旅行的出游方式，选择骑自行车、坐汽车，每一种旅行方式都是一个策略。 3、JAVA AWT 中的 LayoutManager。</p>
-<p><strong>优点：</strong> 1、<strong>算法可以自由切换</strong>。 2、<strong>避免使用多重条件判断</strong>。 3、<strong>扩展性良好</strong>。</p>
-<p><strong>缺点：</strong> 1、<strong>策略类会增多</strong>。 2、所有策略类都需要对外暴露。</p>
-<p><strong>使用场景：</strong> 1、如果在一个系统里面有许多类，它们之间的<strong>区别仅在于它们的行为</strong>，那么使用策略模式可以动态地让一个对象在许多行为中选择一种行为。 2、<strong>一个系统需要动态地在几种算法中选择一种</strong>。 3、如果一个对象有很多的行为，如果不用恰当的模式，这些行为就只好使用多重的条件选择语句来实现。</p>
-<p><strong>注意事项：</strong>如果一个系统的策略多于四个S就需要考虑使用混合模式，解决策略类膨胀的问题。</p>
-<h4 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h4><p>我们将创建一个定义活动的 <em>Strategy</em> 接口和实现了 <em>Strategy</em> 接口的实体策略类。<em>Context</em> 是一个使用了某种策略的类。</p>
-<p><em>StrategyPatternDemo</em>，我们的演示类使用 <em>Context</em> 和策略对象来演示 Context 在它所配置或使用的策略改变时的行为变化</p>
-<p><img src="https://www.runoob.com/wp-content/uploads/2014/08/strategy_pattern_uml_diagram.jpg" alt="策略模式的 UML 图"></p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="comment">// 创建一个接口</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Strategy</span> &#123;</span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 创建实现接口的实体类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationAdd</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 + num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationSubtract</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 - num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">OperationMultiply</span> <span class="keyword">implements</span> <span class="title class_">Strategy</span>&#123;</span><br><span class="line">   <span class="meta">@Override</span></span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">doOperation</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span> &#123;</span><br><span class="line">      <span class="keyword">return</span> num1 * num2;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 创建 Context 类</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Context</span> &#123;</span><br><span class="line">   <span class="keyword">private</span> Strategy strategy;</span><br><span class="line"> </span><br><span class="line">   <span class="keyword">public</span> <span class="title function_">Context</span><span class="params">(Strategy strategy)</span>&#123;</span><br><span class="line">      <span class="built_in">this</span>.strategy = strategy;</span><br><span class="line">   &#125;</span><br><span class="line"> </span><br><span class="line">   <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">executeStrategy</span><span class="params">(<span class="type">int</span> num1, <span class="type">int</span> num2)</span>&#123;</span><br><span class="line">      <span class="keyword">return</span> strategy.doOperation(num1, num2);</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 使用 Context 来查看当它改变策略 Strategy 时的行为变化</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">StrategyPatternDemo</span> &#123;</span><br><span class="line">   <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">      <span class="type">Context</span> <span class="variable">context</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationAdd</span>());    </span><br><span class="line">      System.out.println(<span class="string">&quot;10 + 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line"> </span><br><span class="line">      context = <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationSubtract</span>());      </span><br><span class="line">      System.out.println(<span class="string">&quot;10 - 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line"> </span><br><span class="line">      context = <span class="keyword">new</span> <span class="title class_">Context</span>(<span class="keyword">new</span> <span class="title class_">OperationMultiply</span>());    </span><br><span class="line">      System.out.println(<span class="string">&quot;10 * 5 = &quot;</span> + context.executeStrategy(<span class="number">10</span>, <span class="number">5</span>));</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 执行程序，输出结果</span></span><br><span class="line"><span class="number">10</span> + <span class="number">5</span> = <span class="number">15</span></span><br><span class="line"><span class="number">10</span> - <span class="number">5</span> = <span class="number">5</span></span><br><span class="line"><span class="number">10</span> * <span class="number">5</span> = <span class="number">50</span></span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>设计模式</category>
-      </categories>
-      <tags>
-        <tag>设计模式</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>观察者模式</title>
-    <url>/2022/08/08/%E8%A7%82%E5%AF%9F%E8%80%85%E6%A8%A1%E5%BC%8F/</url>
-    <content><![CDATA[<h4 id="观察者模式"><a href="#观察者模式" class="headerlink" title="观察者模式"></a><strong>观察者模式</strong></h4><p>需要对<strong>某个事物（类的对象等）的某种状态进行监测</strong>，当<strong>被观察者的状态改变的时候</strong>，需要进行某些相应的操作</p>
-<p>分为抽象被观察者、具体被观察者、抽象观察者、具体观察者</p>
-<p>情景：在学校中，老师和学生听到上课铃声之后开始上课</p>
-<h5 id="抽象观察者"><a href="#抽象观察者" class="headerlink" title="抽象观察者"></a><strong>抽象观察者</strong></h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h5 id="具体观察者"><a href="#具体观察者" class="headerlink" title="具体观察者"></a><strong>具体观察者</strong></h5><p>学生</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Student</span> <span class="keyword">implements</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响，学生开始上课！！！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>老师</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Teacher</span> <span class="keyword">implements</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响，老师开始讲课！！！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h5 id="抽象被观察者"><a href="#抽象被观察者" class="headerlink" title="抽象被观察者"></a><strong>抽象被观察者</strong></h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">ISubject</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//增加观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(IOberver oberver)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//删除观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">remove</span><span class="params">(IOberver oberver)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//通知观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">notifyOberver</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<h5 id="具体的被观察者"><a href="#具体的被观察者" class="headerlink" title="具体的被观察者"></a><strong>具体的被观察者</strong></h5><p>铃响</p>
-<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RingBell</span> <span class="keyword">implements</span> <span class="title class_">ISubject</span> &#123;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">private</span> List&lt;IOberver&gt; list=<span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(IOberver oberver)</span> &#123;</span><br><span class="line">        list.add(oberver);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">remove</span><span class="params">(IOberver oberver)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(!list.isEmpty())&#123;</span><br><span class="line">            list.remove(oberver);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">notifyOberver</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">for</span>(IOberver oberver:list)&#123;</span><br><span class="line">            oberver.update();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">ring</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响了&quot;</span>);</span><br><span class="line">        <span class="comment">// 通知老师学生</span></span><br><span class="line">        notifyOberver();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-
-
-<h5 id="运行结果"><a href="#运行结果" class="headerlink" title="运行结果"></a>运行结果</h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *创建观察者实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">Teacher</span> <span class="variable">mathTeacher</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Teacher</span>();</span><br><span class="line">    Student studentA=<span class="keyword">new</span> <span class="title class_">Student</span>();</span><br><span class="line">    Student studentB=<span class="keyword">new</span> <span class="title class_">Student</span>();</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *被观察者实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    RingBell ringBell=<span class="keyword">new</span> <span class="title class_">RingBell</span>();</span><br><span class="line">    ringBell.add(mathTeacher);</span><br><span class="line">    ringBell.add(studentA);</span><br><span class="line">    ringBell.add(studentB);</span><br><span class="line"></span><br><span class="line">    ringBell.ring();</span><br><span class="line">&#125;</span><br><span class="line">铃声响了</span><br><span class="line">铃声响，老师开始讲课！！！</span><br><span class="line">铃声响，学生开始上课！！！</span><br><span class="line">铃声响，学生开始上课！！！ </span><br></pre></td></tr></table></figure>
-
-]]></content>
-      <categories>
-        <category>设计模式</category>
-      </categories>
-      <tags>
-        <tag>设计模式</tag>
       </tags>
   </entry>
   <entry>
@@ -1882,6 +1849,39 @@
       </categories>
       <tags>
         <tag>OOM</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>观察者模式</title>
+    <url>/2022/08/08/%E8%A7%82%E5%AF%9F%E8%80%85%E6%A8%A1%E5%BC%8F/</url>
+    <content><![CDATA[<h4 id="观察者模式"><a href="#观察者模式" class="headerlink" title="观察者模式"></a><strong>观察者模式</strong></h4><p>需要对<strong>某个事物（类的对象等）的某种状态进行监测</strong>，当<strong>被观察者的状态改变的时候</strong>，需要进行某些相应的操作</p>
+<p>分为抽象被观察者、具体被观察者、抽象观察者、具体观察者</p>
+<p>情景：在学校中，老师和学生听到上课铃声之后开始上课</p>
+<h5 id="抽象观察者"><a href="#抽象观察者" class="headerlink" title="抽象观察者"></a><strong>抽象观察者</strong></h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="具体观察者"><a href="#具体观察者" class="headerlink" title="具体观察者"></a><strong>具体观察者</strong></h5><p>学生</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Student</span> <span class="keyword">implements</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响，学生开始上课！！！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>老师</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Teacher</span> <span class="keyword">implements</span> <span class="title class_">IOberver</span> &#123;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">update</span><span class="params">()</span> &#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响，老师开始讲课！！！&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="抽象被观察者"><a href="#抽象被观察者" class="headerlink" title="抽象被观察者"></a><strong>抽象被观察者</strong></h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">ISubject</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//增加观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(IOberver oberver)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//删除观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">remove</span><span class="params">(IOberver oberver)</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//通知观察者方法</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">notifyOberver</span><span class="params">()</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h5 id="具体的被观察者"><a href="#具体的被观察者" class="headerlink" title="具体的被观察者"></a><strong>具体的被观察者</strong></h5><p>铃响</p>
+<figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">RingBell</span> <span class="keyword">implements</span> <span class="title class_">ISubject</span> &#123;</span><br><span class="line"></span><br><span class="line">   <span class="keyword">private</span> List&lt;IOberver&gt; list=<span class="keyword">new</span> <span class="title class_">ArrayList</span>&lt;&gt;();</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">add</span><span class="params">(IOberver oberver)</span> &#123;</span><br><span class="line">        list.add(oberver);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">remove</span><span class="params">(IOberver oberver)</span> &#123;</span><br><span class="line">        <span class="keyword">if</span>(!list.isEmpty())&#123;</span><br><span class="line">            list.remove(oberver);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">notifyOberver</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">for</span>(IOberver oberver:list)&#123;</span><br><span class="line">            oberver.update();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">ring</span><span class="params">()</span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;铃声响了&quot;</span>);</span><br><span class="line">        <span class="comment">// 通知老师学生</span></span><br><span class="line">        notifyOberver();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h5 id="运行结果"><a href="#运行结果" class="headerlink" title="运行结果"></a>运行结果</h5><figure class="highlight java"><table><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *创建观察者实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="type">Teacher</span> <span class="variable">mathTeacher</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Teacher</span>();</span><br><span class="line">    Student studentA=<span class="keyword">new</span> <span class="title class_">Student</span>();</span><br><span class="line">    Student studentB=<span class="keyword">new</span> <span class="title class_">Student</span>();</span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     *被观察者实例</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    RingBell ringBell=<span class="keyword">new</span> <span class="title class_">RingBell</span>();</span><br><span class="line">    ringBell.add(mathTeacher);</span><br><span class="line">    ringBell.add(studentA);</span><br><span class="line">    ringBell.add(studentB);</span><br><span class="line"></span><br><span class="line">    ringBell.ring();</span><br><span class="line">&#125;</span><br><span class="line">铃声响了</span><br><span class="line">铃声响，老师开始讲课！！！</span><br><span class="line">铃声响，学生开始上课！！！</span><br><span class="line">铃声响，学生开始上课！！！ </span><br></pre></td></tr></table></figure>
+
+]]></content>
+      <categories>
+        <category>设计模式</category>
+      </categories>
+      <tags>
+        <tag>设计模式</tag>
       </tags>
   </entry>
   <entry>
